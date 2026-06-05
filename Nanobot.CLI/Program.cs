@@ -1,5 +1,7 @@
 using System.CommandLine;
 using Nanobot.Core.Config;
+using Nanobot.Core.Events;
+using Nanobot.Core.Gateway;
 using Nanobot.Core.Providers;
 using Nanobot.Core.Tools;
 using Nanobot.Core.Tools.Builtin;
@@ -21,36 +23,19 @@ class Program
         var workspace = Path.Combine(nanoDir, "workspace");
         var cronFile = Path.Combine(nanoDir, "cron.json");
 
-        // --- Helper: Setup Agent with Env Priority ---
-        async Task<Agent> SetupAgent() {
+        // --- Helper: Setup Agent with unified provider configuration ---
+        (Agent Agent, RuntimeEventBus EventBus, AppConfig Config, bool StreamingEnabled) SetupAgentContext() {
             AppConfig config = File.Exists(configFile) ? ConfigLoader.Load(configFile) : new AppConfig();
-            
-            // Priority 1: Environment Variables
-            string apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY") ?? "";
-            string? baseUrl = Environment.GetEnvironmentVariable("OPENAI_API_BASE");
-            string model = Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4o";
+            var providerSetup = ProviderConfigurationFactory.Create(config);
+            var provider = providerSetup.Provider;
 
-            // Priority 2: Config File (if env is missing/default)
-            if (string.IsNullOrEmpty(apiKey) && config.Providers.TryGetValue("openai", out var openAiConfig)) {
-                apiKey = openAiConfig.ApiKey ?? "";
-                baseUrl ??= openAiConfig.ApiBase;
-            }
-            if (model == "gpt-4o" && config.Agents.Defaults.Model != null) {
-                model = config.Agents.Defaults.Model;
-            }
-
-            if (string.IsNullOrEmpty(apiKey)) {
-                throw new Exception("Error: No API Key found. Please set 'OPENAI_API_KEY' environment variable.");
-            }
-
-            var provider = new OpenAIProvider(apiKey, baseUrl, model);
             var registry = new ToolRegistry();
             registry.Register(new ReadFileTool());
             registry.Register(new WriteFileTool());
             registry.Register(new EditFileTool());
             registry.Register(new ListDirTool());
-            registry.Register(new ShellTool());
-            registry.Register(new WebSearchTool(config.WebSearch?.ApiKey ?? Environment.GetEnvironmentVariable("BRAVE_API_KEY") ?? ""));
+            registry.Register(new ShellTool(workspace));
+            registry.Register(new WebSearchTool(Environment.GetEnvironmentVariable("BRAVE_API_KEY") ?? config.WebSearch?.ApiKey ?? ""));
             registry.Register(new WebFetchTool());
             registry.Register(new WeatherTool());
             registry.Register(new StockTool());
@@ -60,14 +45,20 @@ class Program
             registry.Register(new GitHubTool(githubToken));
 
             var memory = new FileMemoryStore(workspace);
-            return new Agent(provider, registry, memory);
+            var eventBus = new RuntimeEventBus();
+            return (new Agent(provider, registry, memory, eventBus), eventBus, config, providerSetup.StreamingEnabled);
+        }
+
+        Agent SetupAgent() {
+            var setup = SetupAgentContext();
+            return setup.Agent;
         }
 
         // --- Default Command Handler (Root) ---
         rootCommand.SetHandler(async () => {
             try {
-                var agent = await SetupAgent();
-                await RunChatLoop(agent);
+                var setup = SetupAgentContext();
+                await RunChatLoop(setup.Agent, setup.StreamingEnabled);
             } catch (Exception ex) {
                 Console.WriteLine(ex.Message);
             }
@@ -78,7 +69,46 @@ class Program
         onboardCommand.SetHandler(() => {
             if (!Directory.Exists(nanoDir)) Directory.CreateDirectory(nanoDir);
             if (!File.Exists(configFile)) {
-                File.WriteAllText(configFile, "{\n  \"providers\": {\n    \"openai\": { \"apiKey\": \"\" }\n  }\n}");
+                File.WriteAllText(configFile, """
+                {
+                  "providers": {
+                    "openai": {
+                      "kind": "openai-compatible",
+                      "apiKey": "",
+                      "apiBase": null,
+                      "defaultModel": "gpt-4o",
+                      "models": [
+                        {
+                          "id": "gpt-4o",
+                          "apiModelId": "gpt-4o",
+                          "supportsStreaming": true,
+                          "supportsTools": true
+                        }
+                      ]
+                    }
+                  },
+                  "agents": {
+                    "defaults": {
+                      "model": "openai::gpt-4o",
+                      "fallbackModels": [
+                        "openai::gpt-4o"
+                      ]
+                    }
+                  },
+                  "streaming": {
+                    "enabled": true
+                  },
+                  "gateway": {
+                    "webSocket": {
+                      "prefix": "http://localhost:8765/ws/",
+                      "token": ""
+                    }
+                  },
+                  "webSearch": {
+                    "apiKey": ""
+                  }
+                }
+                """);
                 Console.WriteLine($"Created default config at {configFile}");
             }
             if (!Directory.Exists(workspace)) Directory.CreateDirectory(workspace);
@@ -89,7 +119,7 @@ class Program
         // --- Command: Gateway ---
         var gatewayCommand = new Command("gateway", "Start the Telegram bot gateway");
         gatewayCommand.SetHandler(async () => {
-            var agent = await SetupAgent();
+            var agent = SetupAgent();
             var config = ConfigLoader.Load(configFile);
             
             var cronService = new CronService(cronFile, async (job) => await agent.RunAsync(job.Payload.Message));
@@ -109,11 +139,37 @@ class Program
         });
         rootCommand.AddCommand(gatewayCommand);
 
+        // --- Command: WebSocket Gateway ---
+        var websocketCommand = new Command("websocket", "Start the lightweight WebSocket agent gateway");
+        websocketCommand.SetHandler(async () => {
+            var setup = SetupAgentContext();
+            var prefix = Environment.GetEnvironmentVariable("NANOBOT_WS_PREFIX")
+                ?? setup.Config.Gateway.WebSocket.Prefix
+                ?? "http://localhost:8765/ws/";
+            var authToken = Environment.GetEnvironmentVariable("NANOBOT_WS_TOKEN")
+                ?? setup.Config.Gateway.WebSocket.Token;
+            var wsGateway = new WebSocketAgentGateway(
+                setup.Agent,
+                setup.EventBus,
+                workspace,
+                prefix,
+                authToken,
+                setup.StreamingEnabled
+            );
+            Console.WriteLine($"WebSocket gateway listening on {prefix}");
+            if (string.IsNullOrWhiteSpace(authToken))
+            {
+                Console.WriteLine("WebSocket auth token is not configured. Use only for local development.");
+            }
+            await wsGateway.StartAsync();
+        });
+        rootCommand.AddCommand(websocketCommand);
+
         // --- Command: Chat (Explicit) ---
         var chatCommand = new Command("chat", "Start interactive chat (Default)");
         chatCommand.SetHandler(async () => {
-            var agent = await SetupAgent();
-            await RunChatLoop(agent);
+            var setup = SetupAgentContext();
+            await RunChatLoop(setup.Agent, setup.StreamingEnabled);
         });
         rootCommand.AddCommand(chatCommand);
 
@@ -123,16 +179,24 @@ class Program
         var agentCommand = new Command("agent", "Send a single message to the agent");
         agentCommand.AddOption(msgOption);
         agentCommand.SetHandler(async (message) => {
-            var agent = await SetupAgent();
-            var response = await agent.RunAsync(message);
-            Console.WriteLine(response);
+            var setup = SetupAgentContext();
+            if (setup.StreamingEnabled)
+            {
+                await setup.Agent.RunStreamingAsync(message, WriteConsoleDeltaAsync);
+                Console.WriteLine();
+            }
+            else
+            {
+                var response = await setup.Agent.RunAsync(message);
+                Console.WriteLine(response);
+            }
         }, msgOption);
         rootCommand.AddCommand(agentCommand);
 
         return await rootCommand.InvokeAsync(args);
     }
 
-    static async Task RunChatLoop(Agent agent) {
+    static async Task RunChatLoop(Agent agent, bool streamingEnabled) {
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine("╔══════════════════════════════════════════════╗");
         Console.WriteLine("║        Nanobot.NET Interactive Chat          ║");
@@ -153,15 +217,29 @@ class Program
             Console.ResetColor();
 
             try {
-                var response = await agent.RunAsync(input);
                 Console.Write("\r" + new string(' ', 15) + "\r"); // Clear line
                 Console.ForegroundColor = ConsoleColor.Magenta;
                 Console.Write("Agent: ");
                 Console.ResetColor();
-                Console.WriteLine(response);
+                if (streamingEnabled)
+                {
+                    await agent.RunStreamingAsync(input, WriteConsoleDeltaAsync);
+                    Console.WriteLine();
+                }
+                else
+                {
+                    var response = await agent.RunAsync(input);
+                    Console.WriteLine(response);
+                }
             } catch (Exception ex) {
                 Console.WriteLine($"\nError: {ex.Message}");
             }
         }
+    }
+
+    static Task WriteConsoleDeltaAsync(string delta, CancellationToken cancellationToken)
+    {
+        Console.Write(delta);
+        return Task.CompletedTask;
     }
 }

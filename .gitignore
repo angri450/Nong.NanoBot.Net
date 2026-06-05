@@ -18,5 +18,5 @@ artifacts/
 # Config files with secrets
 config.json
 cron.json
-memory/
-pdf/
+/memory/
+/pdf/

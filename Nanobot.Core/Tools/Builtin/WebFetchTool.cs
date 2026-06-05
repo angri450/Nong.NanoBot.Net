@@ -3,14 +3,18 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Net;
+using Nanobot.Core.Security;
 
 namespace Nanobot.Core.Tools.Builtin;
 
 public class WebFetchTool : ITool
 {
     private const string UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/537.36";
+    private const int MaxRedirects = 5;
     private readonly int _maxChars;
-    private static readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
+    private readonly NetworkSecurityGuard _networkGuard;
+    private static readonly HttpClient DefaultHttpClient = new(new HttpClientHandler { AllowAutoRedirect = false });
 
     public string Name => "web_fetch";
     public string Description => "Fetch URL and extract readable content (HTML → markdown/text).";
@@ -27,9 +31,14 @@ public class WebFetchTool : ITool
     }
     """)!;
 
-    public WebFetchTool(int maxChars = 50000)
+    public WebFetchTool(
+        int maxChars = 50000,
+        HttpClient? httpClient = null,
+        NetworkSecurityGuard? networkGuard = null)
     {
         _maxChars = maxChars;
+        _httpClient = httpClient ?? DefaultHttpClient;
+        _networkGuard = networkGuard ?? new NetworkSecurityGuard();
     }
 
     public async Task<string> ExecuteAsync(JsonNode? arguments)
@@ -43,10 +52,47 @@ public class WebFetchTool : ITool
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.UserAgent.ParseAdd(UserAgent);
-            
-            var response = await _httpClient.SendAsync(request);
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var currentUri))
+            {
+                return JsonSerializer.Serialize(new { error = "URL must be absolute.", url = url });
+            }
+
+            HttpResponseMessage? response = null;
+            for (var redirectCount = 0; redirectCount <= MaxRedirects; redirectCount++)
+            {
+                await _networkGuard.ValidateHttpUrlAsync(currentUri);
+
+                var request = new HttpRequestMessage(HttpMethod.Get, currentUri);
+                request.Headers.UserAgent.ParseAdd(UserAgent);
+
+                response = await _httpClient.SendAsync(request);
+                if (!IsRedirect(response.StatusCode))
+                {
+                    break;
+                }
+
+                var location = response.Headers.Location;
+                if (location is null)
+                {
+                    break;
+                }
+
+                var nextUri = location.IsAbsoluteUri ? location : new Uri(currentUri, location);
+                await _networkGuard.ValidateHttpUrlAsync(nextUri);
+                response.Dispose();
+                currentUri = nextUri;
+            }
+
+            if (response is null)
+            {
+                return JsonSerializer.Serialize(new { error = "No response returned.", url = url });
+            }
+
+            if (IsRedirect(response.StatusCode))
+            {
+                return JsonSerializer.Serialize(new { error = "Too many redirects.", url = url });
+            }
+
             response.EnsureSuccessStatusCode();
 
             var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
@@ -81,7 +127,7 @@ public class WebFetchTool : ITool
             var result = new
             {
                 url = url,
-                finalUrl = response.RequestMessage?.RequestUri?.ToString() ?? url,
+                finalUrl = response.RequestMessage?.RequestUri?.ToString() ?? currentUri.ToString(),
                 status = (int)response.StatusCode,
                 extractor = extractor,
                 truncated = truncated,
@@ -95,6 +141,15 @@ public class WebFetchTool : ITool
         {
             return JsonSerializer.Serialize(new { error = ex.Message, url = url });
         }
+    }
+
+    private static bool IsRedirect(HttpStatusCode statusCode)
+    {
+        return statusCode is HttpStatusCode.Moved
+            or HttpStatusCode.Redirect
+            or HttpStatusCode.RedirectMethod
+            or HttpStatusCode.TemporaryRedirect
+            or HttpStatusCode.PermanentRedirect;
     }
 
     private string StripTags(string html)

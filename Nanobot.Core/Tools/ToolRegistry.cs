@@ -23,12 +23,17 @@ public class ToolRegistry
     
     public bool Has(string name) => _tools.ContainsKey(name);
 
-    public List<JsonNode> GetDefinitions()
+    public List<JsonNode> GetDefinitions(IReadOnlyCollection<string>? allowedToolNames = null)
     {
         // Convert to OpenAI schema format
         var list = new List<JsonNode>();
         foreach (var tool in _tools.Values)
         {
+            if (allowedToolNames is not null && !allowedToolNames.Contains(tool.Name, StringComparer.Ordinal))
+            {
+                continue;
+            }
+
             var node = new JsonObject
             {
                 ["type"] = "function",
@@ -46,18 +51,25 @@ public class ToolRegistry
     
     public async Task<string> ExecuteAsync(string name, JsonNode? arguments)
     {
+        var result = await ExecuteWithResultAsync(name, arguments);
+        return result.Content ?? string.Empty;
+    }
+
+    public async Task<ToolExecutionResult> ExecuteWithResultAsync(string name, JsonNode? arguments)
+    {
         if (!_tools.TryGetValue(name, out var tool))
         {
-            return $"Error: Tool '{name}' not found";
+            return ToolExecutionResult.Error(name, "tool_not_found", $"Tool '{name}' not found.");
         }
         
         try
         {
-            return await tool.ExecuteAsync(arguments);
+            var output = await tool.ExecuteAsync(arguments);
+            return ToolExecutionResult.Ok(name, output);
         }
         catch (Exception ex)
         {
-            return $"Error executing {name}: {ex.Message}";
+            return ToolExecutionResult.Error(name, "tool_exception", ex.Message, ex);
         }
     }
 }

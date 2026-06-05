@@ -1,0 +1,36 @@
+name: Real Integration Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-integration:
+    name: OpenAI and gateway smoke tests
+    runs-on: ubuntu-latest
+
+    env:
+      NANOBOT_RUN_INTEGRATION_TESTS: "1"
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_API_BASE: ${{ vars.OPENAI_API_BASE }}
+      OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run real integration tests
+        run: dotnet test --configuration Release --no-build --filter FullyQualifiedName~RealIntegrationTests
