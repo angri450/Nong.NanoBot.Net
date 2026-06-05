@@ -1,126 +1,44 @@
-<style>
-  :root {
-    --bg: #0d1117;
-    --fg: #c9d1d9;
-    --muted: #8b949e;
-    --border: #30363d;
-    --accent: #7c3aed;
-    --green: #3fb950;
-    --code-bg: #161b22;
-    --card-bg: #161b22;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--fg);
-    line-height: 1.6;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 40px 24px 80px;
-  }
-  a { color: #a78bfa; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; }
-  h2 {
-    font-size: 1.5rem; font-weight: 600; margin: 48px 0 16px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--border);
-  }
-  h3 { font-size: 1.15rem; font-weight: 600; margin: 24px 0 10px; }
-  p { margin: 12px 0; color: var(--fg); }
-  .tagline { font-size: 1.1rem; color: var(--muted); margin-bottom: 24px; }
+<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif;color:#c9d1d9;max-width:960px;margin:0 auto;padding:24px">
 
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 12px; border-radius: 20px;
-    font-size: 0.8rem; font-weight: 500;
-    background: var(--card-bg); border: 1px solid var(--border);
-  }
-  .badge.good { color: var(--green); border-color: var(--green); }
-  .badge.accent { color: #a78bfa; border-color: var(--accent); }
-
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
-  .card {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: 10px; padding: 20px;
-  }
-  .card h3 { margin: 0 0 8px; font-size: 1rem; }
-  .card p, .card li { font-size: 0.9rem; color: var(--muted); margin: 4px 0; }
-  .card ul { padding-left: 18px; }
-
-  pre, code {
-    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
-    font-size: 0.85rem;
-  }
-  pre {
-    background: var(--code-bg); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px 20px; overflow-x: auto;
-    margin: 12px 0; line-height: 1.5;
-  }
-  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; }
-  pre code { background: none; padding: 0; }
-
-  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem; }
-  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
-  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
-  td code { font-size: 0.8rem; }
-
-  .features { list-style: none; }
-  .features li { padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .features li:last-child { border: none; }
-  .features strong { color: #a78bfa; }
-
-  .status-pass { color: var(--green); }
-  .status-ok { color: #d2a8ff; }
-
-  .arch { font-family: monospace; white-space: pre; color: var(--muted); line-height: 1.4; }
-
-  @media (max-width: 640px) {
-    body { padding: 20px 16px 60px; }
-    h1 { font-size: 1.8rem; }
-  }
-</style>
-
-<h1>NanoBot.net</h1>
-<p class="tagline">
+<h1 style="font-size:2.5rem;font-weight:700;color:#c9d1d9;margin:0 0 8px">NanoBot.net</h1>
+<p style="font-size:1.1rem;color:#8b949e;margin:0 0 24px">
   A .NET 10 personal-agent runtime — small CLI-first core, structured agent loop,
   multi-provider LLM routing, tool safety boundaries, streaming, MCP adaptation, and lightweight gateways.
-  Inspired by <a href="https://github.com/HKUDS/nanobot">HKUDS/nanobot</a>.
+  Inspired by <a href="https://github.com/HKUDS/nanobot" style="color:#a78bfa">HKUDS/nanobot</a>.
 </p>
 
-<div class="badges">
-  <span class="badge good">55 tests passed</span>
-  <span class="badge good">0 warnings</span>
-  <span class="badge good">0 errors</span>
-  <span class="badge accent">.NET 10</span>
-  <span class="badge accent">C# 14</span>
-  <span class="badge">MIT</span>
-  <span class="badge">cross-platform</span>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin:20px 0">
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">55 tests passed</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">0 warnings</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">0 errors</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #7c3aed;color:#a78bfa">.NET 10</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #7c3aed;color:#a78bfa">C# 14</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#c9d1d9">MIT</span>
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#c9d1d9">cross-platform</span>
 </div>
 
-<p style="margin-top:8px">
-  <a href="README.zh-CN.md">中文说明</a>
+<p style="margin:8px 0">
+  <a href="README.zh-CN.md" style="color:#a78bfa">中文说明</a>
 </p>
 
-<h2>What Is This?</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">What Is This?</h2>
 
-<p>
+<p style="color:#c9d1d9;margin:12px 0">
   NanoBot.net takes the ultra-lightweight agent philosophy of the original nanobot
   and rebuilds it on .NET 10 with a typed, testable architecture. You get the same
   "own your agent stack" experience — local config, local workspace, no cloud
   dependency — plus the reliability of a compiled, statically-typed runtime.
 </p>
 
-<p>
+<p style="color:#c9d1d9;margin:12px 0">
   It is <strong>integration-ready</strong>: suitable for local agent workflows, internal testing,
   provider evaluation, and release packaging. It is <em>not</em> a fully hardened
   public multi-tenant service yet.
 </p>
 
-<h2>Quick Start</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Quick Start</h2>
 
-<pre><code># 1. Install .NET 10 SDK, then:
+<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#c9d1d9"><code># 1. Install .NET 10 SDK, then:
 git clone https://github.com/angri450/NanoBot.net.git
 cd NanoBot.net
 
@@ -133,116 +51,56 @@ dotnet run --project Nanobot.CLI -- onboard
 # 4. Start chatting
 dotnet run --project Nanobot.CLI</code></pre>
 
-<p>
-  After <code>onboard</code>, your workspace lives at <code>~/.nanobot/workspace</code>.
-  Put memory notes in <code>workspace/memory/MEMORY.md</code> and skills in
-  <code>workspace/skills/&lt;name&gt;/SKILL.md</code> — the agent picks them up automatically.
+<p style="color:#c9d1d9;margin:12px 0">
+  After <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">onboard</code>, your workspace lives at
+  <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">~/.nanobot/workspace</code>.
+  Put memory notes in <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">workspace/memory/MEMORY.md</code>
+  and skills in <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">workspace/skills/&lt;name&gt;/SKILL.md</code>.
 </p>
 
-<h2>Commands</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Commands</h2>
 
-<table>
-  <tr><th>Command</th><th>What It Does</th></tr>
-  <tr>
-    <td><code>dotnet run --project Nanobot.CLI</code></td>
-    <td>Interactive chat (streaming, default mode)</td>
-  </tr>
-  <tr>
-    <td><code>dotnet run --project Nanobot.CLI -- chat</code></td>
-    <td>Explicit interactive chat</td>
-  </tr>
-  <tr>
-    <td><code>dotnet run --project Nanobot.CLI -- agent -m "..."</code></td>
-    <td>Single-turn message, prints response and exits</td>
-  </tr>
-  <tr>
-    <td><code>dotnet run --project Nanobot.CLI -- gateway</code></td>
-    <td>Start Telegram bot (requires <code>channels.telegram</code> in config)</td>
-  </tr>
-  <tr>
-    <td><code>dotnet run --project Nanobot.CLI -- websocket</code></td>
-    <td>Start WebSocket agent gateway with token auth</td>
-  </tr>
-  <tr>
-    <td><code>dotnet run --project Nanobot.CLI -- onboard</code></td>
-    <td>Create <code>~/.nanobot/</code> with default config and workspace</td>
-  </tr>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
+  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Command</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">What It Does</th></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Interactive chat (streaming, default mode)</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- chat</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Explicit interactive chat</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- agent -m "..."</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Single-turn message, prints response and exits</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- gateway</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Start Telegram bot</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- websocket</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Start WebSocket agent gateway with token auth</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- onboard</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Create <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">~/.nanobot/</code> with default config</td></tr>
 </table>
 
-<h2>Built-in Tools</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Built-in Tools</h2>
 
-<div class="grid">
-  <div class="card">
-    <h3>Filesystem</h3>
-    <p><code>read_file</code> &middot; <code>write_file</code> &middot; <code>edit_file</code> &middot; <code>list_dir</code></p>
-  </div>
-  <div class="card">
-    <h3>Shell</h3>
-    <p><code>run_shell</code> — workspace-bounded, timeout + output cap</p>
-  </div>
-  <div class="card">
-    <h3>Web</h3>
-    <p><code>web_search</code> &middot; <code>web_fetch</code> — SSRF-guarded</p>
-  </div>
-  <div class="card">
-    <h3>Data</h3>
-    <p><code>get_weather</code> &middot; <code>get_stock_price</code></p>
-  </div>
-  <div class="card">
-    <h3>GitHub</h3>
-    <p><code>github_*</code> — issues, PRs, repos, search</p>
-  </div>
-  <div class="card">
-    <h3>AI</h3>
-    <p><code>summarize</code> — recursive text summarization</p>
-  </div>
-  <div class="card">
-    <h3>MCP</h3>
-    <p>Stdio MCP servers auto-adapted as tools</p>
-  </div>
-  <div class="card">
-    <h3>Extensible</h3>
-    <p>Implement <code>ITool</code>, register, done</p>
-  </div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Filesystem</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">read_file</code> &middot; <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">write_file</code> &middot; <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">edit_file</code> &middot; <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">list_dir</code></p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Shell</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">run_shell</code> — workspace-bounded, timeout + output cap</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Web</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">web_search</code> &middot; <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">web_fetch</code> — SSRF-guarded</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Data</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">get_weather</code> &middot; <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">get_stock_price</code></p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">GitHub</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">github_*</code> — issues, PRs, repos, search</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">AI</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">summarize</code> — recursive text summarization</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">MCP</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Stdio MCP servers auto-adapted as tools</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Extensible</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Implement <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">ITool</code>, register, done</p></div>
 </div>
 
-<h2>LLM Providers</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">LLM Providers</h2>
 
-<p>
+<p style="color:#c9d1d9;margin:12px 0">
   The provider system is config-driven with env-var override. Models are referenced as
-  <code>providerId::modelId</code>.
+  <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">providerId::modelId</code>.
 </p>
 
-<table>
-  <tr><th>Provider Kind</th><th>Config Key</th><th>Streaming</th><th>Tools</th></tr>
-  <tr>
-    <td>OpenAI-compatible</td>
-    <td><code>openai</code></td>
-    <td class="status-pass">Yes</td>
-    <td class="status-pass">Yes</td>
-  </tr>
-  <tr>
-    <td>Anthropic</td>
-    <td><code>anthropic</code></td>
-    <td class="status-ok">Non-streaming</td>
-    <td class="status-pass">Yes</td>
-  </tr>
-  <tr>
-    <td>Azure OpenAI</td>
-    <td><code>azure-openai</code></td>
-    <td class="status-ok">Non-streaming</td>
-    <td class="status-pass">Yes</td>
-  </tr>
-  <tr>
-    <td>Fallback chain</td>
-    <td><code>fallbackModels</code></td>
-    <td colspan="2">Sequential retry across providers</td>
-  </tr>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
+  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Provider Kind</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Config Key</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Streaming</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Tools</th></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">OpenAI-compatible</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">openai</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Anthropic</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">anthropic</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">Non-streaming</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Azure OpenAI</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">azure-openai</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">Non-streaming</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Fallback chain</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">fallbackModels</code></td><td colspan="2" style="padding:10px 14px;border-bottom:1px solid #30363d">Sequential retry across providers</td></tr>
 </table>
 
-<h3>Example: Ant Ling (蚂蚁百灵)</h3>
+<h3 style="font-size:1.15rem;font-weight:600;color:#c9d1d9;margin:24px 0 10px">Example: Ant Ling</h3>
 
-<pre><code>{
+<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#c9d1d9"><code>{
   "providers": {
     "openai": {
       "kind": "openai-compatible",
@@ -267,214 +125,98 @@ dotnet run --project Nanobot.CLI</code></pre>
   }
 }</code></pre>
 
-<p>Any OpenAI-compatible endpoint works the same way: OpenRouter, DeepSeek, Groq, LM Studio, Ollama, etc.</p>
+<p style="color:#c9d1d9;margin:12px 0">Any OpenAI-compatible endpoint works: OpenRouter, DeepSeek, Groq, LM Studio, Ollama, etc.</p>
 
-<h2>Environment Variables</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Environment Variables</h2>
 
-<table>
-  <tr><th>Variable</th><th>Purpose</th></tr>
-  <tr><td><code>OPENAI_API_KEY</code></td><td>API key for the OpenAI-compatible provider</td></tr>
-  <tr><td><code>OPENAI_API_BASE</code></td><td>Override the base URL</td></tr>
-  <tr><td><code>OPENAI_MODEL</code></td><td>Override default model (<code>provider::model</code> format)</td></tr>
-  <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Enable Anthropic provider</td></tr>
-  <tr><td><code>AZURE_OPENAI_API_KEY</code></td><td>Enable Azure OpenAI</td></tr>
-  <tr><td><code>NANOBOT_STREAMING</code></td><td>Set <code>1</code>, <code>true</code>, or <code>yes</code> to enable streaming</td></tr>
-  <tr><td><code>NANOBOT_WS_PREFIX</code></td><td>WebSocket listener prefix</td></tr>
-  <tr><td><code>NANOBOT_WS_TOKEN</code></td><td>WebSocket bearer/query token</td></tr>
-  <tr><td><code>BRAVE_API_KEY</code></td><td>Web search backend</td></tr>
-  <tr><td><code>GITHUB_TOKEN</code></td><td>GitHub tool access</td></tr>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
+  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Variable</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Purpose</th></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">OPENAI_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">API key for OpenAI-compatible provider</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">OPENAI_API_BASE</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Override base URL</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">ANTHROPIC_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Enable Anthropic provider</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">AZURE_OPENAI_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Enable Azure OpenAI</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">NANOBOT_STREAMING</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Set 1/true/yes to enable streaming</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">BRAVE_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Web search backend</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">GITHUB_TOKEN</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">GitHub tool access</td></tr>
 </table>
 
-<h2>Architecture</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Architecture</h2>
 
-<div class="arch">CLI / Telegram / WebSocket
+<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#8b949e">CLI / Telegram / WebSocket
         |
       Agent
         |
-   AgentLoop  ──── Memory + Skills + Session History
+   AgentLoop  ---- Memory + Skills + Session History
         |
-   AgentRunner ──── Provider + ToolRegistry
+   AgentRunner ---- Provider + ToolRegistry
         |
-  Providers / Built-in Tools / MCP Tools</div>
+  Providers / Built-in Tools / MCP Tools</pre>
 
-<h3>Key Components</h3>
+<h3 style="font-size:1.15rem;font-weight:600;color:#c9d1d9;margin:24px 0 10px">Key Components</h3>
 
-<ul class="features">
-  <li>
-    <strong>AgentLoop</strong> — builds prompt context: memory, skills, session history, and publishes lifecycle events.
-  </li>
-  <li>
-    <strong>AgentRunner</strong> — handles LLM turns, streaming deltas, tool calls, and tool events.
-    Separated from the loop for testability.
-  </li>
-  <li>
-    <strong>ProviderConfigurationFactory</strong> — resolves config + env vars into a provider registry,
-    model references, and fallback chain.
-  </li>
-  <li>
-    <strong>ProviderRegistry</strong> — named provider catalog with capability descriptors.
-  </li>
-  <li>
-    <strong>FallbackLLMProvider</strong> — tries models in sequence, each bound to its own provider and API model id.
-  </li>
-  <li>
-    <strong>RuntimeEventBus</strong> — in-process pub/sub for run/tool started/completed/failed events.
-  </li>
-  <li>
-    <strong>IAgentHook</strong> — extension points around runs and tools (before, after, on error).
-  </li>
-  <li>
-    <strong>McpToolProvider</strong> — converts MCP stdio server tools into <code>ITool</code> instances.
-  </li>
-  <li>
-    <strong>SkillLoader</strong> — scans workspace <code>skills/</code> directory and injects SKILL.md content
-    into the system prompt.
-  </li>
-  <li>
-    <strong>FileMemoryStore</strong> — persistent memory with atomic writes, loaded into agent context.
-  </li>
+<ul style="list-style:none;color:#c9d1d9;padding:0">
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">AgentLoop</strong> — builds prompt context: memory, skills, session history, lifecycle events.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">AgentRunner</strong> — LLM turns, streaming deltas, tool calls, tool events. Separated for testability.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">ProviderConfigurationFactory</strong> — config+env into provider registry, model refs, fallback chain.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">ProviderRegistry</strong> — named provider catalog with capability descriptors.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">FallbackLLMProvider</strong> — sequential model/provider fallback.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">RuntimeEventBus</strong> — in-process pub/sub for lifecycle events.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">IAgentHook</strong> — extension points around runs and tools.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">McpToolProvider</strong> — converts MCP stdio tools into <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">ITool</code> instances.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">SkillLoader</strong> — scans workspace skills/ and injects into system prompt.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">FileMemoryStore</strong> — persistent memory with atomic writes.</li>
 </ul>
 
-<h2>Safety</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Safety</h2>
 
-<p>NanoBot.net ships with a practical safety baseline — not a complete sandbox, but enough for local and trusted-network use:</p>
+<p style="color:#c9d1d9;margin:12px 0">Practical safety baseline for local and trusted-network use:</p>
 
-<div class="grid">
-  <div class="card">
-    <h3>Web Fetch Guard</h3>
-    <ul>
-      <li>Only <code>http</code> / <code>https</code> allowed</li>
-      <li>DNS results validated before requests</li>
-      <li>Loopback, private, link-local, CGNAT, multicast blocked</li>
-      <li>Redirect targets re-checked before following</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3>Shell Sandbox</h3>
-    <ul>
-      <li>Commands execute inside configured workspace</li>
-      <li>Working directory cannot escape workspace</li>
-      <li>Timeout limit enforced</li>
-      <li>Output truncated at configurable cap</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3>Gateway Auth</h3>
-    <ul>
-      <li>WebSocket gateway supports <code>Bearer</code> token</li>
-      <li>Query-string token fallback</li>
-      <li>Tool errors returned as structured JSON</li>
-    </ul>
-  </div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Web Fetch Guard</h3><ul style="padding-left:18px;color:#8b949e;font-size:0.9rem"><li>Only http/https allowed</li><li>DNS validated before request</li><li>Loopback, private, link-local, CGNAT blocked</li><li>Redirect targets re-checked</li></ul></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Shell Sandbox</h3><ul style="padding-left:18px;color:#8b949e;font-size:0.9rem"><li>Commands inside workspace</li><li>Cannot escape workspace</li><li>Timeout enforced</li><li>Output cap configurable</li></ul></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Gateway Auth</h3><ul style="padding-left:18px;color:#8b949e;font-size:0.9rem"><li>WebSocket Bearer token</li><li>Query-string token fallback</li><li>Errors as structured JSON</li></ul></div>
 </div>
 
-<p style="color:var(--muted); font-size:0.85rem; margin-top:12px;">
-  Do not expose the gateway to untrusted users without stronger authorization,
-  rate limits, and deployment controls.
-</p>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Testing</h2>
 
-<h2>Configuration</h2>
+<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#c9d1d9"><code>dotnet test                       # 55 tests, always safe
+dotnet build                      # Build all projects
+NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter ~RealIntegrationTests</code></pre>
 
-<p>
-  The CLI reads <strong>environment variables first</strong>, then falls back to
-  <code>~/.nanobot/config.json</code>. This means you can keep secrets in env vars
-  and everything else in the config file.
-</p>
-
-<h3>Model Identity</h3>
-
-<p>
-  Models use the <code>providerId::modelId</code> pattern, familiar from mature
-  provider registries:
-</p>
-
-<pre><code>openai::gpt-4o
-openrouter::gpt-4o
-anthropic::claude-sonnet-4-5
-azure-openai::production-chat</code></pre>
-
-<p>
-  The left side picks the provider. The right side is the model id in your config.
-  Each model entry can map to a different <code>apiModelId</code> for the actual API call.
-</p>
-
-<h2>Gateways</h2>
-
-<div class="grid">
-  <div class="card">
-    <h3>CLI</h3>
-    <p>Interactive chat with streaming output. Type <code>exit</code> or <code>quit</code> to leave.</p>
-  </div>
-  <div class="card">
-    <h3>Telegram</h3>
-    <p>Long-running bot with cron support. Configure <code>channels.telegram</code> in config.</p>
-  </div>
-  <div class="card">
-    <h3>WebSocket</h3>
-    <p>JSON protocol with <code>delta</code>, <code>response</code>, <code>event</code>, <code>error</code> message types. Plain text or JSON input.</p>
-  </div>
-</div>
-
-<h2>Testing</h2>
-
-<pre><code># Unit tests (55 tests, always safe)
-dotnet test
-
-# Build all projects
-dotnet build
-
-# Real integration tests (needs API key)
-NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter FullyQualifiedName~RealIntegrationTests</code></pre>
-
-<table>
-  <tr><th>Workflow</th><th>Purpose</th></tr>
-  <tr><td><code>ci.yml</code></td><td>Restore, build, test on push/PR</td></tr>
-  <tr><td><code>integration.yml</code></td><td>Manual real API + WebSocket smoke tests</td></tr>
-  <tr><td><code>release.yml</code></td><td>Tag-triggered publish for win-x64, linux-x64, osx-arm64</td></tr>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
+  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem">Workflow</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem">Purpose</th></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">ci.yml</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Restore, build, test on push/PR</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">integration.yml</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Manual real API + WebSocket smoke tests</td></tr>
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">release.yml</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Tag-triggered publish win/linux/osx</td></tr>
 </table>
 
-<h2>Known Boundaries</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Known Boundaries</h2>
 
-<ul class="features">
-  <li><strong>Azure OpenAI</strong> uses API key auth, not AAD / managed identity.</li>
-  <li><strong>Anthropic &amp; Azure</strong> providers are non-streaming today; OpenAI-compatible streaming is implemented.</li>
-  <li><strong>MCP</strong> stdio works, but remote MCP, OAuth, reconnect, and lifecycle management are not finished.</li>
-  <li><strong>WebSocket</strong> auth is token-level; full authorization, event filtering, and WebUI are future work.</li>
-  <li><strong>Not a full port</strong> of the Python upstream — session compaction, Dream memory, and some original channels remain unported.</li>
+<ul style="list-style:none;color:#c9d1d9;padding:0">
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">Azure OpenAI</strong> — API key auth, not AAD/managed identity.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">Anthropic &amp; Azure</strong> — non-streaming currently; OpenAI-compatible streaming done.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">MCP</strong> — stdio works; remote, OAuth, reconnect not finished.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">WebSocket</strong> — token auth; full authorization and WebUI are future work.</li>
+  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">Not a full Python port</strong> — session compaction, Dream memory not yet ported.</li>
 </ul>
 
-<h2>Why .NET?</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Why .NET?</h2>
 
-<p>
-  The original nanobot is Python — fast to prototype, huge ecosystem.
-  NanoBot.net is the same idea on .NET 10:
-</p>
-
-<div class="grid">
-  <div class="card">
-    <h3>Type Safety</h3>
-    <p>The compiler catches config mismatches, null-reference errors, and tool schema violations before you run.</p>
-  </div>
-  <div class="card">
-    <h3>Performance</h3>
-    <p>JIT-compiled runtime, zero GIL, native async/await. Suitable for long-running gateway processes.</p>
-  </div>
-  <div class="card">
-    <h3>Deployment</h3>
-    <p>Single-file publish for win-x64, linux-x64, osx-arm64. No Python runtime needed on the target machine.</p>
-  </div>
-  <div class="card">
-    <h3>Ecosystem</h3>
-    <p>NuGet package management, MSBuild build system, first-class IDE support in Rider, VS, and VS Code.</p>
-  </div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:20px 0">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Type Safety</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Compiler catches config mismatches, null refs, schema violations before runtime.</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Performance</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">JIT-compiled, zero GIL, native async/await for long-running processes.</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Deployment</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Single-file publish for win-x64, linux-x64, osx-arm64. No runtime needed.</p></div>
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Ecosystem</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">NuGet packages, MSBuild, first-class IDE support.</p></div>
 </div>
 
-<h2>License</h2>
+<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">License</h2>
 
-<p>MIT — use it, fork it, ship it.</p>
+<p style="color:#c9d1d9;margin:12px 0">MIT — use it, fork it, ship it.</p>
 
-<p style="color:var(--muted); font-size:0.85rem; margin-top:40px; text-align:center;">
-  Inspired by <a href="https://github.com/HKUDS/nanobot">HKUDS/nanobot</a> &middot;
+<p style="color:#8b949e;font-size:0.85rem;margin-top:40px;text-align:center">
+  Inspired by <a href="https://github.com/HKUDS/nanobot" style="color:#a78bfa">HKUDS/nanobot</a> &middot;
   Built with .NET 10 &middot;
-  <a href="https://github.com/angri450/NanoBot.net">GitHub</a>
+  <a href="https://github.com/angri450/NanoBot.net" style="color:#a78bfa">GitHub</a>
 </p>
+
+</div>
