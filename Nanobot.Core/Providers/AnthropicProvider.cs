@@ -1,11 +1,12 @@
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Nanobot.Core.Models;
 
 namespace Nanobot.Core.Providers;
 
-public class AnthropicProvider : ILLMProvider
+public class AnthropicProvider : IStreamingLLMProvider
 {
     private const string DefaultBaseUrl = "https://api.anthropic.com";
     private const string AnthropicVersion = "2023-06-01";
@@ -63,6 +64,55 @@ public class AnthropicProvider : ILLMProvider
         {
             return new LLMResponse($"Error: {ex.Message}") { FinishReason = "error" };
         }
+    }
+
+    public async IAsyncEnumerable<LLMStreamChunk> ChatStreamAsync(
+        List<Message> messages,
+        List<JsonNode>? tools = null,
+        string? model = null,
+        int maxTokens = 4096,
+        double temperature = 0.7,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var body = BuildRequestBody(messages, tools, model ?? _defaultModel, maxTokens, temperature);
+        body["stream"] = true;
+        using var request = new HttpRequestMessage(HttpMethod.Post, _messagesUri)
+        {
+            Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json")
+        };
+        request.Headers.TryAddWithoutValidation("x-api-key", _apiKey);
+        request.Headers.TryAddWithoutValidation("anthropic-version", AnthropicVersion);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
+
+        using var response = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        var rawError = response.IsSuccessStatusCode
+            ? null
+            : await response.Content.ReadAsStringAsync(cancellationToken);
+        if (rawError is not null)
+        {
+            yield return LLMStreamChunk.Final(new LLMResponse($"Error: Anthropic returned {(int)response.StatusCode}: {rawError}")
+            {
+                FinishReason = "error"
+            });
+            yield break;
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream);
+        var parser = new AnthropicStreamParser();
+        await foreach (var data in ReadSseDataAsync(reader, cancellationToken))
+        {
+            var chunks = parser.Apply(data);
+            foreach (var chunk in chunks)
+            {
+                yield return chunk;
+            }
+        }
+
+        yield return LLMStreamChunk.Final(parser.BuildResponse());
     }
 
     private static JsonObject BuildRequestBody(
@@ -239,5 +289,139 @@ public class AnthropicProvider : ILLMProvider
         }
 
         return result;
+    }
+
+    private static async IAsyncEnumerable<string> ReadSseDataAsync(
+        StreamReader reader,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var data = new StringBuilder();
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (line is null)
+            {
+                break;
+            }
+
+            if (line.Length == 0)
+            {
+                if (data.Length > 0)
+                {
+                    yield return data.ToString();
+                    data.Clear();
+                }
+
+                continue;
+            }
+
+            if (line.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                if (data.Length > 0)
+                {
+                    data.Append('\n');
+                }
+
+                data.Append(line["data:".Length..].Trim());
+            }
+        }
+
+        if (data.Length > 0)
+        {
+            yield return data.ToString();
+        }
+    }
+
+    private sealed class AnthropicStreamParser
+    {
+        private readonly StringBuilder _content = new();
+        private readonly Dictionary<int, ToolUseBuilder> _toolUseByIndex = new();
+        private string _finishReason = "stop";
+
+        public IReadOnlyList<LLMStreamChunk> Apply(string json)
+        {
+            var chunks = new List<LLMStreamChunk>();
+            var root = JsonNode.Parse(json) as JsonObject;
+            var type = root?["type"]?.ToString();
+            if (type == "content_block_start")
+            {
+                var index = root?["index"]?.GetValue<int>() ?? 0;
+                var block = root?["content_block"] as JsonObject;
+                if (block?["type"]?.ToString() == "tool_use")
+                {
+                    _toolUseByIndex[index] = new ToolUseBuilder
+                    {
+                        Id = block["id"]?.ToString() ?? Guid.NewGuid().ToString("N"),
+                        Name = block["name"]?.ToString() ?? "unknown"
+                    };
+                }
+            }
+            else if (type == "content_block_delta")
+            {
+                var index = root?["index"]?.GetValue<int>() ?? 0;
+                var delta = root?["delta"] as JsonObject;
+                if (delta?["type"]?.ToString() == "text_delta")
+                {
+                    var text = delta["text"]?.ToString();
+                    if (!string.IsNullOrEmpty(text))
+                    {
+                        _content.Append(text);
+                        chunks.Add(LLMStreamChunk.Delta(text));
+                    }
+                }
+                else if (delta?["type"]?.ToString() == "input_json_delta"
+                    && _toolUseByIndex.TryGetValue(index, out var toolUse))
+                {
+                    toolUse.Arguments.Append(delta["partial_json"]?.ToString());
+                }
+            }
+            else if (type == "message_delta")
+            {
+                if (root?["delta"] is JsonObject delta
+                    && !string.IsNullOrWhiteSpace(delta["stop_reason"]?.ToString()))
+                {
+                    _finishReason = delta["stop_reason"]!.ToString();
+                }
+            }
+
+            return chunks;
+        }
+
+        public LLMResponse BuildResponse()
+        {
+            var response = new LLMResponse
+            {
+                Content = _content.Length == 0 ? null : _content.ToString(),
+                FinishReason = _finishReason == "stop" && _toolUseByIndex.Count > 0
+                    ? "tool_use"
+                    : _finishReason
+            };
+
+            foreach (var toolUse in _toolUseByIndex.Values)
+            {
+                JsonNode? arguments = null;
+                try
+                {
+                    arguments = JsonNode.Parse(toolUse.Arguments.Length == 0 ? "{}" : toolUse.Arguments.ToString());
+                }
+                catch
+                {
+                    arguments = null;
+                }
+
+                response.ToolCalls.Add(new ToolCallRequest(toolUse.Id, toolUse.Name, arguments));
+            }
+
+            return response;
+        }
+    }
+
+    private sealed class ToolUseBuilder
+    {
+        public string Id { get; init; } = Guid.NewGuid().ToString("N");
+
+        public string Name { get; init; } = "unknown";
+
+        public StringBuilder Arguments { get; } = new();
     }
 }

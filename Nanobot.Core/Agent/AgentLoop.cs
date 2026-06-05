@@ -213,6 +213,22 @@ public class AgentLoop
         history.Add(new Message("user", input));
         history.Add(new Message("assistant", finalContent));
 
+        if (_memory is IWritableMemory writableMemory)
+        {
+            writableMemory.AppendHistory(new MemoryHistoryEntry
+            {
+                SessionId = executionContext.SessionId,
+                Role = "user",
+                Content = input
+            });
+            writableMemory.AppendHistory(new MemoryHistoryEntry
+            {
+                SessionId = executionContext.SessionId,
+                Role = "assistant",
+                Content = finalContent
+            });
+        }
+
         if (history.Count > MaxStoredHistoryMessages)
         {
             history.RemoveRange(0, history.Count - MaxStoredHistoryMessages);

@@ -7,7 +7,7 @@ using System.Net;
 
 namespace Nanobot.Core.Channels;
 
-public class TelegramChannel
+public class TelegramChannel : IMessageChannel
 {
     private readonly string _token;
     private readonly Func<InboundMessage, Task<OutboundMessage?>> _onMessage;
@@ -20,10 +20,12 @@ public class TelegramChannel
         _onMessage = onMessage;
     }
 
-    public async Task StartAsync()
+    public string Name => "telegram";
+
+    public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         _botClient = new TelegramBotClient(_token);
-        _cts = new CancellationTokenSource();
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var receiverOptions = new Telegram.Bot.Polling.ReceiverOptions
         {
@@ -41,9 +43,31 @@ public class TelegramChannel
         Console.WriteLine($"Telegram bot @{me.Username} started.");
     }
 
+    public Task StopAsync(CancellationToken cancellationToken = default)
+    {
+        _cts?.Cancel();
+        return Task.CompletedTask;
+    }
+
     public void Stop()
     {
         _cts?.Cancel();
+    }
+
+    public async Task SendAsync(OutboundMessage message, CancellationToken cancellationToken = default)
+    {
+        if (_botClient is null)
+        {
+            throw new InvalidOperationException("Telegram channel has not been started.");
+        }
+
+        var htmlContent = MarkdownToHtml(message.Content);
+        await _botClient.SendMessage(
+            chatId: long.Parse(message.ChatId),
+            text: htmlContent,
+            parseMode: ParseMode.Html,
+            cancellationToken: cancellationToken
+        );
     }
 
     private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -65,13 +89,7 @@ public class TelegramChannel
 
         if (response != null)
         {
-            var htmlContent = MarkdownToHtml(response.Content);
-            await botClient.SendMessage(
-                chatId: message.Chat.Id,
-                text: htmlContent,
-                parseMode: ParseMode.Html,
-                cancellationToken: cancellationToken
-            );
+            await SendAsync(response, cancellationToken);
         }
     }
 

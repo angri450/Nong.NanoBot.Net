@@ -126,9 +126,14 @@ public class McpStdioClient : IMcpClient
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(_config.Command))
+        {
+            throw new InvalidOperationException("MCP stdio server requires a command.");
+        }
+
         var startInfo = new ProcessStartInfo
         {
-            FileName = _config.Command,
+            FileName = _config.Command!,
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,

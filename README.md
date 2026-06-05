@@ -1,297 +1,303 @@
-<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif;color:#c9d1d9;max-width:960px;margin:0 auto;padding:24px">
+<div align="center">
 
-<h1 style="font-size:2.5rem;font-weight:700;color:#c9d1d9;margin:0 0 8px">NanoBot.net</h1>
-<p style="font-size:1.1rem;color:#8b949e;margin:0 0 24px">
-  A <strong style="color:#c9d1d9">.NET 10 personal-agent runtime</strong> — typed, testable, production-quality core.
-  Structured agent loop, multi-provider LLM routing with fallback, streaming, tool safety boundaries,
-  MCP stdio adaptation, and lightweight gateways (CLI / Telegram / WebSocket).
-  Inspired by <a href="https://github.com/HKUDS/nanobot" style="color:#a78bfa">HKUDS/nanobot</a>.
-</p>
+# NanoBot.net
 
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin:20px 0">
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">50 tests passed</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">0 warnings</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">0 errors</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#3fb950;border-color:#3fb950">zero TODOs</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #7c3aed;color:#a78bfa">.NET 10</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #7c3aed;color:#a78bfa">C# 14</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#c9d1d9">MIT</span>
-  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:0.8rem;font-weight:500;background:#161b22;border:1px solid #30363d;color:#c9d1d9">cross-platform</span>
+**A typed .NET 10 personal-agent runtime for local automation, chat gateways, tools, memory, MCP, and multi-provider LLM routing.**
+
+[中文说明](README.zh-CN.md) · [Releases](https://github.com/angri450/NanoBot.net/releases) · [GitHub](https://github.com/angri450/NanoBot.net)
+
+![.NET 10](https://img.shields.io/badge/.NET-10-6d28d9?style=for-the-badge)
+![C# 14](https://img.shields.io/badge/C%23-14-2563eb?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-71%20passed-16a34a?style=for-the-badge)
+![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-374151?style=for-the-badge)
+
 </div>
 
-<p style="margin:8px 0">
-  <a href="README.zh-CN.md" style="color:#a78bfa">中文说明</a> &middot;
-  <a href="https://github.com/angri450/NanoBot.net/releases" style="color:#a78bfa">Releases</a>
-</p>
+## What It Is
 
-<!-- ============================================================ -->
+NanoBot.net is a .NET 10 rebuild of the lightweight personal-agent ideas from [HKUDS/nanobot](https://github.com/HKUDS/nanobot). It keeps the local-first model: local config, local workspace, local memory, direct tool execution, and no mandatory cloud control plane.
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">What Is This?</h2>
+The current codebase is a mature integration-ready baseline: agent loop, provider routing, streaming, tools, memory write path, Dream consolidation, MCP stdio/HTTP/SSE, cron, heartbeat, WebSocket gateway, and multiple chat-channel adapters are implemented and covered by tests.
 
-<p style="color:#c9d1d9;margin:12px 0">
-  NanoBot.net takes the ultra-lightweight agent philosophy of the original Python nanobot
-  and rebuilds it on .NET 10 with a <strong>typed, testable architecture</strong>.
-  The codebase has zero TODOs, zero stubs, and zero NotImplementedExceptions — every file is working production code.
-  You get the same "own your agent stack" experience — local config, local workspace, no cloud dependency —
-  plus the reliability of a compiled, statically-typed runtime.
-</p>
+It is not a hardened public multi-tenant service yet. Treat it as a strong personal-agent runtime and internal integration base.
 
-<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin:16px 0;font-size:0.9rem;color:#8b949e">
-  <strong>Status:</strong> Integration-ready development baseline. Suitable for local agent workflows,
-  internal testing, provider evaluation, and release packaging. Not a fully hardened multi-tenant service yet.
-</div>
+## Current Status
 
-<!-- ============================================================ -->
+| Area | Status | Notes |
+| --- | --- | --- |
+| Agent loop | Complete | Multi-round tool calls, streaming, hooks, session isolation, runtime events |
+| Providers | Complete | OpenAI-compatible, Anthropic, Azure OpenAI, fallback chain |
+| Streaming | Complete | OpenAI-compatible, Anthropic SSE, Azure OpenAI SSE |
+| Memory | Complete | `MEMORY.md`, `SOUL.md`, `USER.md`, writable memory, `remember` tool, `history.jsonl` |
+| Dream | Complete | Periodic history consolidation into durable Markdown memory |
+| MCP | Complete | stdio, streamable HTTP, SSE endpoint discovery, `tools/list`, `tools/call` |
+| Channels | Complete baseline | Telegram plus Slack, Discord, Feishu HTTP callback / REST adapters |
+| Gateway | Complete | CLI, WebSocket gateway with token auth, chat gateway with cron |
+| Heartbeat | Complete | `HEARTBEAT.md` active task detection and gateway startup wiring |
+| Tools | Complete | Files, shell, web, weather, stocks via CSV API, GitHub, summarize, memory |
+| Safety | Complete baseline | SSRF guard, workspace-bounded shell, structured tool errors |
+| CI/release | Complete | Build/test workflows, integration workflow, tag release workflow |
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Quick Start</h2>
+## Quick Start
 
-<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#c9d1d9"><code># 1. Prerequisites: .NET 10 SDK
+```bash
+# 1. Prerequisite: .NET 10 SDK
 git clone https://github.com/angri450/NanoBot.net.git
 cd NanoBot.net
 
-# 2. Initialize config and workspace (~/.nanobot/)
+# 2. Create ~/.nanobot/config.json and ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. Edit ~/.nanobot/config.json, add your API key
-#    Or export OPENAI_API_KEY (env var takes priority)
+# 3. Add an API key to ~/.nanobot/config.json
+#    or export OPENAI_API_KEY
 
-# 4. Start chatting
-dotnet run --project Nanobot.CLI</code></pre>
+# 4. Start interactive chat
+dotnet run --project Nanobot.CLI
+```
 
-<p style="color:#c9d1d9;margin:12px 0">
-  After <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">onboard</code>,
-  your workspace is at <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">~/.nanobot/workspace</code>.
-  Drop long-term memory into <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">workspace/memory/MEMORY.md</code>
-  and skill definitions into <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">workspace/skills/&lt;name&gt;/SKILL.md</code>.
-  The agent picks them up automatically.
-</p>
+Workspace layout:
 
-<!-- ============================================================ -->
+```text
+~/.nanobot/
+  config.json
+  cron.json
+  workspace/
+    SOUL.md
+    USER.md
+    HEARTBEAT.md
+    memory/
+      MEMORY.md
+      history.jsonl
+      .dream_cursor
+    skills/
+      my-skill/
+        SKILL.md
+```
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Commands</h2>
+## Commands
 
-<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
-  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Command</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">What It Does</th></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Interactive chat mode with streaming output (default)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- agent -m "..."</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Single-turn message, prints response, exits</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- gateway</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Start Telegram bot + cron scheduler</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- websocket</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Start WebSocket agent gateway with token auth</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">dotnet run --project Nanobot.CLI -- onboard</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Create <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">~/.nanobot/</code> with default config + workspace</td></tr>
-</table>
+| Command | Purpose |
+| --- | --- |
+| `dotnet run --project Nanobot.CLI` | Interactive chat mode |
+| `dotnet run --project Nanobot.CLI -- chat` | Explicit interactive chat mode |
+| `dotnet run --project Nanobot.CLI -- agent -m "..."` | Single-turn agent run |
+| `dotnet run --project Nanobot.CLI -- gateway` | Start enabled chat channels, cron, Dream, heartbeat |
+| `dotnet run --project Nanobot.CLI -- websocket` | Start WebSocket agent gateway |
+| `dotnet run --project Nanobot.CLI -- onboard` | Create default config and workspace |
 
-<!-- ============================================================ -->
+## Configuration
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Implementation Status</h2>
+Minimal OpenAI-compatible config:
 
-<p style="color:#c9d1d9;margin:12px 0">
-  Full codebase audit (2026-06-06) — <strong>zero TODOs, stubs, or NotImplementedExceptions across all 80+ source files.</strong>
-</p>
-
-<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
-  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Module</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Status</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Details</th></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Agent Loop</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Multi-round tool calls, streaming, 6 hook points, session isolation, event bus</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">OpenAI Provider</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Streaming + tool calls via OpenAI SDK 2.8. Any compatible endpoint (Ant Ling, OpenRouter, DeepSeek, Ollama...)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Anthropic Provider</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Tool use complete via raw HTTP (Messages API). No streaming yet.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Azure OpenAI Provider</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Tool use complete via raw HTTP (REST API). No streaming yet.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Fallback Chain</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Sequential retry across providers. Works for both sync and streaming paths.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Provider Config</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Env-var override, provider registry, model ID mapping, capability detection</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">10 Built-in Tools</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Filesystem, shell, web, weather, stocks, GitHub, summarize — all working</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">MCP (stdio)</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">JSON-RPC 2.0, init handshake, tools/list, tools/call. No HTTP/SSE transport yet.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">WebSocket Gateway</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Auth (Bearer + query), streaming, event forwarding, JSON protocol</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Security</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">SSRF guard (IPv4 + IPv6), shell sandbox, constant-time token comparison</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Event Bus</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Thread-safe pub/sub, 6 event types, snapshot iteration for safe unsubscribe</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Skills</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Workspace skill scanning, auto-injected into system prompt</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Cron</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">at/every/cron schedules, JSON persistence, wired into gateway command</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">CLI</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">5 commands, System.CommandLine, env + config resolution</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">CI/CD</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">FULL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Build/test CI, manual integration smoke tests, tag-triggered cross-platform release</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Memory</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">PARTIAL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Reads MEMORY.md for context injection. No write API — agent cannot persist new memories.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">MCP (HTTP/SSE)</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">MISSING</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Only stdio transport is implemented. Remote MCP not yet supported.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Heartbeat</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">UNWIRED</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Fully implemented but never started by any CLI command.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Channels</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">PARTIAL</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Telegram only. No Discord, Slack, Feishu, or other channels yet.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Anthropic/Azure Streaming</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">MISSING</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Both implement ILLMProvider but not IStreamingLLMProvider.</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">StockTool</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">FRAGILE</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Scrapes Google Finance HTML with hardcoded CSS class names — will break on site changes.</td></tr>
-</table>
-
-<!-- ============================================================ -->
-
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Architecture</h2>
-
-<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#8b949e">CLI / Telegram / WebSocket
-        |
-      Agent
-        |
-   AgentLoop  ---- Memory + Skills + Session History (+ Heartbeat)
-        |
-   AgentRunner ---- ProviderRegistry + ToolRegistry + RuntimeEventBus
-        |
-  Providers (OpenAI / Anthropic / Azure / Fallback chain)
-  Tools (10 built-in + MCP stdio adapters)
-  Hooks (IAgentHook: before/after run, before/after/error tool)</pre>
-
-<h3 style="font-size:1.15rem;font-weight:600;color:#c9d1d9;margin:24px 0 10px">Key Components</h3>
-
-<ul style="list-style:none;color:#c9d1d9;padding:0">
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">AgentLoop</strong> — builds system prompt (memory + skills), manages per-session chat history (capped 20 msgs), publishes lifecycle events. Delegates turns to AgentRunner.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">AgentRunner</strong> — the actual LLM loop: send messages, receive tool calls, execute tools via ToolRegistry, feed results back, loop until done. Max 20 iterations, 15000 char tool output cap. Streaming gracefully degrades to non-streaming for providers without IStreamingLLMProvider.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">IAgentHook</strong> — 6 extension points with default no-op implementations. Supports tool renaming, rejection, and error interception. Used for security policies, logging, and custom behavior.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">ProviderConfigurationFactory</strong> (520 lines) — resolves config + env vars into provider registry, model references, and fallback chain. Maps <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">providerId::modelId</code> to concrete providers with per-model API ID mapping.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">ProviderRegistry</strong> — named provider catalog. Case-insensitive keys. Each registration carries a ProviderDescriptor with capabilities (Chat, Tools, Streaming, Images).</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">FallbackLLMProvider</strong> — tries models in sequence. Catches exceptions and finish-reason errors, moves to next provider. Collects failure messages for debugging. Streaming path buffers chunks per provider — no partial output leakage.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">RuntimeEventBus</strong> — thread-safe in-process pub/sub. Six event types: RunStarted/Completed/Failed, ToolStarted/Completed/Failed. Snapshot-based subscriber iteration for safe concurrent unsubscribe.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">McpStdioClient</strong> — full JSON-RPC 2.0 implementation over stdio. Initialize handshake, tools/list, tools/call. SemaphoreSlim for request serialization. Auto-starts and manages child process lifecycle.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">SkillLoader</strong> — scans <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">workspace/skills/</code>, loads SKILL.md from each subdirectory, concatenates into system prompt. Truncated at 12000 chars.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">FileMemoryStore</strong> — reads <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">MEMORY.md</code> from workspace, injected as "Long-term Memory" context. Read-only — agent has no memory write path yet.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">NetworkSecurityGuard</strong> — blocks SSRF via DNS + IP validation. Covers loopback, RFC 1918 private ranges, link-local, CGNAT, multicast, broadcast, unspecified, and IPv6 unique-local/link-local/multicast. Called before requests and after redirects.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">WebSocketAgentGateway</strong> — HTTP listener upgraded to WebSocket. Bearer + query-string token auth (constant-time comparison). Subscribes to event bus for real-time event push. Thread-safe send via SemaphoreSlim.</li>
-  <li style="padding:8px 0;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">CronService</strong> — at/every/cron schedules via Cronos library. JSON persistence. Polls every second. Wired into gateway command for scheduled agent turns.</li>
-</ul>
-
-<!-- ============================================================ -->
-
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Built-in Tools</h2>
-
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:20px 0">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Filesystem</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">read_file</code> <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">write_file</code> <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">edit_file</code> <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">list_dir</code></p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Shell</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">run_shell</code> — workspace-bounded, timeout (30s default), output truncation, cross-platform</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Web</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">web_search</code> (Brave API) <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">web_fetch</code> (SSRF-guarded, max 5 redirects)</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Data</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">get_weather</code> (wttr.in, no key) <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">get_stock_price</code> (Google Finance)</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">GitHub</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">github</code> — search repos, list issues via Octokit</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">AI</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">summarize</code> — recursive text/URL summarization via LLM</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">MCP</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Auto-adapt stdio MCP servers as native tools (JSON-RPC 2.0)</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Extensible</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Implement <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">ITool</code>, register, done. Hook system for tool interception.</p></div>
-</div>
-
-<!-- ============================================================ -->
-
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">LLM Providers</h2>
-
-<p style="color:#c9d1d9;margin:12px 0">
-  Config-driven with env-var override. Models use <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.85rem">providerId::modelId</code> identity.
-  The agent gracefully degrades streaming to non-streaming where needed.
-</p>
-
-<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
-  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Provider</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Config Key</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Tool Calls</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Streaming</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Implementation</th></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">OpenAI-compatible</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">openai</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">OpenAI SDK 2.8</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Anthropic</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">anthropic</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">No</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Raw HTTP (Messages API 2023-06-01)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Azure OpenAI</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">azure-openai</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#d2a8ff">No</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Raw HTTP (REST API, api-key auth)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">Fallback chain</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">fallbackModels[]</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d;color:#3fb950">Yes</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Sequential retry, per-provider buffering</td></tr>
-</table>
-
-<h3 style="font-size:1.15rem;font-weight:600;color:#c9d1d9;margin:24px 0 10px">Example: Ant Ling (蚂蚁百灵)</h3>
-
-<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#c9d1d9"><code>{
+```json
+{
   "providers": {
     "openai": {
       "kind": "openai-compatible",
-      "apiKey": "sk-studio-...",
-      "apiBase": "https://api.ant-ling.com/v1/",
-      "defaultModel": "Ling-2.6-1T",
-      "models": [{ "id": "Ling-2.6-1T", "apiModelId": "Ling-2.6-1T",
-                   "supportsStreaming": true, "supportsTools": true }]
+      "apiKey": "sk-...",
+      "apiBase": "https://api.openai.com/v1/",
+      "defaultModel": "gpt-4o",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "apiModelId": "gpt-4o",
+          "supportsStreaming": true,
+          "supportsTools": true
+        }
+      ]
     }
   },
   "agents": {
     "defaults": {
-      "model": "openai::Ling-2.6-1T",
-      "fallbackModels": ["openai::Ling-2.6-1T"]
+      "model": "openai::gpt-4o",
+      "fallbackModels": ["openai::gpt-4o"],
+      "dream": {
+        "enabled": true,
+        "intervalHours": 6
+      }
+    }
+  },
+  "streaming": {
+    "enabled": true
+  }
+}
+```
+
+Fallback across providers:
+
+```json
+{
+  "providers": {
+    "openai": {
+      "kind": "openai-compatible",
+      "apiKey": "sk-...",
+      "defaultModel": "gpt-4o"
+    },
+    "anthropic": {
+      "kind": "anthropic",
+      "apiKey": "sk-ant-...",
+      "defaultModel": "claude-sonnet-4-5"
+    },
+    "azure-openai": {
+      "kind": "azure-openai",
+      "apiKey": "...",
+      "endpoint": "https://example.openai.azure.com",
+      "deployment": "gpt-4o",
+      "apiVersion": "2024-10-21"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "fallbackModels": [
+        "openai::gpt-4o",
+        "anthropic::claude-sonnet-4-5",
+        "azure-openai::gpt-4o"
+      ]
     }
   }
-}</code></pre>
+}
+```
 
-<p style="color:#c9d1d9;margin:12px 0">Compatible with any OpenAI-format endpoint: OpenRouter, DeepSeek, Groq, LM Studio, Ollama, and more.</p>
+MCP stdio / HTTP / SSE:
 
-<!-- ============================================================ -->
+```json
+{
+  "tools": {
+    "mcpServers": {
+      "local-files": {
+        "transport": "stdio",
+        "command": "npx",
+        "arguments": ["-y", "@modelcontextprotocol/server-filesystem", "C:/work"]
+      },
+      "remote-http": {
+        "transport": "streamableHttp",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${REMOTE_MCP_TOKEN}"
+        }
+      },
+      "remote-sse": {
+        "transport": "sse",
+        "url": "https://mcp.example.com/sse"
+      }
+    }
+  }
+}
+```
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Environment Variables</h2>
+Gateway channels:
 
-<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
-  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Variable</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Purpose</th></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">OPENAI_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">OpenAI-compatible provider API key</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">OPENAI_API_BASE</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Override base URL (for OpenRouter, Ollama, etc.)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">OPENAI_MODEL</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Override default model (supports <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">provider::model</code> format)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">ANTHROPIC_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Enable Anthropic provider</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">AZURE_OPENAI_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Enable Azure OpenAI</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">NANOBOT_STREAMING</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Set to <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">1</code>, <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">true</code>, or <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">yes</code> to enable streaming</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">BRAVE_API_KEY</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Web search backend (Brave Search API)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">GITHUB_TOKEN</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">GitHub tool access (Octokit)</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">NANOBOT_WS_PREFIX</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">WebSocket gateway listener prefix</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">NANOBOT_WS_TOKEN</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">WebSocket gateway auth token</td></tr>
-</table>
+```json
+{
+  "gateway": {
+    "heartbeat": {
+      "enabled": true,
+      "intervalSeconds": 1800
+    },
+    "webSocket": {
+      "prefix": "http://localhost:8765/ws/",
+      "token": "local-dev-token"
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "123456:telegram-token"
+    },
+    "slack": {
+      "enabled": true,
+      "token": "xoxb-...",
+      "endpoint": "http://localhost:8781/slack/"
+    },
+    "discord": {
+      "enabled": true,
+      "token": "discord-bot-token",
+      "endpoint": "http://localhost:8782/discord/"
+    },
+    "feishu": {
+      "enabled": true,
+      "appId": "cli_...",
+      "appSecret": "...",
+      "endpoint": "http://localhost:8783/feishu/"
+    }
+  }
+}
+```
 
-<!-- ============================================================ -->
+## Runtime Architecture
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Safety</h2>
+```text
+CLI / Chat Gateway / WebSocket Gateway
+        |
+      Agent
+        |
+   AgentLoop ---- Memory + Skills + Session History
+        |
+   AgentRunner ---- RuntimeEventBus + Hooks
+        |
+  Providers: OpenAI-compatible / Anthropic / Azure / Fallback
+  Tools: built-ins + memory + MCP adapters
+  Services: Cron + Dream + Heartbeat
+```
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:20px 0">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">SSRF Protection</h3><ul style="padding-left:18px;color:#8b949e;font-size:0.9rem"><li>Only http/https protocols</li><li>DNS validated before every request</li><li>Blocks: loopback, 10.x, 172.16-31.x, 192.168.x, 169.254.x, CGNAT, multicast, broadcast, 0.x</li><li>IPv6: blocks ::1, fc00::/7, fe80::/10, ff00::/8</li><li>Re-checks every redirect target</li></ul></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Shell Sandbox</h3><ul style="padding-left:18px;color:#8b949e;font-size:0.9rem"><li>Working directory bounded to workspace</li><li>Path normalization prevents escape</li><li>Timeout enforced (default 30s, max 120s)</li><li>Output capped at configurable limit</li><li>Process tree killed on timeout</li></ul></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Gateway Auth</h3><ul style="padding-left:18px;color:#8b949e;font-size:0.9rem"><li>Bearer token + query-string fallback</li><li>Constant-time comparison (timing-safe)</li><li>Tools errors returned as structured JSON</li><li>Event forwarding over WebSocket</li></ul></div>
-</div>
+Important implementation points:
 
-<div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin:16px 0;font-size:0.9rem;color:#8b949e">
-  <strong>Note:</strong> This is a practical safety baseline, not a complete sandbox.
-  Do not expose the gateway to untrusted users without stronger authorization, rate limits, and deployment controls.
-</div>
+- `ProviderConfigurationFactory` resolves config, environment overrides, model IDs, API model IDs, provider capabilities, and fallback chain selection.
+- `AgentRunner` executes tool-call loops up to 20 iterations and caps tool output at 15,000 characters.
+- `FileMemoryStore` reads and writes durable memory files and appends per-session history to `history.jsonl`.
+- `DreamConsolidator` uses the selected LLM provider to fold new history into `MEMORY.md`.
+- `McpClientFactory` chooses stdio, streamable HTTP, or SSE transport from config.
+- `NetworkSecurityGuard` blocks loopback, private, link-local, CGNAT, multicast, broadcast, and unsafe IPv6 ranges.
 
-<!-- ============================================================ -->
+## Environment Variables
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Testing</h2>
+| Variable | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | OpenAI-compatible provider API key |
+| `OPENAI_API_BASE` | Override OpenAI-compatible base URL |
+| `OPENAI_MODEL` | Override default model, supports `provider::model` |
+| `ANTHROPIC_API_KEY` | Enable Anthropic provider |
+| `ANTHROPIC_API_BASE` | Override Anthropic base URL |
+| `ANTHROPIC_MODEL` | Override Anthropic default model |
+| `AZURE_OPENAI_API_KEY` | Enable Azure OpenAI provider |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint |
+| `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI deployment |
+| `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version |
+| `NANOBOT_STREAMING` | `1`, `true`, or `yes` enables streaming |
+| `BRAVE_API_KEY` | Web search API key |
+| `GITHUB_TOKEN` | GitHub tool token |
+| `NANOBOT_WS_PREFIX` | WebSocket listener prefix |
+| `NANOBOT_WS_TOKEN` | WebSocket auth token |
 
-<pre style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 20px;overflow-x:auto;margin:12px 0;line-height:1.5;font-size:0.85rem;color:#c9d1d9"><code>dotnet test                       # 50 unit tests (always safe, no API keys needed)
-dotnet build                      # Build all projects
+## Testing
 
-# Real integration tests (needs API key)
-NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter ~RealIntegrationTests</code></pre>
+```bash
+dotnet test
+dotnet build
 
-<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
-  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Workflow</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Trigger</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Purpose</th></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">ci.yml</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">push, PR</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Restore, build, test</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">integration.yml</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">manual (workflow_dispatch)</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Real API + WebSocket smoke tests</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">release.yml</code></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">tag v*</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Cross-platform single-file publish + release</td></tr>
-</table>
+# Real integration tests need credentials.
+NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter RealIntegrationTests
+```
 
-<!-- ============================================================ -->
+Current local verification:
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Known Gaps</h2>
+| Check | Result |
+| --- | --- |
+| `dotnet test` | 71 passed, 0 failed, 0 skipped |
+| `dotnet build` | 0 warnings, 0 errors |
+| Source audit | 0 TODO, 0 stub, 0 `NotImplementedException` |
 
-<p style="color:#c9d1d9;margin:12px 0">
-  These are the six real gaps found in the audit. All core paths work — these are the next things to build.
-</p>
+## Safety Boundary
 
-<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.9rem;color:#c9d1d9">
-  <tr><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">#</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Area</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Issue</th><th style="padding:10px 14px;text-align:left;border-bottom:1px solid #30363d;color:#8b949e;font-size:0.8rem;text-transform:uppercase">Impact</th></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">1</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">Memory (write path)</strong></td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">FileMemoryStore</code> is read-only. Agent has no tool or API to persist new memories.</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Agent cannot learn across sessions</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">2</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">Anthropic/Azure streaming</strong></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Both implement <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">ILLMProvider</code> but not <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">IStreamingLLMProvider</code>.</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">No real-time output for Anthropic/Azure users</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">3</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">MCP HTTP/SSE transport</strong></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Only stdio MCP is implemented. No HTTP-based or SSE transport.</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Cannot connect to remote MCP servers</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">4</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">HeartbeatService unwired</strong></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Fully implemented in <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">HeartbeatService.cs</code> but never started by any CLI command.</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Periodic self-check dead code</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">5</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">Single channel (Telegram only)</strong></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Only <code style="background:#161b22;padding:2px 6px;border-radius:4px;font-size:0.8rem">TelegramChannel</code> exists. No Discord, Slack, Feishu, or others.</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Limited platform reach</td></tr>
-  <tr><td style="padding:10px 14px;border-bottom:1px solid #30363d">6</td><td style="padding:10px 14px;border-bottom:1px solid #30363d"><strong style="color:#a78bfa">StockTool scraping</strong></td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Google Finance HTML scraping with hardcoded CSS class names.</td><td style="padding:10px 14px;border-bottom:1px solid #30363d">Will break when Google changes their markup</td></tr>
-</table>
+NanoBot.net has practical guardrails, not a complete hostile-user sandbox.
 
-<!-- ============================================================ -->
+- Shell execution is bounded to the configured workspace.
+- HTTP fetches are checked for SSRF before requests and redirects.
+- WebSocket auth uses constant-time token comparison.
+- Tool errors are returned as structured JSON.
+- Public deployment still needs stronger authentication, authorization, rate limits, observability, and secret management.
 
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">Why .NET?</h2>
+## License
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:20px 0">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Type Safety</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Compiler catches config mismatches, null refs, and tool schema violations before runtime. Zero runtime type errors in production.</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Performance</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">JIT-compiled, no GIL, native async/await. Long-running gateway processes stay responsive under load.</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Deployment</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">Single-file publish for win-x64, linux-x64, osx-arm64. Target machine needs zero dependencies — no .NET runtime, no Python.</p></div>
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px"><h3 style="margin:0 0 8px;font-size:1rem;color:#c9d1d9">Testability</h3><p style="font-size:0.9rem;color:#8b949e;margin:4px 0">IHostResolver, IMcpClient, and IAgentHook enable clean unit testing. 50 tests, zero skipped, CI on every push.</p></div>
-</div>
-
-<!-- ============================================================ -->
-
-<h2 style="font-size:1.5rem;font-weight:600;color:#c9d1d9;margin:48px 0 16px;padding-bottom:8px;border-bottom:1px solid #30363d">License</h2>
-
-<p style="color:#c9d1d9;margin:12px 0">MIT — use it, fork it, ship it.</p>
-
-<p style="color:#8b949e;font-size:0.85rem;margin-top:40px;text-align:center">
-  Inspired by <a href="https://github.com/HKUDS/nanobot" style="color:#a78bfa">HKUDS/nanobot</a> &middot;
-  Built with .NET 10 &middot;
-  <a href="https://github.com/angri450/NanoBot.net" style="color:#a78bfa">GitHub</a> &middot;
-  <a href="https://gitee.com/angri450/NanoBot.net" style="color:#a78bfa">Gitee</a> &middot;
-  <a href="https://gitcode.com/angri450/NanoBot.net" style="color:#a78bfa">GitCode</a>
-</p>
-
-</div>
+MIT. Inspired by [HKUDS/nanobot](https://github.com/HKUDS/nanobot), rebuilt for .NET 10.

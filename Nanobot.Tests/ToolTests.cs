@@ -48,6 +48,46 @@ public class ToolTests
     }
 
     [Fact]
+    public async Task StockTool_UsesCsvApiAndParsesQuote()
+    {
+        var handler = new RecordingHandler((request, body) =>
+        {
+            Assert.Contains("s=aapl.us", request.RequestUri!.Query);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    Symbol,Date,Time,Open,High,Low,Close,Volume
+                    AAPL.US,2026-06-05,22:00:12,190.00,192.00,189.50,191.25,123456
+                    """)
+            };
+        });
+        var tool = new StockTool(new HttpClient(handler), "https://example.test/q/l/");
+
+        var result = await tool.ExecuteAsync(JsonNode.Parse("""{"symbol":"AAPL"}"""));
+
+        Assert.Contains("股票: AAPL.US", result);
+        Assert.Contains("收盘/最新: 191.25", result);
+        Assert.DoesNotContain("Google", result);
+    }
+
+    [Fact]
+    public async Task StockTool_ReturnsHelpfulMessageForMissingQuote()
+    {
+        var handler = new RecordingHandler((request, body) => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                Symbol,Date,Time,Open,High,Low,Close,Volume
+                UNKNOWN.US,N/D,N/D,N/D,N/D,N/D,N/D,N/D
+                """)
+        });
+        var tool = new StockTool(new HttpClient(handler), "https://example.test/q/l/");
+
+        var result = await tool.ExecuteAsync(JsonNode.Parse("""{"symbol":"UNKNOWN"}"""));
+
+        Assert.Contains("未能获取股票 UNKNOWN 的报价", result);
+    }
+
+    [Fact]
     public async Task ToolRegistry_ExecuteWithResult_ReturnsStructuredMissingToolError()
     {
         var registry = new ToolRegistry();
@@ -201,5 +241,21 @@ public class ToolTests
         {
             return Task.FromResult(_addresses);
         }
+    }
+}
+
+public sealed class RecordingHandler : HttpMessageHandler
+{
+    private readonly Func<HttpRequestMessage, string, HttpResponseMessage> _handler;
+
+    public RecordingHandler(Func<HttpRequestMessage, string, HttpResponseMessage> handler)
+    {
+        _handler = handler;
+    }
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken);
+        return _handler(request, body);
     }
 }

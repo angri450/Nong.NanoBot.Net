@@ -231,6 +231,103 @@ public class HttpProviderTests
         Assert.Equal(7, response.Usage["total_tokens"]);
     }
 
+    [Fact]
+    public async Task AnthropicProvider_StreamsTextAndToolCalls()
+    {
+        var handler = new RecordingHandler((request, body) =>
+        {
+            var json = JsonNode.Parse(body)!;
+            Assert.True(json["stream"]?.GetValue<bool>());
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    event: content_block_delta
+                    data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hel"}}
+
+                    event: content_block_delta
+                    data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"lo"}}
+
+                    event: content_block_start
+                    data: {"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"tool-1","name":"lookup","input":{}}}
+
+                    event: content_block_delta
+                    data: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"query\":\"nano\"}"}}
+
+                    event: message_delta
+                    data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}
+
+                    """)
+            };
+        });
+        var provider = new AnthropicProvider("test-key", "claude-test", new HttpClient(handler));
+        var deltas = new List<string>();
+        LLMResponse? final = null;
+
+        await foreach (var chunk in provider.ChatStreamAsync(new List<Message> { new("user", "hello") }))
+        {
+            if (chunk.ContentDelta is not null)
+            {
+                deltas.Add(chunk.ContentDelta);
+            }
+
+            final = chunk.FinalResponse ?? final;
+        }
+
+        Assert.Equal(new[] { "hel", "lo" }, deltas);
+        Assert.NotNull(final);
+        Assert.Equal("hello", final!.Content);
+        Assert.Equal("tool_use", final.FinishReason);
+        Assert.Single(final.ToolCalls);
+        Assert.Equal("lookup", final.ToolCalls[0].Name);
+        Assert.Equal("nano", final.ToolCalls[0].Arguments?["query"]?.ToString());
+    }
+
+    [Fact]
+    public async Task AzureOpenAIProvider_StreamsTextAndToolCalls()
+    {
+        var handler = new RecordingHandler((request, body) =>
+        {
+            var json = JsonNode.Parse(body)!;
+            Assert.True(json["stream"]?.GetValue<bool>());
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    data: {"choices":[{"delta":{"content":"hel"}}]}
+
+                    data: {"choices":[{"delta":{"content":"lo"}}]}
+
+                    data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"lookup","arguments":"{\"query\":"}}]}}]}
+
+                    data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"nano\"}"}}]},"finish_reason":"tool_calls"}]}
+
+                    data: [DONE]
+
+                    """)
+            };
+        });
+        var provider = new AzureOpenAIProvider("https://example.openai.azure.com", "azure-key", "deploy-a", httpClient: new HttpClient(handler));
+        var deltas = new List<string>();
+        LLMResponse? final = null;
+
+        await foreach (var chunk in provider.ChatStreamAsync(new List<Message> { new("user", "hello") }))
+        {
+            if (chunk.ContentDelta is not null)
+            {
+                deltas.Add(chunk.ContentDelta);
+            }
+
+            final = chunk.FinalResponse ?? final;
+        }
+
+        Assert.Equal(new[] { "hel", "lo" }, deltas);
+        Assert.NotNull(final);
+        Assert.Equal("hello", final!.Content);
+        Assert.Equal("tool_calls", final.FinishReason);
+        Assert.Single(final.ToolCalls);
+        Assert.Equal("lookup", final.ToolCalls[0].Name);
+        Assert.Equal("nano", final.ToolCalls[0].Arguments?["query"]?.ToString());
+    }
+
     private static List<JsonNode> ToolDefinitions()
     {
         return new List<JsonNode>

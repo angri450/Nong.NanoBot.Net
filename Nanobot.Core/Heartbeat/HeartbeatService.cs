@@ -8,7 +8,7 @@ public class HeartbeatService
     private bool _running;
     private CancellationTokenSource? _cts;
 
-    private const string HeartbeatPrompt = """
+    public const string HeartbeatPrompt = """
 Read HEARTBEAT.md in your workspace (if it exists).
 Follow any instructions or tasks listed there.
 If nothing needs attention, reply with just: HEARTBEAT_OK
@@ -35,19 +35,34 @@ If nothing needs attention, reply with just: HEARTBEAT_OK
         return null;
     }
 
-    private bool IsHeartbeatEmpty(string? content)
+    public static bool HasActiveTasks(string? content)
     {
-        if (string.IsNullOrWhiteSpace(content)) return true;
+        if (string.IsNullOrWhiteSpace(content)) return false;
 
-        var skipPatterns = new[] { "- [ ]", "* [ ]", "- [x]", "* [x]" };
+        var inActiveTasks = false;
         foreach (var line in content.Split('\n'))
         {
             var trimmedLine = line.Trim();
-            if (string.IsNullOrEmpty(trimmedLine) || trimmedLine.StartsWith("#") || trimmedLine.StartsWith("<!--") || skipPatterns.Contains(trimmedLine))
+
+            if (trimmedLine.StartsWith("## ", StringComparison.Ordinal))
+            {
+                inActiveTasks = trimmedLine.Equals("## Active Tasks", StringComparison.OrdinalIgnoreCase);
                 continue;
-            return false;
+            }
+
+            if (!inActiveTasks)
+            {
+                continue;
+            }
+
+            if (trimmedLine.StartsWith("- [ ]", StringComparison.Ordinal)
+                || trimmedLine.StartsWith("* [ ]", StringComparison.Ordinal))
+            {
+                return true;
+            }
         }
-        return true;
+
+        return false;
     }
 
     public async Task StartAsync()
@@ -77,17 +92,17 @@ If nothing needs attention, reply with just: HEARTBEAT_OK
         }
     }
 
-    private async Task TickAsync()
+    public async Task TickAsync()
     {
         var content = ReadHeartbeatFile();
-        if (IsHeartbeatEmpty(content)) return;
+        if (!HasActiveTasks(content)) return;
 
         if (_onHeartbeat != null)
         {
             try
             {
                 var response = await _onHeartbeat(HeartbeatPrompt);
-                if (response.ToUpper().Replace("_", "").Contains(HeartbeatOkToken))
+                if (response.ToUpperInvariant().Replace("_", "").Contains(HeartbeatOkToken.Replace("_", "")))
                 {
                     // No action needed
                 }

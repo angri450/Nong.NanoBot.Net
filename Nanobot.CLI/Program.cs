@@ -10,6 +10,8 @@ using Nanobot.Core.Agent;
 using Nanobot.Core.Cron;
 using Nanobot.Core.Models;
 using Nanobot.Core.Channels;
+using Nanobot.Core.Mcp;
+using Nanobot.Core.Heartbeat;
 
 class Program
 {
@@ -24,7 +26,7 @@ class Program
         var cronFile = Path.Combine(nanoDir, "cron.json");
 
         // --- Helper: Setup Agent with unified provider configuration ---
-        (Agent Agent, RuntimeEventBus EventBus, AppConfig Config, bool StreamingEnabled) SetupAgentContext() {
+        async Task<(Agent Agent, RuntimeEventBus EventBus, AppConfig Config, bool StreamingEnabled, FileMemoryStore Memory, ILLMProvider Provider)> SetupAgentContextAsync() {
             AppConfig config = File.Exists(configFile) ? ConfigLoader.Load(configFile) : new AppConfig();
             var providerSetup = ProviderConfigurationFactory.Create(config);
             var provider = providerSetup.Provider;
@@ -45,19 +47,16 @@ class Program
             registry.Register(new GitHubTool(githubToken));
 
             var memory = new FileMemoryStore(workspace);
+            registry.Register(new MemoryTool(memory));
+            await RegisterMcpToolsAsync(registry, config);
             var eventBus = new RuntimeEventBus();
-            return (new Agent(provider, registry, memory, eventBus), eventBus, config, providerSetup.StreamingEnabled);
-        }
-
-        Agent SetupAgent() {
-            var setup = SetupAgentContext();
-            return setup.Agent;
+            return (new Agent(provider, registry, memory, eventBus), eventBus, config, providerSetup.StreamingEnabled, memory, provider);
         }
 
         // --- Default Command Handler (Root) ---
         rootCommand.SetHandler(async () => {
             try {
-                var setup = SetupAgentContext();
+                var setup = await SetupAgentContextAsync();
                 await RunChatLoop(setup.Agent, setup.StreamingEnabled);
             } catch (Exception ex) {
                 Console.WriteLine(ex.Message);
@@ -117,32 +116,80 @@ class Program
         rootCommand.AddCommand(onboardCommand);
 
         // --- Command: Gateway ---
-        var gatewayCommand = new Command("gateway", "Start the Telegram bot gateway");
+        var gatewayCommand = new Command("gateway", "Start enabled chat channels and cron scheduler");
         gatewayCommand.SetHandler(async () => {
-            var agent = SetupAgent();
+            var setup = await SetupAgentContextAsync();
+            var agent = setup.Agent;
             var config = ConfigLoader.Load(configFile);
             
-            var cronService = new CronService(cronFile, async (job) => await agent.RunAsync(job.Payload.Message));
-            await cronService.StartAsync();
+            var dream = new DreamConsolidator(setup.Memory, setup.Provider);
+            var cronService = new CronService(cronFile, async (job) =>
+            {
+                if (job.Name.Equals("dream", StringComparison.OrdinalIgnoreCase))
+                {
+                    var result = await dream.RunOnceAsync();
+                    return result.Status;
+                }
 
-            if (config.Channels.TryGetValue("telegram", out var tg) && tg.Enabled && !string.IsNullOrEmpty(tg.Token)) {
-                var tgChannel = new TelegramChannel(tg.Token, async (inbound) => {
-                    var response = await agent.RunAsync(inbound.Content);
+                return await agent.RunAsync(job.Payload.Message);
+            });
+            if (setup.Config.Agents.Defaults.Dream.Enabled)
+            {
+                EnsureNamedCronJob(
+                    cronService,
+                    "dream",
+                    new CronSchedule
+                    {
+                        Kind = "every",
+                        EveryMs = Math.Max(1, setup.Config.Agents.Defaults.Dream.IntervalHours) * 60L * 60L * 1000L
+                    },
+                    "__dream__"
+                );
+                Console.WriteLine($"Dream running (every {setup.Config.Agents.Defaults.Dream.IntervalHours}h)...");
+            }
+
+            await cronService.StartAsync();
+            if (setup.Config.Gateway.Heartbeat.Enabled)
+            {
+                var heartbeat = new HeartbeatService(
+                    workspace,
+                    prompt => agent.RunAsync(prompt, AgentExecutionContext.CreateRoot(workspace) with { SessionId = "heartbeat" }),
+                    setup.Config.Gateway.Heartbeat.IntervalSeconds
+                );
+                await heartbeat.StartAsync();
+                Console.WriteLine($"Heartbeat running (every {setup.Config.Gateway.Heartbeat.IntervalSeconds}s)...");
+            }
+
+            var channels = new List<IMessageChannel>();
+            foreach (var (name, settings) in config.Channels.Where(pair => pair.Value.Enabled))
+            {
+                var channel = ChannelFactory.Create(name, settings, async (inbound, cancellationToken) =>
+                {
+                    var sessionContext = AgentExecutionContext.CreateRoot(workspace) with
+                    {
+                        SessionId = inbound.SessionKey
+                    };
+                    var response = await agent.RunAsync(inbound.Content, sessionContext);
                     return new OutboundMessage(inbound.Channel, inbound.ChatId, response);
                 });
-                await tgChannel.StartAsync();
-                Console.WriteLine("Gateway running (Telegram)...");
-                await Task.Delay(-1);
-            } else {
-                Console.WriteLine("Telegram configuration missing. Gateway cannot start.");
+                await channel.StartAsync();
+                channels.Add(channel);
+                Console.WriteLine($"Gateway channel running ({channel.Name})...");
             }
+
+            if (channels.Count == 0)
+            {
+                Console.WriteLine("No enabled channels configured. Gateway cron is running without chat channels.");
+            }
+
+            await Task.Delay(-1);
         });
         rootCommand.AddCommand(gatewayCommand);
 
         // --- Command: WebSocket Gateway ---
         var websocketCommand = new Command("websocket", "Start the lightweight WebSocket agent gateway");
         websocketCommand.SetHandler(async () => {
-            var setup = SetupAgentContext();
+            var setup = await SetupAgentContextAsync();
             var prefix = Environment.GetEnvironmentVariable("NANOBOT_WS_PREFIX")
                 ?? setup.Config.Gateway.WebSocket.Prefix
                 ?? "http://localhost:8765/ws/";
@@ -168,7 +215,7 @@ class Program
         // --- Command: Chat (Explicit) ---
         var chatCommand = new Command("chat", "Start interactive chat (Default)");
         chatCommand.SetHandler(async () => {
-            var setup = SetupAgentContext();
+            var setup = await SetupAgentContextAsync();
             await RunChatLoop(setup.Agent, setup.StreamingEnabled);
         });
         rootCommand.AddCommand(chatCommand);
@@ -179,7 +226,7 @@ class Program
         var agentCommand = new Command("agent", "Send a single message to the agent");
         agentCommand.AddOption(msgOption);
         agentCommand.SetHandler(async (message) => {
-            var setup = SetupAgentContext();
+            var setup = await SetupAgentContextAsync();
             if (setup.StreamingEnabled)
             {
                 await setup.Agent.RunStreamingAsync(message, WriteConsoleDeltaAsync);
@@ -194,6 +241,30 @@ class Program
         rootCommand.AddCommand(agentCommand);
 
         return await rootCommand.InvokeAsync(args);
+    }
+
+    static async Task RegisterMcpToolsAsync(ToolRegistry registry, AppConfig config)
+    {
+        foreach (var (_, serverConfig) in config.Tools.McpServers)
+        {
+            var client = McpClientFactory.Create(serverConfig);
+            var tools = await new McpToolProvider(client).LoadToolsAsync();
+            foreach (var tool in tools)
+            {
+                registry.Register(tool);
+            }
+        }
+    }
+
+    static void EnsureNamedCronJob(CronService cronService, string name, CronSchedule schedule, string message)
+    {
+        if (cronService.ListJobs(includeDisabled: true).Any(job =>
+            job.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        cronService.AddJob(name, schedule, message);
     }
 
     static async Task RunChatLoop(Agent agent, bool streamingEnabled) {

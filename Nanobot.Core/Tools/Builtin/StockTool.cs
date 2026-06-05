@@ -1,14 +1,20 @@
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 
 namespace Nanobot.Core.Tools.Builtin;
 
 public class StockTool : ITool
 {
-    private static readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
+    private readonly Uri _baseUri;
+
+    public StockTool(HttpClient? httpClient = null, string? baseUrl = null)
+    {
+        _httpClient = httpClient ?? new HttpClient();
+        _baseUri = new Uri(baseUrl ?? "https://stooq.com/q/l/");
+    }
 
     public string Name => "get_stock_price";
-    public string Description => "获取股票实时价格和涨跌幅（无需 API Key）。支持美股（如 AAPL）、港股和 A 股（如 600519:SHA）。";
+    public string Description => "获取股票报价（无需 API Key）。默认使用 Stooq CSV API，支持美股符号如 AAPL、MSFT，也支持传入带交易所后缀的 Stooq 符号。";
 
     public JsonNode Parameters => JsonNode.Parse("""
     {
@@ -27,37 +33,101 @@ public class StockTool : ITool
 
         try
         {
-            // 设置 User-Agent 以模拟浏览器，防止被拦截
-            if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+            var normalizedSymbol = NormalizeSymbol(symbol);
+            var url = new Uri(_baseUri, $"?s={Uri.EscapeDataString(normalizedSymbol)}&f=sd2t2ohlcv&h&e=csv");
+            var csv = await _httpClient.GetStringAsync(url);
+            var quote = ParseQuote(csv);
+            if (quote is null)
             {
-                _httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                return $"未能获取股票 {symbol} 的报价。提示：请确认代码或使用 Stooq 符号格式，例如 AAPL.US。";
             }
 
-            var url = $"https://www.google.com/finance/quote/{symbol}";
-            var html = await _httpClient.GetStringAsync(url);
-
-            // Google Finance 的价格通常在 class="YMlKec fxKbKc" 的 div 中
-            var priceMatch = Regex.Match(html, @"class=""YMlKec fxKbKc"">([^<]+)</div>");
-            // 涨跌值和涨跌幅
-            var changeMatch = Regex.Match(html, @"class=""[^""]*P63p9c[^""]*"">([^<]+)</div>");
-            var percentMatch = Regex.Match(html, @"class=""[^""]*W67mY[^""]*"">([^<]+)</div>");
-
-            if (!priceMatch.Success) 
-            {
-                return $"未能获取股票 {symbol} 的实时数据。提示：请尝试包含交易所代码，例如 '600519:SHA' 或 '700:HKG'。";
-            }
-
-            var price = priceMatch.Groups[1].Value;
-            var change = changeMatch.Success ? changeMatch.Groups[1].Value : "未知";
-            var percent = percentMatch.Success ? percentMatch.Groups[1].Value : "未知";
-
-            return $@"📊 股票: {symbol.ToUpper()}
-💰 当前价格: {price}
-📈 今日涨跌: {change} ({percent})";
+            return $@"股票: {quote.Symbol.ToUpperInvariant()}
+日期: {quote.Date} {quote.Time}
+开盘: {quote.Open}
+最高: {quote.High}
+最低: {quote.Low}
+收盘/最新: {quote.Close}
+成交量: {quote.Volume}";
         }
         catch (Exception ex)
         {
             return $"获取数据时发生异常: {ex.Message}";
         }
     }
+
+    private static string NormalizeSymbol(string symbol)
+    {
+        var trimmed = symbol.Trim().ToLowerInvariant();
+        if (trimmed.Contains('.') || trimmed.Contains(':'))
+        {
+            return trimmed.Replace(':', '.');
+        }
+
+        return trimmed + ".us";
+    }
+
+    private static StockQuote? ParseQuote(string csv)
+    {
+        var lines = csv.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (lines.Length < 2)
+        {
+            return null;
+        }
+
+        var values = SplitCsvLine(lines[1]);
+        if (values.Length < 8 || values.Any(value => value.Equals("N/D", StringComparison.OrdinalIgnoreCase)))
+        {
+            return null;
+        }
+
+        return new StockQuote(
+            values[0],
+            values[1],
+            values[2],
+            values[3],
+            values[4],
+            values[5],
+            values[6],
+            values[7]
+        );
+    }
+
+    private static string[] SplitCsvLine(string line)
+    {
+        var values = new List<string>();
+        var current = new System.Text.StringBuilder();
+        var inQuotes = false;
+        foreach (var ch in line)
+        {
+            if (ch == '"')
+            {
+                inQuotes = !inQuotes;
+                continue;
+            }
+
+            if (ch == ',' && !inQuotes)
+            {
+                values.Add(current.ToString());
+                current.Clear();
+                continue;
+            }
+
+            current.Append(ch);
+        }
+
+        values.Add(current.ToString());
+        return values.ToArray();
+    }
+
+    private sealed record StockQuote(
+        string Symbol,
+        string Date,
+        string Time,
+        string Open,
+        string High,
+        string Low,
+        string Close,
+        string Volume
+    );
 }
