@@ -1,316 +1,480 @@
-# NanoBot.net
+<style>
+  :root {
+    --bg: #0d1117;
+    --fg: #c9d1d9;
+    --muted: #8b949e;
+    --border: #30363d;
+    --accent: #7c3aed;
+    --green: #3fb950;
+    --code-bg: #161b22;
+    --card-bg: #161b22;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  a { color: #a78bfa; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; }
+  h2 {
+    font-size: 1.5rem; font-weight: 600; margin: 48px 0 16px;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.15rem; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 12px 0; color: var(--fg); }
+  .tagline { font-size: 1.1rem; color: var(--muted); margin-bottom: 24px; }
 
-**NanoBot.net** is a .NET 10 personal-agent runtime inspired by [HKUDS/nanobot](https://github.com/HKUDS/nanobot). It keeps the small CLI-first workflow and adds a structured agent loop, provider registry, model-safe configuration, tool safety boundaries, streaming output, MCP tool adaptation, and lightweight gateways.
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 500;
+    background: var(--card-bg); border: 1px solid var(--border);
+  }
+  .badge.good { color: var(--green); border-color: var(--green); }
+  .badge.accent { color: #a78bfa; border-color: var(--accent); }
 
-[中文说明](README.zh-CN.md)
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 1rem; }
+  .card p, .card li { font-size: 0.9rem; color: var(--muted); margin: 4px 0; }
+  .card ul { padding-left: 18px; }
 
----
+  pre, code {
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; overflow-x: auto;
+    margin: 12px 0; line-height: 1.5;
+  }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; }
+  pre code { background: none; padding: 0; }
 
-## Status
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+  td code { font-size: 0.8rem; }
 
-NanoBot.net is now an integration-ready development baseline. It is suitable for local agent workflows, internal testing, provider integration, and release packaging. It is not yet a fully hardened public multi-tenant service.
+  .features { list-style: none; }
+  .features li { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .features li:last-child { border: none; }
+  .features strong { color: #a78bfa; }
 
-| Area | Status |
-|---|---|
-| Build and tests | `dotnet build` clean, `dotnet test` passing |
-| Agent runtime | `AgentLoop` + `AgentRunner`, hooks, events, session history |
-| Configuration | Provider/model references use `providerId::modelId` |
-| Providers | OpenAI-compatible, Anthropic, Azure OpenAI, registry, fallback |
-| Streaming | OpenAI-compatible streaming, Agent streaming API, CLI and WebSocket deltas |
-| Tools | Filesystem, shell, web search/fetch, weather, stocks, GitHub, MCP adapter |
-| Safety | WebFetch SSRF guard, shell workspace boundary, timeout, output cap |
-| Gateways | CLI, Telegram, authenticated WebSocket gateway |
-| Delivery | GitHub Actions CI, manual real integration workflow, tag release workflow |
+  .status-pass { color: var(--green); }
+  .status-ok { color: #d2a8ff; }
 
-Current local verification:
+  .arch { font-family: monospace; white-space: pre; color: var(--muted); line-height: 1.4; }
 
-```text
-55 tests passed
-0 build warnings
-0 build errors
-```
+  @media (max-width: 640px) {
+    body { padding: 20px 16px 60px; }
+    h1 { font-size: 1.8rem; }
+  }
+</style>
 
----
+<h1>NanoBot.net</h1>
+<p class="tagline">
+  A .NET 10 personal-agent runtime — small CLI-first core, structured agent loop,
+  multi-provider LLM routing, tool safety boundaries, streaming, MCP adaptation, and lightweight gateways.
+  Inspired by <a href="https://github.com/HKUDS/nanobot">HKUDS/nanobot</a>.
+</p>
 
-## Highlights
+<div class="badges">
+  <span class="badge good">55 tests passed</span>
+  <span class="badge good">0 warnings</span>
+  <span class="badge good">0 errors</span>
+  <span class="badge accent">.NET 10</span>
+  <span class="badge accent">C# 14</span>
+  <span class="badge">MIT</span>
+  <span class="badge">cross-platform</span>
+</div>
 
-- **Stable model identity**: models are selected as `providerId::modelId`, while each provider can map that to a real API model id.
-- **Config-driven providers**: OpenAI-compatible, Anthropic, and Azure OpenAI can be configured from `~/.nanobot/config.json`, with environment variables still taking priority.
-- **Fallback chain**: the agent can try configured models in order, each bound to its own provider and API model id.
-- **Streaming runtime**: OpenAI-compatible providers stream text deltas; Agent, CLI, and WebSocket gateway expose the same flow.
-- **Runtime observability**: run/tool started/completed/failed events plus hook extension points.
-- **Workspace context**: memory and skills are loaded from the workspace and injected into the system prompt.
-- **Tool safety baseline**: web fetch blocks restricted networks and redirect SSRF; shell execution stays inside the workspace.
-- **Release path**: CI, manual real integration tests, and multi-platform release artifacts are defined in `.github/workflows`.
+<p style="margin-top:8px">
+  <a href="README.zh-CN.md">中文说明</a>
+</p>
 
----
+<h2>What Is This?</h2>
 
-## Requirements
+<p>
+  NanoBot.net takes the ultra-lightweight agent philosophy of the original nanobot
+  and rebuilds it on .NET 10 with a typed, testable architecture. You get the same
+  "own your agent stack" experience — local config, local workspace, no cloud
+  dependency — plus the reliability of a compiled, statically-typed runtime.
+</p>
 
-- .NET 10 SDK
-- An OpenAI-compatible API key for the default setup
-- Optional: Brave Search API key, Telegram token, GitHub token
+<p>
+  It is <strong>integration-ready</strong>: suitable for local agent workflows, internal testing,
+  provider evaluation, and release packaging. It is <em>not</em> a fully hardened
+  public multi-tenant service yet.
+</p>
 
-Initialize local config and workspace:
+<h2>Quick Start</h2>
 
-```bash
+<pre><code># 1. Install .NET 10 SDK, then:
+git clone https://github.com/angri450/NanoBot.net.git
+cd NanoBot.net
+
+# 2. Initialize config and workspace
 dotnet run --project Nanobot.CLI -- onboard
-```
 
-The default workspace is:
+# 3. Edit ~/.nanobot/config.json, add your API key (OpenAI-compatible)
+#    Or set environment variable: OPENAI_API_KEY
 
-```text
-~/.nanobot/workspace
-```
+# 4. Start chatting
+dotnet run --project Nanobot.CLI</code></pre>
 
----
+<p>
+  After <code>onboard</code>, your workspace lives at <code>~/.nanobot/workspace</code>.
+  Put memory notes in <code>workspace/memory/MEMORY.md</code> and skills in
+  <code>workspace/skills/&lt;name&gt;/SKILL.md</code> — the agent picks them up automatically.
+</p>
 
-## Configuration
+<h2>Commands</h2>
 
-The CLI reads environment variables first, then falls back to `~/.nanobot/config.json`.
+<table>
+  <tr><th>Command</th><th>What It Does</th></tr>
+  <tr>
+    <td><code>dotnet run --project Nanobot.CLI</code></td>
+    <td>Interactive chat (streaming, default mode)</td>
+  </tr>
+  <tr>
+    <td><code>dotnet run --project Nanobot.CLI -- chat</code></td>
+    <td>Explicit interactive chat</td>
+  </tr>
+  <tr>
+    <td><code>dotnet run --project Nanobot.CLI -- agent -m "..."</code></td>
+    <td>Single-turn message, prints response and exits</td>
+  </tr>
+  <tr>
+    <td><code>dotnet run --project Nanobot.CLI -- gateway</code></td>
+    <td>Start Telegram bot (requires <code>channels.telegram</code> in config)</td>
+  </tr>
+  <tr>
+    <td><code>dotnet run --project Nanobot.CLI -- websocket</code></td>
+    <td>Start WebSocket agent gateway with token auth</td>
+  </tr>
+  <tr>
+    <td><code>dotnet run --project Nanobot.CLI -- onboard</code></td>
+    <td>Create <code>~/.nanobot/</code> with default config and workspace</td>
+  </tr>
+</table>
 
-### Model References
+<h2>Built-in Tools</h2>
 
-NanoBot.net uses the same stable model identity idea that mature provider registries use:
+<div class="grid">
+  <div class="card">
+    <h3>Filesystem</h3>
+    <p><code>read_file</code> &middot; <code>write_file</code> &middot; <code>edit_file</code> &middot; <code>list_dir</code></p>
+  </div>
+  <div class="card">
+    <h3>Shell</h3>
+    <p><code>run_shell</code> — workspace-bounded, timeout + output cap</p>
+  </div>
+  <div class="card">
+    <h3>Web</h3>
+    <p><code>web_search</code> &middot; <code>web_fetch</code> — SSRF-guarded</p>
+  </div>
+  <div class="card">
+    <h3>Data</h3>
+    <p><code>get_weather</code> &middot; <code>get_stock_price</code></p>
+  </div>
+  <div class="card">
+    <h3>GitHub</h3>
+    <p><code>github_*</code> — issues, PRs, repos, search</p>
+  </div>
+  <div class="card">
+    <h3>AI</h3>
+    <p><code>summarize</code> — recursive text summarization</p>
+  </div>
+  <div class="card">
+    <h3>MCP</h3>
+    <p>Stdio MCP servers auto-adapted as tools</p>
+  </div>
+  <div class="card">
+    <h3>Extensible</h3>
+    <p>Implement <code>ITool</code>, register, done</p>
+  </div>
+</div>
 
-```text
-providerId::modelId
-```
+<h2>LLM Providers</h2>
 
-Examples:
+<p>
+  The provider system is config-driven with env-var override. Models are referenced as
+  <code>providerId::modelId</code>.
+</p>
 
-```text
-openai::gpt-4o
-openrouter::gpt-4o
-anthropic::claude-sonnet-4-5
-azure-openai::production-chat
-```
+<table>
+  <tr><th>Provider Kind</th><th>Config Key</th><th>Streaming</th><th>Tools</th></tr>
+  <tr>
+    <td>OpenAI-compatible</td>
+    <td><code>openai</code></td>
+    <td class="status-pass">Yes</td>
+    <td class="status-pass">Yes</td>
+  </tr>
+  <tr>
+    <td>Anthropic</td>
+    <td><code>anthropic</code></td>
+    <td class="status-ok">Non-streaming</td>
+    <td class="status-pass">Yes</td>
+  </tr>
+  <tr>
+    <td>Azure OpenAI</td>
+    <td><code>azure-openai</code></td>
+    <td class="status-ok">Non-streaming</td>
+    <td class="status-pass">Yes</td>
+  </tr>
+  <tr>
+    <td>Fallback chain</td>
+    <td><code>fallbackModels</code></td>
+    <td colspan="2">Sequential retry across providers</td>
+  </tr>
+</table>
 
-The left side selects the provider. The right side is the configured model id. A model entry may map it to a different `apiModelId` for the provider request.
+<h3>Example: Ant Ling (蚂蚁百灵)</h3>
 
-### Config File
-
-```json
-{
+<pre><code>{
   "providers": {
     "openai": {
       "kind": "openai-compatible",
-      "apiKey": "",
-      "apiBase": null,
-      "defaultModel": "gpt-4o",
+      "apiKey": "sk-studio-...",
+      "apiBase": "https://api.ant-ling.com/v1/",
+      "defaultModel": "Ling-2.6-1T",
       "models": [
         {
-          "id": "gpt-4o",
-          "apiModelId": "gpt-4o",
+          "id": "Ling-2.6-1T",
+          "apiModelId": "Ling-2.6-1T",
           "supportsStreaming": true,
           "supportsTools": true
-        }
-      ]
-    },
-    "openrouter": {
-      "kind": "openai-compatible",
-      "apiKey": "",
-      "apiBase": "https://openrouter.ai/api/v1",
-      "models": [
-        {
-          "id": "gpt-4o",
-          "apiModelId": "openai/gpt-4o"
         }
       ]
     }
   },
   "agents": {
     "defaults": {
-      "model": "openai::gpt-4o",
-      "fallbackModels": [
-        "openai::gpt-4o",
-        "openrouter::gpt-4o"
-      ]
+      "model": "openai::Ling-2.6-1T",
+      "fallbackModels": ["openai::Ling-2.6-1T"]
     }
-  },
-  "streaming": {
-    "enabled": true
-  },
-  "gateway": {
-    "webSocket": {
-      "prefix": "http://localhost:8765/ws/",
-      "token": ""
-    }
-  },
-  "webSearch": {
-    "apiKey": ""
   }
-}
-```
+}</code></pre>
 
-### Environment Variables
+<p>Any OpenAI-compatible endpoint works the same way: OpenRouter, DeepSeek, Groq, LM Studio, Ollama, etc.</p>
 
-| Variable | Purpose |
-|---|---|
-| `OPENAI_API_KEY` | Overrides the OpenAI-compatible provider API key |
-| `OPENAI_API_BASE` | Overrides the OpenAI-compatible base URL |
-| `OPENAI_MODEL` | Overrides the default model; accepts `provider::model` |
-| `ANTHROPIC_API_KEY` | Enables the Anthropic provider |
-| `ANTHROPIC_API_BASE` | Optional Anthropic-compatible base URL |
-| `ANTHROPIC_MODEL` | Anthropic default model |
-| `AZURE_OPENAI_API_KEY` | Enables Azure OpenAI |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint |
-| `AZURE_OPENAI_DEPLOYMENT` | Azure deployment/model name |
-| `AZURE_OPENAI_API_VERSION` | Azure API version |
-| `NANOBOT_STREAMING` | `1`, `true`, or `yes` enables streaming |
-| `NANOBOT_WS_PREFIX` | WebSocket listener prefix |
-| `NANOBOT_WS_TOKEN` | WebSocket bearer/query token |
-| `BRAVE_API_KEY` | Web search backend |
-| `GITHUB_TOKEN` | GitHub tool access |
+<h2>Environment Variables</h2>
 
----
+<table>
+  <tr><th>Variable</th><th>Purpose</th></tr>
+  <tr><td><code>OPENAI_API_KEY</code></td><td>API key for the OpenAI-compatible provider</td></tr>
+  <tr><td><code>OPENAI_API_BASE</code></td><td>Override the base URL</td></tr>
+  <tr><td><code>OPENAI_MODEL</code></td><td>Override default model (<code>provider::model</code> format)</td></tr>
+  <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Enable Anthropic provider</td></tr>
+  <tr><td><code>AZURE_OPENAI_API_KEY</code></td><td>Enable Azure OpenAI</td></tr>
+  <tr><td><code>NANOBOT_STREAMING</code></td><td>Set <code>1</code>, <code>true</code>, or <code>yes</code> to enable streaming</td></tr>
+  <tr><td><code>NANOBOT_WS_PREFIX</code></td><td>WebSocket listener prefix</td></tr>
+  <tr><td><code>NANOBOT_WS_TOKEN</code></td><td>WebSocket bearer/query token</td></tr>
+  <tr><td><code>BRAVE_API_KEY</code></td><td>Web search backend</td></tr>
+  <tr><td><code>GITHUB_TOKEN</code></td><td>GitHub tool access</td></tr>
+</table>
 
-## Usage
+<h2>Architecture</h2>
 
-Interactive chat:
-
-```bash
-dotnet run --project Nanobot.CLI
-```
-
-Single message:
-
-```bash
-dotnet run --project Nanobot.CLI -- agent -m "Summarize the files in my workspace."
-```
-
-Telegram gateway:
-
-```bash
-dotnet run --project Nanobot.CLI -- gateway
-```
-
-WebSocket gateway:
-
-```bash
-dotnet run --project Nanobot.CLI -- websocket
-```
-
-When `gateway.webSocket.token` or `NANOBOT_WS_TOKEN` is set, clients must send either:
-
-```text
-Authorization: Bearer <token>
-```
-
-or:
-
-```text
-ws://localhost:8765/ws/?token=<token>
-```
-
-WebSocket requests can be plain text or JSON:
-
-```json
-{
-  "message": "What changed today?",
-  "sessionId": "default"
-}
-```
-
-Gateway messages are JSON with type `delta`, `response`, `event`, or `error`.
-
----
-
-## Workspace
-
-| Path | Purpose |
-|---|---|
-| `~/.nanobot/config.json` | Local config fallback |
-| `~/.nanobot/workspace/memory/MEMORY.md` | Long-term memory context |
-| `~/.nanobot/workspace/skills/<name>/SKILL.md` | Skills injected into the system prompt |
-
----
-
-## Architecture
-
-```text
-CLI / Telegram / WebSocket
+<div class="arch">CLI / Telegram / WebSocket
         |
       Agent
         |
-   AgentLoop  ---- Memory + Skills + Session History
+   AgentLoop  ──── Memory + Skills + Session History
         |
-   AgentRunner ---- Provider + ToolRegistry
+   AgentRunner ──── Provider + ToolRegistry
         |
-  Providers / Built-in Tools / MCP Tools
-```
+  Providers / Built-in Tools / MCP Tools</div>
 
-Key pieces:
+<h3>Key Components</h3>
 
-- `AgentLoop`: builds prompt context, memory, skills, history, run events.
-- `AgentRunner`: handles LLM turns, streaming deltas, tool calls, and tool events.
-- `ProviderConfigurationFactory`: resolves config/env into provider registry, model refs, and fallback chain.
-- `ProviderRegistry`: named providers and descriptors.
-- `FallbackLLMProvider`: sequential model/provider fallback.
-- `RuntimeEventBus`: in-process lifecycle events.
-- `IAgentHook`: extension points around runs and tools.
-- `McpToolProvider`: converts MCP server tools into `ITool`.
+<ul class="features">
+  <li>
+    <strong>AgentLoop</strong> — builds prompt context: memory, skills, session history, and publishes lifecycle events.
+  </li>
+  <li>
+    <strong>AgentRunner</strong> — handles LLM turns, streaming deltas, tool calls, and tool events.
+    Separated from the loop for testability.
+  </li>
+  <li>
+    <strong>ProviderConfigurationFactory</strong> — resolves config + env vars into a provider registry,
+    model references, and fallback chain.
+  </li>
+  <li>
+    <strong>ProviderRegistry</strong> — named provider catalog with capability descriptors.
+  </li>
+  <li>
+    <strong>FallbackLLMProvider</strong> — tries models in sequence, each bound to its own provider and API model id.
+  </li>
+  <li>
+    <strong>RuntimeEventBus</strong> — in-process pub/sub for run/tool started/completed/failed events.
+  </li>
+  <li>
+    <strong>IAgentHook</strong> — extension points around runs and tools (before, after, on error).
+  </li>
+  <li>
+    <strong>McpToolProvider</strong> — converts MCP stdio server tools into <code>ITool</code> instances.
+  </li>
+  <li>
+    <strong>SkillLoader</strong> — scans workspace <code>skills/</code> directory and injects SKILL.md content
+    into the system prompt.
+  </li>
+  <li>
+    <strong>FileMemoryStore</strong> — persistent memory with atomic writes, loaded into agent context.
+  </li>
+</ul>
 
----
+<h2>Safety</h2>
 
-## Safety
+<p>NanoBot.net ships with a practical safety baseline — not a complete sandbox, but enough for local and trusted-network use:</p>
 
-NanoBot.net includes a practical safety baseline:
+<div class="grid">
+  <div class="card">
+    <h3>Web Fetch Guard</h3>
+    <ul>
+      <li>Only <code>http</code> / <code>https</code> allowed</li>
+      <li>DNS results validated before requests</li>
+      <li>Loopback, private, link-local, CGNAT, multicast blocked</li>
+      <li>Redirect targets re-checked before following</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Shell Sandbox</h3>
+    <ul>
+      <li>Commands execute inside configured workspace</li>
+      <li>Working directory cannot escape workspace</li>
+      <li>Timeout limit enforced</li>
+      <li>Output truncated at configurable cap</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Gateway Auth</h3>
+    <ul>
+      <li>WebSocket gateway supports <code>Bearer</code> token</li>
+      <li>Query-string token fallback</li>
+      <li>Tool errors returned as structured JSON</li>
+    </ul>
+  </div>
+</div>
 
-- `web_fetch` only allows `http` and `https`.
-- DNS results are checked before requests.
-- Loopback, private, link-local, carrier-grade NAT, multicast, unspecified, and other restricted IPs are blocked.
-- Redirect targets are checked before following.
-- `run_shell` runs inside a configured workspace.
-- Shell working directories cannot escape the workspace.
-- Shell commands have timeout and output limits.
-- Tool errors are returned as structured JSON.
-- WebSocket gateway supports token authentication.
+<p style="color:var(--muted); font-size:0.85rem; margin-top:12px;">
+  Do not expose the gateway to untrusted users without stronger authorization,
+  rate limits, and deployment controls.
+</p>
 
-This is still not a complete sandbox. Do not expose the gateway to untrusted users without stronger authorization, rate limits, and deployment controls.
+<h2>Configuration</h2>
 
----
+<p>
+  The CLI reads <strong>environment variables first</strong>, then falls back to
+  <code>~/.nanobot/config.json</code>. This means you can keep secrets in env vars
+  and everything else in the config file.
+</p>
 
-## Tests And Delivery
+<h3>Model Identity</h3>
 
-Run unit tests:
+<p>
+  Models use the <code>providerId::modelId</code> pattern, familiar from mature
+  provider registries:
+</p>
 
-```bash
+<pre><code>openai::gpt-4o
+openrouter::gpt-4o
+anthropic::claude-sonnet-4-5
+azure-openai::production-chat</code></pre>
+
+<p>
+  The left side picks the provider. The right side is the model id in your config.
+  Each model entry can map to a different <code>apiModelId</code> for the actual API call.
+</p>
+
+<h2>Gateways</h2>
+
+<div class="grid">
+  <div class="card">
+    <h3>CLI</h3>
+    <p>Interactive chat with streaming output. Type <code>exit</code> or <code>quit</code> to leave.</p>
+  </div>
+  <div class="card">
+    <h3>Telegram</h3>
+    <p>Long-running bot with cron support. Configure <code>channels.telegram</code> in config.</p>
+  </div>
+  <div class="card">
+    <h3>WebSocket</h3>
+    <p>JSON protocol with <code>delta</code>, <code>response</code>, <code>event</code>, <code>error</code> message types. Plain text or JSON input.</p>
+  </div>
+</div>
+
+<h2>Testing</h2>
+
+<pre><code># Unit tests (55 tests, always safe)
 dotnet test
-```
 
-Build all projects:
-
-```bash
+# Build all projects
 dotnet build
-```
 
-Run real integration tests locally:
+# Real integration tests (needs API key)
+NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter FullyQualifiedName~RealIntegrationTests</code></pre>
 
-```bash
-NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter FullyQualifiedName~RealIntegrationTests
-```
+<table>
+  <tr><th>Workflow</th><th>Purpose</th></tr>
+  <tr><td><code>ci.yml</code></td><td>Restore, build, test on push/PR</td></tr>
+  <tr><td><code>integration.yml</code></td><td>Manual real API + WebSocket smoke tests</td></tr>
+  <tr><td><code>release.yml</code></td><td>Tag-triggered publish for win-x64, linux-x64, osx-arm64</td></tr>
+</table>
 
-GitHub Actions:
+<h2>Known Boundaries</h2>
 
-| Workflow | Purpose |
-|---|---|
-| `.github/workflows/ci.yml` | Restore, build, test on push/PR |
-| `.github/workflows/integration.yml` | Manual real OpenAI + WebSocket integration smoke tests |
-| `.github/workflows/release.yml` | Tag-triggered CLI publish for `win-x64`, `linux-x64`, `osx-arm64` |
+<ul class="features">
+  <li><strong>Azure OpenAI</strong> uses API key auth, not AAD / managed identity.</li>
+  <li><strong>Anthropic &amp; Azure</strong> providers are non-streaming today; OpenAI-compatible streaming is implemented.</li>
+  <li><strong>MCP</strong> stdio works, but remote MCP, OAuth, reconnect, and lifecycle management are not finished.</li>
+  <li><strong>WebSocket</strong> auth is token-level; full authorization, event filtering, and WebUI are future work.</li>
+  <li><strong>Not a full port</strong> of the Python upstream — session compaction, Dream memory, and some original channels remain unported.</li>
+</ul>
 
----
+<h2>Why .NET?</h2>
 
-## Known Boundaries
+<p>
+  The original nanobot is Python — fast to prototype, huge ecosystem.
+  NanoBot.net is the same idea on .NET 10:
+</p>
 
-- Azure OpenAI currently uses API key auth, not AAD.
-- Anthropic and Azure providers are non-streaming today; OpenAI-compatible streaming is implemented.
-- MCP stdio support exists, but remote MCP, OAuth, reconnect, and advanced lifecycle management are not finished.
-- WebSocket auth is token-based; full authorization, event filtering, and WebUI are future work.
-- This is not a full Python upstream clone; session compaction, Dream memory, and every original channel are not fully ported.
+<div class="grid">
+  <div class="card">
+    <h3>Type Safety</h3>
+    <p>The compiler catches config mismatches, null-reference errors, and tool schema violations before you run.</p>
+  </div>
+  <div class="card">
+    <h3>Performance</h3>
+    <p>JIT-compiled runtime, zero GIL, native async/await. Suitable for long-running gateway processes.</p>
+  </div>
+  <div class="card">
+    <h3>Deployment</h3>
+    <p>Single-file publish for win-x64, linux-x64, osx-arm64. No Python runtime needed on the target machine.</p>
+  </div>
+  <div class="card">
+    <h3>Ecosystem</h3>
+    <p>NuGet package management, MSBuild build system, first-class IDE support in Rider, VS, and VS Code.</p>
+  </div>
+</div>
 
----
+<h2>License</h2>
 
-## License
+<p>MIT — use it, fork it, ship it.</p>
 
-MIT
+<p style="color:var(--muted); font-size:0.85rem; margin-top:40px; text-align:center;">
+  Inspired by <a href="https://github.com/HKUDS/nanobot">HKUDS/nanobot</a> &middot;
+  Built with .NET 10 &middot;
+  <a href="https://github.com/angri450/NanoBot.net">GitHub</a>
+</p>
