@@ -11,6 +11,7 @@
 project.lock.json
 project.fragment.lock.json
 artifacts/
+publish/
 
 # Visual Studio Code
 .vscode/
