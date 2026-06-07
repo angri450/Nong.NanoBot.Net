@@ -42,6 +42,10 @@ class Program
             registry.Register(new WeatherTool());
             registry.Register(new StockTool());
             registry.Register(new SummarizeTool(provider));
+            if (config.Tools.Nong.Enabled)
+            {
+                registry.Register(new NongTool(workspace, config.Tools.Nong));
+            }
             
             string? githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? (config.Providers.TryGetValue("github", out var gh) ? gh.ApiKey : null);
             registry.Register(new GitHubTool(githubToken));
@@ -105,6 +109,29 @@ class Program
                   },
                   "webSearch": {
                     "apiKey": ""
+                  },
+                  "tools": {
+                    "nong": {
+                      "enabled": true,
+                      "command": "nong",
+                      "appendJson": true,
+                      "timeoutMs": 120000,
+                      "maxOutputChars": 20000,
+                      "allowedRoots": [
+                        "commands",
+                        "word",
+                        "inspect",
+                        "chart",
+                        "excel",
+                        "diagram",
+                        "genre",
+                        "icons",
+                        "skill",
+                        "pptx",
+                        "ocr",
+                        "pdf"
+                      ]
+                    }
                   }
                 }
                 """);

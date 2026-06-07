@@ -111,10 +111,21 @@ public class ToolSettings
 {
     public Dictionary<string, Mcp.McpServerConfig> McpServers { get; set; } = new();
     public StockToolSettings Stock { get; set; } = new();
+    public NongToolSettings Nong { get; set; } = new();
 }
 
 public class StockToolSettings
 {
     public string? ApiKey { get; set; }
     public string? Provider { get; set; }
+}
+
+public class NongToolSettings
+{
+    public bool Enabled { get; set; } = true;
+    public string Command { get; set; } = "nong";
+    public bool AppendJson { get; set; } = true;
+    public int TimeoutMs { get; set; } = 120000;
+    public int MaxOutputChars { get; set; } = 20000;
+    public List<string>? AllowedRoots { get; set; }
 }

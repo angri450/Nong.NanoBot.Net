@@ -2,13 +2,13 @@
 
 # NanoBot.net
 
-**A typed .NET 10 personal-agent runtime for local automation, chat gateways, tools, memory, MCP, and multi-provider LLM routing.**
+**A typed .NET 8 personal-agent runtime for local automation, chat gateways, tools, memory, MCP, and multi-provider LLM routing.**
 
 [中文说明](README.zh-CN.md) · [Releases](https://github.com/angri450/NanoBot.net/releases) · [GitHub](https://github.com/angri450/NanoBot.net)
 
-![.NET 10](https://img.shields.io/badge/.NET-10-6d28d9?style=for-the-badge)
-![C# 14](https://img.shields.io/badge/C%23-14-2563eb?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-71%20passed-16a34a?style=for-the-badge)
+![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
+![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-77%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-374151?style=for-the-badge)
 
@@ -16,7 +16,9 @@
 
 ## What It Is
 
-NanoBot.net is a .NET 10 rebuild of the lightweight personal-agent ideas from [HKUDS/nanobot](https://github.com/HKUDS/nanobot). It keeps the local-first model: local config, local workspace, local memory, direct tool execution, and no mandatory cloud control plane.
+NanoBot.net is an independent .NET 8 personal-agent runtime for local automation, tool execution, memory, chat gateways, MCP, and multi-provider LLM routing. It is designed as a compact but production-shaped foundation for building local-first agents in the C# ecosystem.
+
+The project keeps a simple operating model: local config, local workspace, local memory, direct tool execution, and no mandatory cloud control plane. It was originally informed by lightweight personal-agent systems such as [HKUDS/nanobot](https://github.com/HKUDS/nanobot), but NanoBot.net now evolves as its own runtime rather than a line-by-line port.
 
 The current codebase is a mature integration-ready baseline: agent loop, provider routing, streaming, tools, memory write path, Dream consolidation, MCP stdio/HTTP/SSE, cron, heartbeat, WebSocket gateway, and multiple chat-channel adapters are implemented and covered by tests.
 
@@ -35,14 +37,14 @@ It is not a hardened public multi-tenant service yet. Treat it as a strong perso
 | Channels | Complete baseline | Telegram plus Slack, Discord, Feishu HTTP callback / REST adapters |
 | Gateway | Complete | CLI, WebSocket gateway with token auth, chat gateway with cron |
 | Heartbeat | Complete | `HEARTBEAT.md` active task detection and gateway startup wiring |
-| Tools | Complete | Files, shell, web, weather, stocks via CSV API, GitHub, summarize, memory |
+| Tools | Complete | Files, shell, Nong CLI bridge, web, weather, stocks via CSV API, GitHub, summarize, memory |
 | Safety | Complete baseline | SSRF guard, workspace-bounded shell, structured tool errors |
 | CI/release | Complete | Build/test workflows, integration workflow, tag release workflow |
 
 ## Quick Start
 
 ```bash
-# 1. Prerequisite: .NET 10 SDK
+# 1. Prerequisite: .NET 8 SDK
 git clone https://github.com/angri450/NanoBot.net.git
 cd NanoBot.net
 
@@ -186,6 +188,36 @@ MCP stdio / HTTP / SSE:
 }
 ```
 
+Nong CLI bridge:
+
+```json
+{
+  "tools": {
+    "nong": {
+      "enabled": true,
+      "command": "nong",
+      "appendJson": true,
+      "timeoutMs": 120000,
+      "maxOutputChars": 20000,
+      "allowedRoots": [
+        "commands",
+        "word",
+        "inspect",
+        "chart",
+        "excel",
+        "diagram",
+        "genre",
+        "icons",
+        "skill",
+        "pptx",
+        "ocr",
+        "pdf"
+      ]
+    }
+  }
+}
+```
+
 Gateway channels:
 
 ```json
@@ -248,6 +280,7 @@ Important implementation points:
 - `FileMemoryStore` reads and writes durable memory files and appends per-session history to `history.jsonl`.
 - `DreamConsolidator` uses the selected LLM provider to fold new history into `MEMORY.md`.
 - `McpClientFactory` chooses stdio, streamable HTTP, or SSE transport from config.
+- `NongTool` exposes `run_nong` as an argument-array tool, resolves working directories inside the workspace, applies a root-command allowlist, and appends `--json` by default.
 - `NetworkSecurityGuard` blocks loopback, private, link-local, CGNAT, multicast, broadcast, and unsafe IPv6 ranges.
 
 ## Environment Variables
@@ -284,7 +317,7 @@ Current local verification:
 
 | Check | Result |
 | --- | --- |
-| `dotnet test` | 71 passed, 0 failed, 0 skipped |
+| `dotnet test` | 77 passed, 0 failed, 0 skipped |
 | `dotnet build` | 0 warnings, 0 errors |
 | Source audit | 0 TODO, 0 stub, 0 `NotImplementedException` |
 
@@ -293,6 +326,7 @@ Current local verification:
 NanoBot.net has practical guardrails, not a complete hostile-user sandbox.
 
 - Shell execution is bounded to the configured workspace.
+- Nong execution uses argument arrays rather than shell command strings and rejects working directories outside the workspace.
 - HTTP fetches are checked for SSRF before requests and redirects.
 - WebSocket auth uses constant-time token comparison.
 - Tool errors are returned as structured JSON.
@@ -300,4 +334,4 @@ NanoBot.net has practical guardrails, not a complete hostile-user sandbox.
 
 ## License
 
-MIT. Inspired by [HKUDS/nanobot](https://github.com/HKUDS/nanobot), rebuilt for .NET 10.
+MIT. Inspired by lightweight personal-agent projects, built as an independent .NET runtime.

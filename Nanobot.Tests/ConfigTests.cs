@@ -1,5 +1,6 @@
 using Nanobot.Core.Config;
 using Nanobot.Core.Providers;
+using Microsoft.Extensions.Configuration;
 
 namespace Nanobot.Tests;
 
@@ -216,6 +217,24 @@ public class ConfigTests
 
         Assert.Equal("anthropic::claude-test", result.DefaultModel.UniqueId);
         Assert.Equal("claude-test", result.Provider.GetDefaultModel());
+    }
+
+    [Fact]
+    public void AppConfig_BindsCustomNongAllowedRootsWithoutDefaultAppend()
+    {
+        var source = new Dictionary<string, string?>
+        {
+            ["tools:nong:allowedRoots:0"] = "pdf",
+            ["tools:nong:allowedRoots:1"] = "ocr"
+        };
+        var config = new AppConfig();
+
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(source)
+            .Build()
+            .Bind(config);
+
+        Assert.Equal(new[] { "pdf", "ocr" }, config.Tools.Nong.AllowedRoots);
     }
 
     private static IReadOnlyDictionary<string, string?> Env(params (string Key, string? Value)[] values)

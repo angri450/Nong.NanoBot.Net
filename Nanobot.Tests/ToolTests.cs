@@ -1,6 +1,7 @@
 using Nanobot.Core.Tools;
 using Nanobot.Core.Tools.Builtin;
 using Nanobot.Core.Security;
+using Nanobot.Core.Config;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
@@ -98,6 +99,126 @@ public class ToolTests
         Assert.Equal("tool_not_found", result.ErrorCode);
         var json = JsonNode.Parse(result.Content!);
         Assert.Equal("missing", json?["error"]?["tool"]?.ToString());
+    }
+
+    [Fact]
+    public async Task NongTool_AppendsJsonAndPassesArgumentArray()
+    {
+        var workspace = CreateWorkspace();
+        var docs = Path.Combine(workspace, "docs");
+        Directory.CreateDirectory(docs);
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, "{\"status\":\"ok\"}", ""));
+        var tool = new NongTool(
+            workspace,
+            new NongToolSettings
+            {
+                Command = "fake-nong",
+                AllowedRoots = new List<string> { "pdf" }
+            },
+            runner
+        );
+
+        var result = await tool.ExecuteAsync(JsonNode.Parse("""
+            {
+              "args": ["pdf", "check", "paper.pdf"],
+              "workingDirectory": "docs",
+              "timeoutMs": 1500
+            }
+            """));
+
+        var json = JsonNode.Parse(result);
+        Assert.Single(runner.Requests);
+        Assert.Equal("fake-nong", runner.Requests[0].Command);
+        Assert.Equal(new[] { "pdf", "check", "paper.pdf", "--json" }, runner.Requests[0].Args);
+        Assert.Equal(docs, runner.Requests[0].WorkingDirectory);
+        Assert.Equal(1500, runner.Requests[0].TimeoutMs);
+        Assert.Equal(0, json?["exitCode"]?.GetValue<int>());
+        Assert.Contains("\"status\":\"ok\"", json?["stdout"]?.ToString());
+    }
+
+    [Fact]
+    public async Task NongTool_DoesNotDuplicateJsonFlag()
+    {
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, "ok", ""));
+        var tool = new NongTool(CreateWorkspace(), new NongToolSettings(), runner);
+
+        await tool.ExecuteAsync(JsonNode.Parse("""
+            {
+              "args": ["--verbose", "commands", "--json"]
+            }
+            """));
+
+        Assert.Single(runner.Requests);
+        Assert.Equal(new[] { "--verbose", "commands", "--json" }, runner.Requests[0].Args);
+    }
+
+    [Fact]
+    public async Task NongTool_RejectsDisallowedRootWithoutRunning()
+    {
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, "unused", ""));
+        var tool = new NongTool(
+            CreateWorkspace(),
+            new NongToolSettings
+            {
+                AllowedRoots = new List<string> { "pdf" }
+            },
+            runner
+        );
+
+        var result = await tool.ExecuteAsync(JsonNode.Parse("""
+            {
+              "args": ["lit", "search"]
+            }
+            """));
+
+        var json = JsonNode.Parse(result);
+        Assert.Equal("nong_root_not_allowed", json?["error"]?["code"]?.ToString());
+        Assert.Empty(runner.Requests);
+    }
+
+    [Fact]
+    public async Task NongTool_RejectsAllRootsWhenAllowlistIsExplicitlyEmpty()
+    {
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, "unused", ""));
+        var tool = new NongTool(
+            CreateWorkspace(),
+            new NongToolSettings
+            {
+                AllowedRoots = new List<string>()
+            },
+            runner
+        );
+
+        var result = await tool.ExecuteAsync(JsonNode.Parse("""
+            {
+              "args": ["pdf", "check", "paper.pdf"]
+            }
+            """));
+
+        var json = JsonNode.Parse(result);
+        Assert.Equal("nong_root_not_allowed", json?["error"]?["code"]?.ToString());
+        Assert.Empty(runner.Requests);
+    }
+
+    [Fact]
+    public async Task NongTool_RejectsWorkingDirectoryOutsideWorkspace()
+    {
+        var workspace = CreateWorkspace();
+        var outside = Directory.GetParent(workspace)!.FullName;
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, "unused", ""));
+        var tool = new NongTool(workspace, new NongToolSettings(), runner);
+
+        var result = await tool.ExecuteAsync(JsonNode.Parse($$"""
+            {
+              "args": ["pdf", "check", "paper.pdf"],
+              "workingDirectory": "{{JsonEscape(outside)}}"
+            }
+            """));
+
+        var json = JsonNode.Parse(result);
+        Assert.Equal("nong_execution_error", json?["error"]?["code"]?.ToString());
+        Assert.Contains("outside workspace", json?["error"]?["message"]?.ToString());
+        Assert.Empty(runner.Requests);
     }
 
     [Fact]
@@ -240,6 +361,24 @@ public class ToolTests
         public Task<IPAddress[]> GetHostAddressesAsync(string host)
         {
             return Task.FromResult(_addresses);
+        }
+    }
+
+    private sealed class FakeNongRunner : INongCommandRunner
+    {
+        private readonly NongCommandResult _result;
+
+        public FakeNongRunner(NongCommandResult result)
+        {
+            _result = result;
+        }
+
+        public List<NongCommandRequest> Requests { get; } = new();
+
+        public Task<NongCommandResult> RunAsync(NongCommandRequest request)
+        {
+            Requests.Add(request);
+            return Task.FromResult(_result);
         }
     }
 }

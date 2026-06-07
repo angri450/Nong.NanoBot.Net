@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This repository is **NanoBot.net**, the .NET 10 / C# 14 implementation of the nanobot-style personal agent runtime. The upstream Python `nanobot` repository is a reference, not the code being edited here.
+This repository is **NanoBot.net**, the .NET 8 / C# 12 implementation of the nanobot-style personal agent runtime. The upstream Python `nanobot` repository is a reference, not the code being edited here.
 
 ## Current Baseline
 
