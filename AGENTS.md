@@ -8,6 +8,7 @@ This file defines the working direction for development inside this repository.
 - Treat `DEVELOPMENT_PLAN.zh-CN.md` as the active construction plan for this repository. External GUI/runtime repositories are references unless the user explicitly changes the main implementation target.
 - Treat it as an independent .NET runtime, not as a fork/port positioning project.
 - Keep the baseline aligned with Nong CLI and GroundPA: .NET 8, Apache-2.0, local-first operation, deterministic tool bridges, and practical safety boundaries.
+- NanoBot should not ship with full external skill payloads bundled by default. It should ship with a plugin/skill-pack bootstrap system that can install, update, detect, and run repositories with `plugin.json`; GroundPA-Toolkit and Nong are first-class plugins on top of that system, including background deployment while the runtime is already usable.
 - Prefer improving the runtime that already exists here over starting parallel agent runtimes unless a comparison matrix shows a stronger candidate.
 - soloncode.net, GenericAgent.net, PilotDeck.net, and related projects are comparison lines, not the default implementation target.
 
