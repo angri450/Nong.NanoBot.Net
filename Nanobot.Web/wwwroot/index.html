@@ -29,10 +29,21 @@
         </div>
       </header>
 
+      <section class="panel-block mode-block">
+        <div class="mode-tabs">
+          <button class="mode-tab active" type="button" data-i18n="modeAgent">Agent</button>
+          <button class="mode-tab" type="button" data-i18n="modeWrite">写作</button>
+        </div>
+        <div class="quick-actions">
+          <button id="newSession" class="quick-action" type="button"><span>+</span><span data-i18n="newSession">新建</span></button>
+          <button id="refreshFiles" class="quick-action" type="button"><span>↻</span><span data-i18n="refresh">刷新</span></button>
+        </div>
+      </section>
+
       <section class="panel-block">
         <div class="section-head">
           <div class="section-title" data-i18n="sessions">会话</div>
-          <button id="newSession" class="mini-button" type="button" data-i18n="newSession">新建</button>
+          <span class="section-count" id="sessionCount">0</span>
         </div>
         <div id="sessions" class="session-list"></div>
       </section>
@@ -40,7 +51,7 @@
       <section class="panel-block">
         <div class="section-head">
           <div class="section-title" data-i18n="workspaceFiles">工作区文件</div>
-          <button id="refreshFiles" class="mini-button" type="button" data-i18n="refresh">刷新</button>
+          <span class="section-count" data-i18n="localFiles">本地</span>
         </div>
         <div id="filePath" class="path-chip"></div>
         <div id="fileList" class="file-list"></div>
@@ -64,6 +75,11 @@
           <div class="eyebrow" data-i18n="localRuntime">本地 Agent 运行时</div>
           <h2 id="sessionTitle">NanoBot 会话</h2>
         </div>
+        <div class="status-strip">
+          <span id="runtimeReadyPill" class="status-pill">Loading</span>
+          <span id="runtimeModelPill" class="status-pill muted">Model</span>
+          <span id="runtimeNongPill" class="status-pill muted">Nong</span>
+        </div>
         <div class="topbar-actions">
           <button id="reloadStatus" class="secondary-button" type="button" data-i18n="reload">重载</button>
           <a class="secondary-button" href="/api/runtime/status" target="_blank" data-i18n="statusJson">状态 JSON</a>
@@ -73,12 +89,36 @@
       <section id="messages" class="messages"></section>
 
       <form id="composer" class="composer">
-        <textarea id="prompt" rows="3" placeholder="输入下一步要 NanoBot 做的事情..."></textarea>
-        <button id="sendButton" type="submit" disabled data-i18n="send">发送</button>
+        <div class="composer-card">
+          <textarea id="prompt" rows="3" placeholder="输入下一步要 NanoBot 做的事情..."></textarea>
+          <div class="composer-footer">
+            <div class="composer-hints">
+              <span id="composerModel">NanoBot</span>
+              <span>·</span>
+              <span data-i18n="composerHint">输入 / 可组织任务</span>
+            </div>
+            <button id="sendButton" type="submit" disabled data-i18n="send">发送</button>
+          </div>
+        </div>
       </form>
     </main>
 
     <aside class="inspector">
+      <section class="inspector-section plan-section">
+        <div class="section-title" data-i18n="plan">计划</div>
+        <div class="plan-card">
+          <strong data-i18n="noActivePlan">暂无活动计划</strong>
+          <span data-i18n="planHint">发送任务后，工具调用和会话进展会在这里沉淀。</span>
+        </div>
+      </section>
+      <section class="inspector-section todo-section">
+        <div class="section-title" data-i18n="todos">待办</div>
+        <div class="todo-list">
+          <div class="todo-item"><span></span><span data-i18n="todoRuntime">确认运行时就绪</span></div>
+          <div class="todo-item"><span></span><span data-i18n="todoFiles">选择工作区上下文</span></div>
+          <div class="todo-item"><span></span><span data-i18n="todoSend">发送下一步任务</span></div>
+        </div>
+      </section>
       <section class="inspector-section">
         <div class="section-title" data-i18n="toolTimeline">工具时间线</div>
         <div id="events" class="event-list"></div>

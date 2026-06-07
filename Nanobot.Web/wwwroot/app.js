@@ -56,7 +56,18 @@ const i18n = {
     errorPrefix: "错误",
     disconnected: "事件流已断开，浏览器会自动重连。",
     directoryIcon: "目录",
-    fileIcon: "文本"
+    fileIcon: "文本",
+    modeAgent: "Agent",
+    modeWrite: "写作",
+    localFiles: "本地",
+    composerHint: "输入 / 可组织任务",
+    plan: "计划",
+    todos: "待办",
+    noActivePlan: "暂无活动计划",
+    planHint: "发送任务后，工具调用和会话进展会在这里沉淀。",
+    todoRuntime: "确认运行时就绪",
+    todoFiles: "选择工作区上下文",
+    todoSend: "发送下一步任务"
   },
   en: {
     product: "NanoBot.net",
@@ -115,7 +126,18 @@ const i18n = {
     errorPrefix: "Error",
     disconnected: "Event stream disconnected. Browser will retry.",
     directoryIcon: "DIR",
-    fileIcon: "TXT"
+    fileIcon: "TXT",
+    modeAgent: "Agent",
+    modeWrite: "Write",
+    localFiles: "Local",
+    composerHint: "Type / to organize a task",
+    plan: "Plan",
+    todos: "Todos",
+    noActivePlan: "No active plan",
+    planHint: "Send a task and runtime progress will collect here.",
+    todoRuntime: "Confirm runtime readiness",
+    todoFiles: "Choose workspace context",
+    todoSend: "Send the next task"
   }
 };
 
@@ -147,10 +169,15 @@ const elements = {
   runtimeModel: document.getElementById("runtimeModel"),
   runtimeWorkspace: document.getElementById("runtimeWorkspace"),
   runtimeNong: document.getElementById("runtimeNong"),
+  runtimeReadyPill: document.getElementById("runtimeReadyPill"),
+  runtimeModelPill: document.getElementById("runtimeModelPill"),
+  runtimeNongPill: document.getElementById("runtimeNongPill"),
   runtimeNotice: document.getElementById("runtimeNotice"),
   sessionTitle: document.getElementById("sessionTitle"),
+  sessionCount: document.getElementById("sessionCount"),
   prompt: document.getElementById("prompt"),
   composer: document.getElementById("composer"),
+  composerModel: document.getElementById("composerModel"),
   sendButton: document.getElementById("sendButton"),
   newSession: document.getElementById("newSession"),
   reloadStatus: document.getElementById("reloadStatus"),
@@ -220,6 +247,7 @@ function persistSessionId() {
 
 async function loadSessions() {
   state.sessions = await apiJson("/api/sessions");
+  elements.sessionCount.textContent = String(state.sessions.length);
   if (!state.sessionId || !state.sessions.some(session => session.id === state.sessionId)) {
     state.sessionId = state.sessions[0]?.id || "";
     persistSessionId();
@@ -287,6 +315,11 @@ async function loadStatus() {
   elements.runtimeModel.textContent = status.model || status.Model || "Unknown";
   elements.runtimeWorkspace.textContent = status.workspace || status.Workspace || "Unknown";
   elements.runtimeNong.textContent = (status.nongEnabled ?? status.NongEnabled) ? t("enabled") : t("disabled");
+  elements.runtimeReadyPill.textContent = ready ? t("ready") : t("needsConfig");
+  elements.runtimeReadyPill.className = `status-pill ${ready ? "ready" : "error"}`;
+  elements.runtimeModelPill.textContent = status.model || status.Model || "Unknown";
+  elements.runtimeNongPill.textContent = (status.nongEnabled ?? status.NongEnabled) ? "Nong on" : "Nong off";
+  elements.composerModel.textContent = status.model || status.Model || "NanoBot";
   elements.memoryPreview.textContent = status.memoryPreview || status.MemoryPreview || t("noMemory");
 
   if (error || warning) {
