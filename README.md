@@ -8,7 +8,7 @@
 
 ![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-77%20passed-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-79%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
@@ -37,6 +37,7 @@ It is not a hardened public multi-tenant service yet. Treat it as a strong perso
 | Channels | Complete baseline | Telegram plus Slack, Discord, Feishu HTTP callback / REST adapters |
 | Gateway | Complete | CLI, WebSocket gateway with token auth, chat gateway with cron |
 | WebUI | P2 usable | Chinese-first browser workbench, streaming chat, persisted sessions, workspace file tree, tool-call details, dark/light themes |
+| Windows MSI | P5 baseline | Per-user MSI, self-contained CLI/WebUI payload, Start Menu shortcuts, user PATH entry |
 | Heartbeat | Complete | `HEARTBEAT.md` active task detection and gateway startup wiring |
 | Tools | Complete | Files, shell, Nong CLI bridge, web, weather, stocks via CSV API, GitHub, summarize, memory |
 | Safety | Complete baseline | SSRF guard, workspace-bounded shell, structured tool errors |
@@ -87,6 +88,8 @@ Workspace layout:
 | `dotnet run --project Nanobot.CLI -- agent -m "..."` | Single-turn agent run |
 | `dotnet run --project Nanobot.CLI -- gateway` | Start enabled chat channels, cron, Dream, heartbeat |
 | `dotnet run --project Nanobot.CLI -- websocket` | Start WebSocket agent gateway |
+| `dotnet run --project Nanobot.CLI -- web` | Start the local WebUI and open the default browser |
+| `dotnet run --project Nanobot.CLI -- serve` | Start the local WebUI server without opening a browser |
 | `dotnet run --project Nanobot.Web` | Start the local browser workbench |
 | `dotnet run --project Nanobot.CLI -- onboard` | Create default config and workspace |
 
@@ -96,6 +99,13 @@ Workspace layout:
 
 ```bash
 dotnet run --project Nanobot.Web --urls http://127.0.0.1:8788
+```
+
+The CLI wrapper starts the same WebUI runtime and is the command used by the Windows installer:
+
+```bash
+dotnet run --project Nanobot.CLI -- web
+dotnet run --project Nanobot.CLI -- serve --urls http://127.0.0.1:8788
 ```
 
 The normal command requires the .NET 8 SDK and ASP.NET Core Runtime 8. On a machine without the ASP.NET Core 8 runtime, run it self-contained:
@@ -114,6 +124,30 @@ Current WebUI behavior:
 - WebUI sessions are persisted under `~/.nanobot/workspace/.webui/sessions.json`.
 - Workspace file browsing is restricted to `~/.nanobot/workspace`; internal `.webui` files are hidden.
 - Tool calls are shown in a live event timeline with a detail panel for run/session/tool/error/content fields.
+
+## Windows MSI
+
+NanoBot.net can be packaged as a Windows x64 MSI without WebView2, Electron, or a resident browser shell. The MSI installs the self-contained CLI and WebUI runtime, creates Start Menu shortcuts, and adds `nanobot.exe` to the current user's PATH. GroundPA-Toolkit and Nong are still installed later through the plugin/bootstrap path; they are not bundled into the MSI payload.
+
+Build a local MSI:
+
+```powershell
+.\eng\package-msi.ps1 -Version 0.1.0 -Configuration Release -RuntimeIdentifier win-x64
+```
+
+The generated package is written to:
+
+```text
+artifacts/installer/NanoBot-0.1.0-win-x64.msi
+```
+
+After installation:
+
+```powershell
+nanobot onboard
+nanobot web
+nanobot serve --urls http://127.0.0.1:8788
+```
 
 ## Configuration
 
