@@ -10,7 +10,7 @@
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/tests-77%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-374151?style=for-the-badge)
+![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
 </div>
 
@@ -334,4 +334,4 @@ NanoBot.net has practical guardrails, not a complete hostile-user sandbox.
 
 ## License
 
-MIT. Inspired by lightweight personal-agent projects, built as an independent .NET runtime.
+Apache-2.0. Inspired by lightweight personal-agent projects, built as an independent .NET runtime.

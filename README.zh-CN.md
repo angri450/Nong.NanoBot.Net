@@ -10,7 +10,7 @@
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/tests-77%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-374151?style=for-the-badge)
+![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
 </div>
 
@@ -334,4 +334,4 @@ NanoBot.net 有实用安全护栏，但不是完整的敌意用户沙箱。
 
 ## License
 
-MIT。受轻量个人 Agent 项目启发，作为独立 .NET runtime 演进。
+Apache-2.0。受轻量个人 Agent 项目启发，作为独立 .NET runtime 演进。
