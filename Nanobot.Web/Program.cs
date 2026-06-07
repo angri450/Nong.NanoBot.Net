@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Nanobot.Core.Agent;
 using Nanobot.Core.Config;
@@ -25,6 +26,26 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapGet("/api/runtime/status", (NanobotWebRuntime runtime) => runtime.GetStatus());
+
+app.MapGet("/api/settings/model", (NanobotWebRuntime runtime) => runtime.GetModelSettings());
+
+app.MapPost("/api/settings/model", (SaveModelSettingsRequest request, NanobotWebRuntime runtime) =>
+{
+    try
+    {
+        return Results.Ok(runtime.SaveModelSettings(request));
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new ApiErrorResponse(ex.Message));
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(
+            new ApiErrorResponse($"Model settings save failed: {ex.Message}"),
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+});
 
 app.MapGet("/api/sessions", (NanobotWebRuntime runtime) => runtime.ListSessions());
 
@@ -174,32 +195,168 @@ static async Task WriteNdjsonAsync(
 
 public sealed class NanobotWebRuntime
 {
+    private const string DmxProviderId = "dmx";
+    private const string DmxDefaultApiBase = "https://www.dmxapi.cn/v1/";
+    private const string DmxDefaultModel = "deepseek-v4-pro-guan";
+
+    private readonly object _reloadLock = new();
+    private readonly string _nanoDir;
+    private readonly string _configFile;
     private readonly string _workspace;
-    private readonly AppConfig _config;
     private readonly RuntimeEventBus _eventBus = new();
     private readonly FileMemoryStore _memory;
     private readonly WebSessionStore _sessions;
     private readonly WorkspaceFileBrowser _files;
-    private readonly ILLMProvider? _provider;
-    private readonly Agent? _agent;
-    private readonly string? _startupError;
-    private readonly string? _startupWarning;
+    private AppConfig _config = new();
+    private ILLMProvider? _provider;
+    private Agent? _agent;
+    private string? _startupError;
+    private string? _startupWarning;
 
     public NanobotWebRuntime()
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var nanoDir = Path.Combine(home, ".nanobot");
-        var configFile = Path.Combine(nanoDir, "config.json");
-        _workspace = Path.Combine(nanoDir, "workspace");
+        _nanoDir = Path.Combine(home, ".nanobot");
+        _configFile = Path.Combine(_nanoDir, "config.json");
+        _workspace = Path.Combine(_nanoDir, "workspace");
+        Directory.CreateDirectory(_nanoDir);
         Directory.CreateDirectory(_workspace);
 
         _memory = new FileMemoryStore(_workspace);
         _sessions = new WebSessionStore(_workspace);
         _files = new WorkspaceFileBrowser(_workspace);
+        ReloadRuntime();
+    }
 
+    public RuntimeStatusResponse GetStatus()
+    {
+        return new RuntimeStatusResponse(
+            Workspace: _workspace,
+            Model: ResolveRuntimeModelLabel(),
+            NongEnabled: _config.Tools.Nong.Enabled,
+            MemoryPreview: Truncate(_memory.GetContext(), 1600),
+            Ready: _agent is not null,
+            Error: _startupError,
+            Warning: _startupWarning
+        );
+    }
+
+    public ModelSettingsResponse GetModelSettings()
+    {
+        var providerId = DmxProviderId;
+        var provider = ResolveProvider(providerId);
+        var envKey = Environment.GetEnvironmentVariable("DMX_API_KEY");
+        var configuredKey = provider?.ApiKey;
+        var effectiveKey = !string.IsNullOrWhiteSpace(envKey) ? envKey : configuredKey;
+        var keySource = !string.IsNullOrWhiteSpace(envKey)
+            ? "environment"
+            : !string.IsNullOrWhiteSpace(configuredKey)
+                ? "config"
+                : "none";
+
+        return new ModelSettingsResponse(
+            ProviderId: providerId,
+            ApiBase: provider?.ApiBase ?? provider?.BaseUrl ?? DmxDefaultApiBase,
+            Model: ResolveProviderModel(providerId, provider),
+            HasApiKey: !string.IsNullOrWhiteSpace(effectiveKey),
+            ApiKeyPreview: MaskSecret(effectiveKey),
+            KeySource: keySource,
+            ConfigPath: _configFile
+        );
+    }
+
+    public SaveModelSettingsResponse SaveModelSettings(SaveModelSettingsRequest request)
+    {
+        var providerId = string.IsNullOrWhiteSpace(request.ProviderId)
+            ? DmxProviderId
+            : request.ProviderId.Trim();
+        if (!providerId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("当前 WebUI 设置面板先支持 DMX provider。");
+        }
+
+        var apiBase = string.IsNullOrWhiteSpace(request.ApiBase)
+            ? DmxDefaultApiBase
+            : request.ApiBase.Trim();
+        var model = string.IsNullOrWhiteSpace(request.Model)
+            ? DmxDefaultModel
+            : request.Model.Trim();
+        if (!Uri.TryCreate(apiBase, UriKind.Absolute, out var apiBaseUri)
+            || (apiBaseUri.Scheme != Uri.UriSchemeHttp && apiBaseUri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new InvalidOperationException("API 地址必须是 http 或 https URL。");
+        }
+
+        Directory.CreateDirectory(_nanoDir);
+        var configJson = LoadConfigJson();
+        var providers = EnsureObject(configJson, "providers");
+        var provider = EnsureObject(providers, providerId);
+        provider["kind"] = "openai-compatible";
+        provider["apiBase"] = apiBase;
+        provider["defaultModel"] = model;
+        provider["models"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = model,
+                ["apiModelId"] = model,
+                ["supportsStreaming"] = true,
+                ["supportsTools"] = true
+            }
+        };
+
+        if (request.ClearApiKey)
+        {
+            provider["apiKey"] = "";
+        }
+        else if (!string.IsNullOrWhiteSpace(request.ApiKey))
+        {
+            provider["apiKey"] = request.ApiKey.Trim();
+        }
+        else if (!provider.ContainsKey("apiKey"))
+        {
+            provider["apiKey"] = "";
+        }
+
+        var agents = EnsureObject(configJson, "agents");
+        var defaults = EnsureObject(agents, "defaults");
+        defaults["provider"] = providerId;
+        defaults["model"] = $"{providerId}::{model}";
+        defaults["fallbackModels"] = new JsonArray($"{providerId}::{model}");
+
+        var streaming = EnsureObject(configJson, "streaming");
+        streaming["enabled"] = true;
+
+        File.WriteAllText(
+            _configFile,
+            configJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+
+        ReloadRuntime();
+        return new SaveModelSettingsResponse(
+            Message: _agent is null ? "配置已保存，但运行时仍未就绪。" : "模型配置已保存并重载。",
+            Status: GetStatus(),
+            Settings: GetModelSettings()
+        );
+    }
+
+    private void ReloadRuntime()
+    {
+        lock (_reloadLock)
+        {
+            _provider = null;
+            _agent = null;
+            _startupError = null;
+            _startupWarning = null;
+
+            LoadRuntimeCore();
+        }
+    }
+
+    private void LoadRuntimeCore()
+    {
         try
         {
-            _config = File.Exists(configFile) ? ConfigLoader.Load(configFile) : new AppConfig();
+            _config = File.Exists(_configFile) ? ConfigLoader.Load(_configFile) : new AppConfig();
         }
         catch (Exception ex)
         {
@@ -226,19 +383,6 @@ public sealed class NanobotWebRuntime
         {
             _startupError = FormatStartupError(ex);
         }
-    }
-
-    public RuntimeStatusResponse GetStatus()
-    {
-        return new RuntimeStatusResponse(
-            Workspace: _workspace,
-            Model: _provider?.GetDefaultModel() ?? "Not configured",
-            NongEnabled: _config.Tools.Nong.Enabled,
-            MemoryPreview: Truncate(_memory.GetContext(), 1600),
-            Ready: _agent is not null,
-            Error: _startupError,
-            Warning: _startupWarning
-        );
     }
 
     public IReadOnlyList<WebSessionSummary> ListSessions()
@@ -412,6 +556,104 @@ public sealed class NanobotWebRuntime
         }
 
         return message;
+    }
+
+    private string ResolveSettingsProviderId()
+    {
+        return DmxProviderId;
+    }
+
+    private ProviderSettings? ResolveProvider(string providerId)
+    {
+        return _config.Providers.TryGetValue(providerId, out var provider)
+            ? provider
+            : null;
+    }
+
+    private string ResolveRuntimeModelLabel()
+    {
+        if (!string.IsNullOrWhiteSpace(_config.Agents.Defaults.Model))
+        {
+            return _config.Agents.Defaults.Model!;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_config.Agents.Defaults.Provider))
+        {
+            var providerId = _config.Agents.Defaults.Provider!;
+            return $"{providerId}::{ResolveProviderModel(providerId, ResolveProvider(providerId))}";
+        }
+
+        return _provider?.GetDefaultModel() ?? "Not configured";
+    }
+
+    private static string ResolveProviderModel(string providerId, ProviderSettings? provider)
+    {
+        if (provider is null)
+        {
+            return providerId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase)
+                ? DmxDefaultModel
+                : "Not configured";
+        }
+
+        if (!string.IsNullOrWhiteSpace(provider.DefaultModel))
+        {
+            return provider.DefaultModel!;
+        }
+
+        var model = provider.Models.FirstOrDefault(item => item.Enabled && !string.IsNullOrWhiteSpace(item.Id));
+        if (model is not null)
+        {
+            return model.ApiModelId ?? model.Id!;
+        }
+
+        return providerId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase)
+            ? DmxDefaultModel
+            : "Not configured";
+    }
+
+    private static string MaskSecret(string? secret)
+    {
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            return "";
+        }
+
+        var value = secret.Trim();
+        if (value.Length <= 10)
+        {
+            return "已配置";
+        }
+
+        return $"{value[..6]}...{value[^4..]}";
+    }
+
+    private JsonObject LoadConfigJson()
+    {
+        if (!File.Exists(_configFile))
+        {
+            return new JsonObject();
+        }
+
+        var text = File.ReadAllText(_configFile);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return new JsonObject();
+        }
+
+        return JsonNode.Parse(text) as JsonObject
+            ?? throw new InvalidOperationException("config.json 根节点必须是 JSON object。");
+    }
+
+    private static JsonObject EnsureObject(JsonObject parent, string propertyName)
+    {
+        if (parent[propertyName] is JsonObject existing)
+        {
+            return existing;
+        }
+
+        var created = new JsonObject();
+        parent[propertyName] = created;
+        return created;
     }
 
     private static string Truncate(string value, int maxChars)

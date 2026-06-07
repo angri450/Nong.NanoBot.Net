@@ -120,6 +120,7 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
 
 - 默认语言是中文，并提供英文切换。
 - Header 里提供深色 / 浅色主题切换。
+- 左侧栏提供 DMX DeepSeek V4 Pro 模型设置面板，可以直接填写调用密钥并保存到本机 `~/.nanobot/config.json`，保存后自动重载 runtime；密钥不会进入仓库。
 - 聊天走 runtime streaming path，助手输出会边生成边显示。
 - WebUI 会话持久化在 `~/.nanobot/workspace/.webui/sessions.json`。
 - 文件树限制在 `~/.nanobot/workspace` 内部，内部 `.webui` 文件会隐藏。
@@ -152,6 +153,8 @@ nanobot serve --urls http://127.0.0.1:8788
 ## 配置
 
 最小 DMX DeepSeek V4 Pro 配置：
+
+可以在 WebUI 左侧的模型设置面板填写，也可以手动编辑 `~/.nanobot/config.json`。
 
 ```json
 {

@@ -6,6 +6,7 @@
 - Added `eng/package-msi.ps1` to publish the CLI and WebUI runtime, generate WiX file components, and build a local MSI artifact.
 - Added `nanobot web` and `nanobot serve` commands so the installed CLI can launch the local browser workbench without a WebView2 or Electron shell.
 - The MSI installs per user, adds `nanobot.exe` to the user PATH, and creates Start Menu shortcuts.
+- Added a desktop `NanoBot WebUI` shortcut and an install-finish launch action so double-click installation has an obvious visible result.
 
 ## Notes
 

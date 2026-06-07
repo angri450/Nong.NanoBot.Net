@@ -10,11 +10,22 @@
 <body>
   <div class="app-shell">
     <aside class="rail">
-      <div class="brand-mark">N</div>
-      <button class="rail-button active" data-view="chat" data-i18n="railChat" title="对话">聊</button>
-      <button class="rail-button" data-view="files" data-i18n="railFiles" title="文件">文</button>
-      <button class="rail-button" data-view="tools" data-i18n="railTools" title="工具">工</button>
-      <button class="rail-button" data-view="memory" data-i18n="railMemory" title="记忆">忆</button>
+      <div class="brand-mark" aria-label="NanoBot">N</div>
+      <button class="rail-button active" data-view="chat" title="对话" type="button">
+        <span data-i18n="railChat">对话</span>
+      </button>
+      <button class="rail-button" data-view="files" title="文件" type="button">
+        <span data-i18n="railFiles">文件</span>
+      </button>
+      <button class="rail-button" data-view="tools" title="工具" type="button">
+        <span data-i18n="railTools">工具</span>
+      </button>
+      <button class="rail-button" data-view="memory" title="记忆" type="button">
+        <span data-i18n="railMemory">记忆</span>
+      </button>
+      <button class="rail-button" data-view="settings" title="设置" type="button">
+        <span data-i18n="railSettings">设置</span>
+      </button>
     </aside>
 
     <aside class="sidebar">
@@ -38,6 +49,39 @@
           <button id="newSession" class="quick-action" type="button"><span>+</span><span data-i18n="newSession">新建</span></button>
           <button id="refreshFiles" class="quick-action" type="button"><span>↻</span><span data-i18n="refresh">刷新</span></button>
         </div>
+      </section>
+
+      <section class="panel-block model-settings-block">
+        <div class="section-head">
+          <div class="section-title" data-i18n="modelSettings">模型设置</div>
+          <span id="keyStatus" class="section-count">未配置</span>
+        </div>
+        <form id="modelSettingsForm" class="settings-form">
+          <label>
+            <span data-i18n="provider">Provider</span>
+            <select id="providerId">
+              <option value="dmx">DMX 中转</option>
+            </select>
+          </label>
+          <label>
+            <span data-i18n="apiBase">API 地址</span>
+            <input id="apiBase" type="url" autocomplete="off" spellcheck="false" value="https://www.dmxapi.cn/v1/">
+          </label>
+          <label>
+            <span data-i18n="modelId">模型 ID</span>
+            <input id="modelId" type="text" autocomplete="off" spellcheck="false" value="deepseek-v4-pro-guan">
+          </label>
+          <label>
+            <span data-i18n="apiKey">调用密钥</span>
+            <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-...">
+          </label>
+          <div id="apiKeyHint" class="settings-hint"></div>
+          <div class="settings-actions">
+            <button id="saveModelSettings" class="primary-button" type="submit" data-i18n="saveSettings">保存并重载</button>
+            <button id="clearApiKey" class="secondary-button" type="button" data-i18n="clearKey">清空 Key</button>
+          </div>
+          <div id="settingsNotice" class="settings-notice" hidden></div>
+        </form>
       </section>
 
       <section class="panel-block">

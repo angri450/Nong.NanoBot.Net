@@ -120,6 +120,7 @@ Current WebUI behavior:
 
 - Chinese is the default UI language, with an optional English toggle.
 - Dark and light themes are both supported from the header toggle.
+- The left sidebar includes a model settings panel for DMX DeepSeek V4 Pro. It saves the API key to the local `~/.nanobot/config.json` file and reloads the runtime without committing secrets to the repository.
 - Chat uses the runtime streaming path and renders partial assistant output as it arrives.
 - WebUI sessions are persisted under `~/.nanobot/workspace/.webui/sessions.json`.
 - Workspace file browsing is restricted to `~/.nanobot/workspace`; internal `.webui` files are hidden.
@@ -152,6 +153,8 @@ nanobot serve --urls http://127.0.0.1:8788
 ## Configuration
 
 Minimal DMX DeepSeek V4 Pro config:
+
+You can either fill this from the WebUI model settings panel or edit `~/.nanobot/config.json` manually.
 
 ```json
 {

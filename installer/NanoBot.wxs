@@ -8,6 +8,9 @@
     <SummaryInformation Description="NanoBot.net GroundPA runtime" Manufacturer="Angri450" />
     <MajorUpgrade DowngradeErrorMessage="A newer version of NanoBot.net is already installed." />
     <MediaTemplate EmbedCab="yes" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/angri450/NanoBot.net" />
+    <Property Id="ARPCONTACT" Value="angri450" />
+    <Property Id="ARPNOREPAIR" Value="yes" />
 
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="ProgramsFolder" Name="Programs">
@@ -18,6 +21,8 @@
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="NanoBot.net" />
     </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
 
     <Component Id="StartMenuShortcuts" Directory="ApplicationProgramsFolder" Guid="{8E4E1E0B-0A21-47F1-92AF-8A29E65D80B6}">
       <Shortcut
@@ -44,6 +49,23 @@
         KeyPath="yes" />
     </Component>
 
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="{C2E4B586-54EB-45F1-8C30-112719570A39}">
+      <Shortcut
+        Id="DesktopWebUiShortcut"
+        Name="NanoBot WebUI"
+        Target="[INSTALLFOLDER]nanobot.exe"
+        Arguments="web"
+        WorkingDirectory="INSTALLFOLDER"
+        Advertise="no" />
+      <RegistryValue
+        Root="HKCU"
+        Key="Software\Angri450\NanoBot.net"
+        Name="DesktopShortcut"
+        Type="integer"
+        Value="1"
+        KeyPath="yes" />
+    </Component>
+
     <Component Id="UserPathEnvironment" Directory="INSTALLFOLDER" Guid="{C30C0B44-7E43-4886-9002-C93B0FC63E31}">
       <Environment
         Id="AddNanobotToUserPath"
@@ -62,9 +84,22 @@
         KeyPath="yes" />
     </Component>
 
+    <CustomAction
+      Id="LaunchWebUiAfterInstall"
+      Directory="INSTALLFOLDER"
+      ExeCommand="&quot;[INSTALLFOLDER]nanobot.exe&quot; web"
+      Execute="immediate"
+      Return="asyncNoWait"
+      Impersonate="yes" />
+
+    <InstallExecuteSequence>
+      <Custom Action="LaunchWebUiAfterInstall" After="InstallFinalize" Condition="(NOT Installed) AND (NOT REMOVE) AND (UILevel &gt;= 3)" />
+    </InstallExecuteSequence>
+
     <Feature Id="MainFeature" Title="NanoBot.net" Level="1">
       <ComponentGroupRef Id="PublishedFiles" />
       <ComponentRef Id="StartMenuShortcuts" />
+      <ComponentRef Id="DesktopShortcut" />
       <ComponentRef Id="UserPathEnvironment" />
     </Feature>
   </Package>

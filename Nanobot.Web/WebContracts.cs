@@ -22,6 +22,27 @@ public sealed record RuntimeStatusResponse(
     string? Error,
     string? Warning);
 
+public sealed record ModelSettingsResponse(
+    string ProviderId,
+    string ApiBase,
+    string Model,
+    bool HasApiKey,
+    string ApiKeyPreview,
+    string KeySource,
+    string ConfigPath);
+
+public sealed record SaveModelSettingsRequest(
+    string? ProviderId,
+    string? ApiKey,
+    string? ApiBase,
+    string? Model,
+    bool ClearApiKey);
+
+public sealed record SaveModelSettingsResponse(
+    string Message,
+    RuntimeStatusResponse Status,
+    ModelSettingsResponse Settings);
+
 public sealed record CreateSessionRequest(string? Title);
 
 public sealed record WebSessionSummary(

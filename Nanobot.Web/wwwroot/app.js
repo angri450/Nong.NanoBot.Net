@@ -2,10 +2,11 @@ const i18n = {
   zh: {
     product: "NanoBot.net",
     workbench: "Agent 工作台",
-    railChat: "聊",
-    railFiles: "文",
-    railTools: "工",
-    railMemory: "忆",
+    railChat: "对话",
+    railFiles: "文件",
+    railTools: "工具",
+    railMemory: "记忆",
+    railSettings: "设置",
     sessions: "会话",
     newSession: "新建",
     workspaceFiles: "工作区文件",
@@ -67,15 +68,31 @@ const i18n = {
     planHint: "发送任务后，工具调用和会话进展会在这里沉淀。",
     todoRuntime: "确认运行时就绪",
     todoFiles: "选择工作区上下文",
-    todoSend: "发送下一步任务"
+    todoSend: "发送下一步任务",
+    modelSettings: "模型设置",
+    provider: "Provider",
+    apiBase: "API 地址",
+    modelId: "模型 ID",
+    apiKey: "调用密钥",
+    saveSettings: "保存并重载",
+    clearKey: "清空 Key",
+    keyConfigured: "Key 已配置",
+    keyMissing: "Key 未配置",
+    keySourceConfig: "当前 Key 来自本机配置。",
+    keySourceEnvironment: "当前 Key 来自环境变量 DMX_API_KEY，表单不会覆盖它的运行时优先级。",
+    keySourceNone: "请输入中转站调用密钥，保存后写入本机配置。",
+    keepExistingKey: "留空表示保留现有 Key。",
+    settingsSaved: "模型配置已保存。",
+    settingsError: "设置保存失败"
   },
   en: {
     product: "NanoBot.net",
     workbench: "Agent Workbench",
-    railChat: "C",
-    railFiles: "F",
-    railTools: "T",
-    railMemory: "M",
+    railChat: "Chat",
+    railFiles: "Files",
+    railTools: "Tools",
+    railMemory: "Memory",
+    railSettings: "Settings",
     sessions: "Sessions",
     newSession: "New",
     workspaceFiles: "Workspace Files",
@@ -137,7 +154,22 @@ const i18n = {
     planHint: "Send a task and runtime progress will collect here.",
     todoRuntime: "Confirm runtime readiness",
     todoFiles: "Choose workspace context",
-    todoSend: "Send the next task"
+    todoSend: "Send the next task",
+    modelSettings: "Model Settings",
+    provider: "Provider",
+    apiBase: "API Base",
+    modelId: "Model ID",
+    apiKey: "API Key",
+    saveSettings: "Save and reload",
+    clearKey: "Clear Key",
+    keyConfigured: "Key configured",
+    keyMissing: "Key missing",
+    keySourceConfig: "Current key is loaded from local config.",
+    keySourceEnvironment: "Current key is loaded from DMX_API_KEY. Form changes do not override environment priority.",
+    keySourceNone: "Enter the relay API key; it will be saved to local config.",
+    keepExistingKey: "Leave blank to keep the existing key.",
+    settingsSaved: "Model settings saved.",
+    settingsError: "Settings save failed"
   }
 };
 
@@ -150,7 +182,8 @@ const state = {
   currentPath: "",
   toolEvents: [],
   selectedEventKey: "",
-  isRunning: false
+  isRunning: false,
+  modelSettings: null
 };
 
 applyHashPreferences();
@@ -173,6 +206,15 @@ const elements = {
   runtimeModelPill: document.getElementById("runtimeModelPill"),
   runtimeNongPill: document.getElementById("runtimeNongPill"),
   runtimeNotice: document.getElementById("runtimeNotice"),
+  modelSettingsForm: document.getElementById("modelSettingsForm"),
+  providerId: document.getElementById("providerId"),
+  apiBase: document.getElementById("apiBase"),
+  modelId: document.getElementById("modelId"),
+  apiKey: document.getElementById("apiKey"),
+  apiKeyHint: document.getElementById("apiKeyHint"),
+  keyStatus: document.getElementById("keyStatus"),
+  clearApiKey: document.getElementById("clearApiKey"),
+  settingsNotice: document.getElementById("settingsNotice"),
   sessionTitle: document.getElementById("sessionTitle"),
   sessionCount: document.getElementById("sessionCount"),
   prompt: document.getElementById("prompt"),
@@ -201,6 +243,7 @@ function applyLanguage() {
   renderSessions();
   renderEvents();
   renderToolDetail();
+  renderModelSettings();
   updateSendState();
 }
 
@@ -306,6 +349,10 @@ function appendMessage(node, text) {
 
 async function loadStatus() {
   const status = await apiJson("/api/runtime/status");
+  applyStatus(status);
+}
+
+function applyStatus(status) {
   const ready = status.ready ?? status.Ready ?? false;
   const warning = status.warning || status.Warning || "";
   const error = status.error || status.Error || "";
@@ -333,6 +380,43 @@ async function loadStatus() {
   }
 
   updateSendState();
+}
+
+async function loadModelSettings() {
+  state.modelSettings = await apiJson("/api/settings/model");
+  renderModelSettings();
+}
+
+function renderModelSettings() {
+  if (!elements.modelSettingsForm || !state.modelSettings) {
+    return;
+  }
+
+  const settings = state.modelSettings;
+  elements.providerId.value = settings.providerId || settings.ProviderId || "dmx";
+  elements.apiBase.value = settings.apiBase || settings.ApiBase || "https://www.dmxapi.cn/v1/";
+  elements.modelId.value = settings.model || settings.Model || "deepseek-v4-pro-guan";
+  elements.apiKey.value = "";
+
+  const hasKey = settings.hasApiKey ?? settings.HasApiKey ?? false;
+  const keySource = settings.keySource || settings.KeySource || "none";
+  const preview = settings.apiKeyPreview || settings.ApiKeyPreview || "";
+  elements.keyStatus.textContent = hasKey ? t("keyConfigured") : t("keyMissing");
+  elements.keyStatus.className = `section-count ${hasKey ? "status-ready" : "status-error"}`;
+
+  let sourceText = t("keySourceNone");
+  if (keySource === "config") {
+    sourceText = `${t("keySourceConfig")} ${preview ? `(${preview})` : ""} ${t("keepExistingKey")}`;
+  } else if (keySource === "environment") {
+    sourceText = `${t("keySourceEnvironment")} ${preview ? `(${preview})` : ""}`;
+  }
+  elements.apiKeyHint.textContent = sourceText;
+}
+
+function showSettingsNotice(message, kind = "info") {
+  elements.settingsNotice.hidden = false;
+  elements.settingsNotice.textContent = message;
+  elements.settingsNotice.className = `settings-notice ${kind}`;
 }
 
 function updateSendState() {
@@ -608,6 +692,64 @@ elements.refreshFiles.addEventListener("click", () => {
   });
 });
 
+elements.modelSettingsForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  showSettingsNotice(t("running"), "info");
+  try {
+    const result = await apiJson("/api/settings/model", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        providerId: elements.providerId.value,
+        apiKey: elements.apiKey.value,
+        apiBase: elements.apiBase.value,
+        model: elements.modelId.value,
+        clearApiKey: false
+      })
+    });
+    state.modelSettings = result.settings || result.Settings;
+    const status = result.status || result.Status;
+    if (status) {
+      applyStatus(status);
+    } else {
+      await loadStatus();
+    }
+    renderModelSettings();
+    showSettingsNotice(result.message || result.Message || t("settingsSaved"), "success");
+    addMessage("system", result.message || result.Message || t("settingsSaved"));
+  } catch (error) {
+    showSettingsNotice(`${t("settingsError")}: ${error.message}`, "error");
+  }
+});
+
+elements.clearApiKey.addEventListener("click", async () => {
+  showSettingsNotice(t("running"), "info");
+  try {
+    const result = await apiJson("/api/settings/model", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        providerId: elements.providerId.value,
+        apiKey: "",
+        apiBase: elements.apiBase.value,
+        model: elements.modelId.value,
+        clearApiKey: true
+      })
+    });
+    state.modelSettings = result.settings || result.Settings;
+    const status = result.status || result.Status;
+    if (status) {
+      applyStatus(status);
+    } else {
+      await loadStatus();
+    }
+    renderModelSettings();
+    showSettingsNotice(result.message || result.Message || t("settingsSaved"), "success");
+  } catch (error) {
+    showSettingsNotice(`${t("settingsError")}: ${error.message}`, "error");
+  }
+});
+
 elements.languageToggle.addEventListener("click", () => {
   state.language = state.language === "zh" ? "en" : "zh";
   localStorage.setItem("nanobot.language", state.language);
@@ -629,6 +771,7 @@ async function boot() {
   renderToolDetail();
   await Promise.all([
     loadStatus().catch(error => addMessage("system", `${t("statusError")}: ${error.message}`)),
+    loadModelSettings().catch(error => showSettingsNotice(`${t("settingsError")}: ${error.message}`, "error")),
     loadSessions().catch(error => addMessage("system", `${t("requestError")}: ${error.message}`)),
     loadFiles("").catch(error => {
       elements.fileList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
