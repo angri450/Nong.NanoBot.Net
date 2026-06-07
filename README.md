@@ -36,6 +36,7 @@ It is not a hardened public multi-tenant service yet. Treat it as a strong perso
 | MCP | Complete | stdio, streamable HTTP, SSE endpoint discovery, `tools/list`, `tools/call` |
 | Channels | Complete baseline | Telegram plus Slack, Discord, Feishu HTTP callback / REST adapters |
 | Gateway | Complete | CLI, WebSocket gateway with token auth, chat gateway with cron |
+| WebUI | P2 usable | Chinese-first browser workbench, streaming chat, persisted sessions, workspace file tree, tool-call details, dark/light themes |
 | Heartbeat | Complete | `HEARTBEAT.md` active task detection and gateway startup wiring |
 | Tools | Complete | Files, shell, Nong CLI bridge, web, weather, stocks via CSV API, GitHub, summarize, memory |
 | Safety | Complete baseline | SSRF guard, workspace-bounded shell, structured tool errors |
@@ -91,7 +92,7 @@ Workspace layout:
 
 ## WebUI
 
-`Nanobot.Web` is a local browser workbench for using the runtime visually. It exposes runtime status, session chat, server-sent tool events, and memory preview through an ASP.NET Core backend and a static HTML/CSS/JS frontend.
+`Nanobot.Web` is a local browser workbench for using the runtime visually. It exposes runtime status, streaming session chat, persisted WebUI sessions, workspace file browsing and preview, server-sent tool events with detail inspection, and memory preview through an ASP.NET Core backend and a static HTML/CSS/JS frontend.
 
 ```bash
 dotnet run --project Nanobot.Web --urls http://127.0.0.1:8788
@@ -104,6 +105,15 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
 ```
 
 The workbench still loads when provider configuration is incomplete. It reports the runtime error in the status panel and enables chat after `~/.nanobot/config.json` or provider environment variables are configured and the WebUI is restarted.
+
+Current WebUI behavior:
+
+- Chinese is the default UI language, with an optional English toggle.
+- Dark and light themes are both supported from the header toggle.
+- Chat uses the runtime streaming path and renders partial assistant output as it arrives.
+- WebUI sessions are persisted under `~/.nanobot/workspace/.webui/sessions.json`.
+- Workspace file browsing is restricted to `~/.nanobot/workspace`; internal `.webui` files are hidden.
+- Tool calls are shown in a live event timeline with a detail panel for run/session/tool/error/content fields.
 
 ## Configuration
 

@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f1f22">
   <title>NanoBot.net Workbench</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -10,32 +11,47 @@
   <div class="app-shell">
     <aside class="rail">
       <div class="brand-mark">N</div>
-      <button class="rail-button active" title="Chat">C</button>
-      <button class="rail-button" title="Files">F</button>
-      <button class="rail-button" title="Memory">M</button>
-      <button class="rail-button" title="Tools">T</button>
+      <button class="rail-button active" data-view="chat" data-i18n="railChat" title="对话">聊</button>
+      <button class="rail-button" data-view="files" data-i18n="railFiles" title="文件">文</button>
+      <button class="rail-button" data-view="tools" data-i18n="railTools" title="工具">工</button>
+      <button class="rail-button" data-view="memory" data-i18n="railMemory" title="记忆">忆</button>
     </aside>
 
     <aside class="sidebar">
       <header class="sidebar-header">
         <div>
-          <div class="eyebrow">NanoBot.net</div>
-          <h1>Agent Workbench</h1>
+          <div class="eyebrow" data-i18n="product">NanoBot.net</div>
+          <h1 data-i18n="workbench">Agent 工作台</h1>
         </div>
-        <button id="newSession" class="icon-button" title="New session">+</button>
+        <div class="header-actions">
+          <button id="themeToggle" class="mini-button" type="button">浅色</button>
+          <button id="languageToggle" class="icon-button wide" type="button">EN</button>
+        </div>
       </header>
 
       <section class="panel-block">
-        <div class="section-title">Sessions</div>
+        <div class="section-head">
+          <div class="section-title" data-i18n="sessions">会话</div>
+          <button id="newSession" class="mini-button" type="button" data-i18n="newSession">新建</button>
+        </div>
         <div id="sessions" class="session-list"></div>
       </section>
 
       <section class="panel-block">
-        <div class="section-title">Runtime</div>
+        <div class="section-head">
+          <div class="section-title" data-i18n="workspaceFiles">工作区文件</div>
+          <button id="refreshFiles" class="mini-button" type="button" data-i18n="refresh">刷新</button>
+        </div>
+        <div id="filePath" class="path-chip"></div>
+        <div id="fileList" class="file-list"></div>
+      </section>
+
+      <section class="panel-block">
+        <div class="section-title" data-i18n="runtime">运行时</div>
         <dl class="runtime-list">
-          <div><dt>Status</dt><dd id="runtimeStatus">Loading</dd></div>
-          <div><dt>Model</dt><dd id="runtimeModel">Loading</dd></div>
-          <div><dt>Workspace</dt><dd id="runtimeWorkspace">Loading</dd></div>
+          <div><dt data-i18n="status">状态</dt><dd id="runtimeStatus">Loading</dd></div>
+          <div><dt data-i18n="model">模型</dt><dd id="runtimeModel">Loading</dd></div>
+          <div><dt data-i18n="workspace">工作区</dt><dd id="runtimeWorkspace">Loading</dd></div>
           <div><dt>Nong</dt><dd id="runtimeNong">Loading</dd></div>
         </dl>
         <div id="runtimeNotice" class="runtime-notice" hidden></div>
@@ -45,30 +61,39 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <div class="eyebrow">Local-first agent runtime</div>
-          <h2 id="sessionTitle">GroundPA Session</h2>
+          <div class="eyebrow" data-i18n="localRuntime">本地 Agent 运行时</div>
+          <h2 id="sessionTitle">NanoBot 会话</h2>
         </div>
         <div class="topbar-actions">
-          <button id="reloadStatus" class="secondary-button">Reload</button>
-          <a class="secondary-button" href="/api/runtime/status" target="_blank">Status JSON</a>
+          <button id="reloadStatus" class="secondary-button" type="button" data-i18n="reload">重载</button>
+          <a class="secondary-button" href="/api/runtime/status" target="_blank" data-i18n="statusJson">状态 JSON</a>
         </div>
       </header>
 
       <section id="messages" class="messages"></section>
 
       <form id="composer" class="composer">
-        <textarea id="prompt" rows="3" placeholder="What should NanoBot do next?"></textarea>
-        <button id="sendButton" type="submit" disabled>Send</button>
+        <textarea id="prompt" rows="3" placeholder="输入下一步要 NanoBot 做的事情..."></textarea>
+        <button id="sendButton" type="submit" disabled data-i18n="send">发送</button>
       </form>
     </main>
 
     <aside class="inspector">
       <section class="inspector-section">
-        <div class="section-title">Tool Events</div>
+        <div class="section-title" data-i18n="toolTimeline">工具时间线</div>
         <div id="events" class="event-list"></div>
       </section>
       <section class="inspector-section">
-        <div class="section-title">Memory Preview</div>
+        <div class="section-title" data-i18n="toolDetail">工具详情</div>
+        <div id="toolDetail" class="tool-detail"></div>
+      </section>
+      <section class="inspector-section">
+        <div class="section-title" data-i18n="filePreview">文件预览</div>
+        <div id="filePreviewTitle" class="preview-title"></div>
+        <pre id="filePreview" class="file-preview"></pre>
+      </section>
+      <section class="inspector-section">
+        <div class="section-title" data-i18n="memoryPreview">记忆预览</div>
         <pre id="memoryPreview" class="memory-preview">Loading</pre>
       </section>
     </aside>

@@ -8,6 +8,7 @@ using Nanobot.Core.Mcp;
 using Nanobot.Core.Providers;
 using Nanobot.Core.Tools;
 using Nanobot.Core.Tools.Builtin;
+using Nanobot.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,43 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapGet("/api/runtime/status", (NanobotWebRuntime runtime) => runtime.GetStatus());
+
+app.MapGet("/api/sessions", (NanobotWebRuntime runtime) => runtime.ListSessions());
+
+app.MapPost("/api/sessions", (CreateSessionRequest request, NanobotWebRuntime runtime) =>
+    runtime.CreateSession(request));
+
+app.MapGet("/api/sessions/{sessionId}", (string sessionId, NanobotWebRuntime runtime) =>
+{
+    var session = runtime.GetSession(sessionId);
+    return session is null
+        ? Results.NotFound(new ApiErrorResponse("Session not found."))
+        : Results.Ok(session);
+});
+
+app.MapGet("/api/workspace/files", (string? path, NanobotWebRuntime runtime) =>
+{
+    try
+    {
+        return Results.Ok(runtime.ListFiles(path));
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new ApiErrorResponse(ex.Message));
+    }
+});
+
+app.MapGet("/api/workspace/file", (string? path, NanobotWebRuntime runtime) =>
+{
+    try
+    {
+        return Results.Ok(runtime.ReadFile(path));
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new ApiErrorResponse(ex.Message));
+    }
+});
 
 app.MapPost("/api/agent/message", async Task<IResult> (
     AgentMessageRequest request,
@@ -54,6 +92,55 @@ app.MapPost("/api/agent/message", async Task<IResult> (
     }
 });
 
+app.MapPost("/api/agent/stream", async (
+    AgentMessageRequest request,
+    NanobotWebRuntime runtime,
+    HttpContext context,
+    CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Message))
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await context.Response.WriteAsJsonAsync(
+            new ApiErrorResponse("Message is required."),
+            cancellationToken);
+        return;
+    }
+
+    context.Response.Headers.ContentType = "application/x-ndjson";
+    context.Response.Headers.CacheControl = "no-cache";
+
+    try
+    {
+        var response = await runtime.SendMessageStreamingAsync(
+            request,
+            async (streamEvent, token) =>
+            {
+                await WriteNdjsonAsync(context, streamEvent, token);
+            },
+            cancellationToken);
+
+        await WriteNdjsonAsync(
+            context,
+            new AgentStreamEvent("complete", response.SessionId, Answer: response.Answer),
+            cancellationToken);
+    }
+    catch (InvalidOperationException ex)
+    {
+        await WriteNdjsonAsync(
+            context,
+            new AgentStreamEvent("error", runtime.ResolveSessionId(request.SessionId), Error: ex.Message),
+            cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        await WriteNdjsonAsync(
+            context,
+            new AgentStreamEvent("error", runtime.ResolveSessionId(request.SessionId), Error: $"Agent request failed: {ex.Message}"),
+            cancellationToken);
+    }
+});
+
 app.MapGet("/api/events", async (
     HttpContext context,
     NanobotWebRuntime runtime,
@@ -74,12 +161,25 @@ app.MapGet("/favicon.ico", () => Results.NoContent());
 
 app.Run();
 
+static async Task WriteNdjsonAsync(
+    HttpContext context,
+    AgentStreamEvent streamEvent,
+    CancellationToken cancellationToken)
+{
+    await context.Response.WriteAsync(
+        JsonSerializer.Serialize(streamEvent, NanobotWebJson.EventOptions) + "\n",
+        cancellationToken);
+    await context.Response.Body.FlushAsync(cancellationToken);
+}
+
 public sealed class NanobotWebRuntime
 {
     private readonly string _workspace;
     private readonly AppConfig _config;
     private readonly RuntimeEventBus _eventBus = new();
     private readonly FileMemoryStore _memory;
+    private readonly WebSessionStore _sessions;
+    private readonly WorkspaceFileBrowser _files;
     private readonly ILLMProvider? _provider;
     private readonly Agent? _agent;
     private readonly string? _startupError;
@@ -94,6 +194,8 @@ public sealed class NanobotWebRuntime
         Directory.CreateDirectory(_workspace);
 
         _memory = new FileMemoryStore(_workspace);
+        _sessions = new WebSessionStore(_workspace);
+        _files = new WorkspaceFileBrowser(_workspace);
 
         try
         {
@@ -139,6 +241,44 @@ public sealed class NanobotWebRuntime
         );
     }
 
+    public IReadOnlyList<WebSessionSummary> ListSessions()
+    {
+        var sessions = _sessions.List();
+        return sessions.Count == 0
+            ? new[] { _sessions.Create() }.Select(session => new WebSessionSummary(
+                session.Id,
+                session.Title,
+                session.CreatedAt,
+                session.UpdatedAt,
+                session.Messages.Count)).ToList()
+            : sessions;
+    }
+
+    public WebSessionDto CreateSession(CreateSessionRequest request)
+    {
+        return _sessions.Create(request.Title);
+    }
+
+    public WebSessionDto? GetSession(string sessionId)
+    {
+        return _sessions.Get(sessionId);
+    }
+
+    public WorkspaceFileListResponse ListFiles(string? path)
+    {
+        return _files.List(path);
+    }
+
+    public WorkspaceFileContentResponse ReadFile(string? path)
+    {
+        return _files.Read(path);
+    }
+
+    public string ResolveSessionId(string? sessionId)
+    {
+        return _sessions.GetOrCreate(sessionId).Id;
+    }
+
     public async Task<AgentMessageResponse> SendMessageAsync(AgentMessageRequest request, CancellationToken cancellationToken)
     {
         if (_agent is null)
@@ -146,12 +286,49 @@ public sealed class NanobotWebRuntime
             throw new InvalidOperationException(_startupError ?? "Agent runtime is not ready.");
         }
 
-        var sessionId = string.IsNullOrWhiteSpace(request.SessionId) ? "web-default" : request.SessionId;
+        var sessionId = ResolveSessionId(request.SessionId);
+        _sessions.AppendMessage(sessionId, "user", request.Message ?? "");
+
         var context = AgentExecutionContext.CreateRoot(_workspace) with
         {
             SessionId = sessionId
         };
-        var answer = await _agent.RunAsync(request.Message, context);
+        var answer = await _agent.RunAsync(request.Message ?? "", context);
+        _sessions.AppendMessage(sessionId, "assistant", answer);
+        return new AgentMessageResponse(sessionId, answer);
+    }
+
+    public async Task<AgentMessageResponse> SendMessageStreamingAsync(
+        AgentMessageRequest request,
+        Func<AgentStreamEvent, CancellationToken, Task> onStreamEventAsync,
+        CancellationToken cancellationToken)
+    {
+        if (_agent is null)
+        {
+            throw new InvalidOperationException(_startupError ?? "Agent runtime is not ready.");
+        }
+
+        var sessionId = ResolveSessionId(request.SessionId);
+        var message = request.Message ?? "";
+        _sessions.AppendMessage(sessionId, "user", message);
+
+        await onStreamEventAsync(new AgentStreamEvent("session", sessionId), cancellationToken);
+
+        var context = AgentExecutionContext.CreateRoot(_workspace) with
+        {
+            SessionId = sessionId
+        };
+
+        var answer = await _agent.RunStreamingAsync(
+            message,
+            context,
+            async (delta, token) =>
+            {
+                await onStreamEventAsync(new AgentStreamEvent("delta", sessionId, Content: delta), token);
+            },
+            cancellationToken);
+
+        _sessions.AppendMessage(sessionId, "assistant", answer);
         return new AgentMessageResponse(sessionId, answer);
     }
 
@@ -242,21 +419,6 @@ public sealed class NanobotWebRuntime
         return value.Length <= maxChars ? value : value[..maxChars] + "\n... (truncated)";
     }
 }
-
-public sealed record AgentMessageRequest(string SessionId, string Message);
-
-public sealed record AgentMessageResponse(string SessionId, string Answer);
-
-public sealed record ApiErrorResponse(string Error);
-
-public sealed record RuntimeStatusResponse(
-    string Workspace,
-    string Model,
-    bool NongEnabled,
-    string MemoryPreview,
-    bool Ready,
-    string? Error,
-    string? Warning);
 
 public static class NanobotWebJson
 {
