@@ -16,6 +16,7 @@ This file defines the working direction for development inside this repository.
 
 - Target .NET 8 unless the user explicitly changes the platform plan.
 - Keep the repo usable from CLI first, then WebUI, then optional native shells such as WinUI.
+- For desktop distribution, MSI is acceptable, but do not build a WebView2/Electron/browser-shell desktop client. If a desktop client is added, it must be native UI such as WinUI or WPF talking to NanoBot runtime APIs.
 - Preserve the local-first model: `~/.nanobot/config.json`, `~/.nanobot/workspace`, local memory files, local session data, and no required cloud control plane.
 - Keep tool execution explicit, bounded, and inspectable. High-risk bridges such as Nong must use argument arrays, workspace boundaries, allowlists, timeouts, and capped output.
 - Prefer existing project patterns in `Nanobot.Core`, `Nanobot.CLI`, `Nanobot.Web`, and tests before introducing new abstractions.
