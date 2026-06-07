@@ -2,4 +2,5 @@
   <Project Path="Nanobot.CLI/Nanobot.CLI.csproj" />
   <Project Path="Nanobot.Core/Nanobot.Core.csproj" />
   <Project Path="Nanobot.Tests/Nanobot.Tests.csproj" />
+  <Project Path="Nanobot.Web/Nanobot.Web.csproj" />
 </Solution>

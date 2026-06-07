@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NanoBot.net Workbench</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <div class="brand-mark">N</div>
+      <button class="rail-button active" title="Chat">C</button>
+      <button class="rail-button" title="Files">F</button>
+      <button class="rail-button" title="Memory">M</button>
+      <button class="rail-button" title="Tools">T</button>
+    </aside>
+
+    <aside class="sidebar">
+      <header class="sidebar-header">
+        <div>
+          <div class="eyebrow">NanoBot.net</div>
+          <h1>Agent Workbench</h1>
+        </div>
+        <button id="newSession" class="icon-button" title="New session">+</button>
+      </header>
+
+      <section class="panel-block">
+        <div class="section-title">Sessions</div>
+        <div id="sessions" class="session-list"></div>
+      </section>
+
+      <section class="panel-block">
+        <div class="section-title">Runtime</div>
+        <dl class="runtime-list">
+          <div><dt>Status</dt><dd id="runtimeStatus">Loading</dd></div>
+          <div><dt>Model</dt><dd id="runtimeModel">Loading</dd></div>
+          <div><dt>Workspace</dt><dd id="runtimeWorkspace">Loading</dd></div>
+          <div><dt>Nong</dt><dd id="runtimeNong">Loading</dd></div>
+        </dl>
+        <div id="runtimeNotice" class="runtime-notice" hidden></div>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Local-first agent runtime</div>
+          <h2 id="sessionTitle">GroundPA Session</h2>
+        </div>
+        <div class="topbar-actions">
+          <button id="reloadStatus" class="secondary-button">Reload</button>
+          <a class="secondary-button" href="/api/runtime/status" target="_blank">Status JSON</a>
+        </div>
+      </header>
+
+      <section id="messages" class="messages"></section>
+
+      <form id="composer" class="composer">
+        <textarea id="prompt" rows="3" placeholder="What should NanoBot do next?"></textarea>
+        <button id="sendButton" type="submit" disabled>Send</button>
+      </form>
+    </main>
+
+    <aside class="inspector">
+      <section class="inspector-section">
+        <div class="section-title">Tool Events</div>
+        <div id="events" class="event-list"></div>
+      </section>
+      <section class="inspector-section">
+        <div class="section-title">Memory Preview</div>
+        <pre id="memoryPreview" class="memory-preview">Loading</pre>
+      </section>
+    </aside>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

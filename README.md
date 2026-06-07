@@ -86,7 +86,24 @@ Workspace layout:
 | `dotnet run --project Nanobot.CLI -- agent -m "..."` | Single-turn agent run |
 | `dotnet run --project Nanobot.CLI -- gateway` | Start enabled chat channels, cron, Dream, heartbeat |
 | `dotnet run --project Nanobot.CLI -- websocket` | Start WebSocket agent gateway |
+| `dotnet run --project Nanobot.Web` | Start the local browser workbench |
 | `dotnet run --project Nanobot.CLI -- onboard` | Create default config and workspace |
+
+## WebUI
+
+`Nanobot.Web` is a local browser workbench for using the runtime visually. It exposes runtime status, session chat, server-sent tool events, and memory preview through an ASP.NET Core backend and a static HTML/CSS/JS frontend.
+
+```bash
+dotnet run --project Nanobot.Web --urls http://127.0.0.1:8788
+```
+
+The normal command requires the .NET 8 SDK and ASP.NET Core Runtime 8. On a machine without the ASP.NET Core 8 runtime, run it self-contained:
+
+```bash
+dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0.0.1:8788
+```
+
+The workbench still loads when provider configuration is incomplete. It reports the runtime error in the status panel and enables chat after `~/.nanobot/config.json` or provider environment variables are configured and the WebUI is restarted.
 
 ## Configuration
 

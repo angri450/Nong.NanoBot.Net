@@ -86,7 +86,24 @@ dotnet run --project Nanobot.CLI
 | `dotnet run --project Nanobot.CLI -- agent -m "..."` | 单轮 Agent 执行 |
 | `dotnet run --project Nanobot.CLI -- gateway` | 启动已启用的聊天通道、cron、Dream、heartbeat |
 | `dotnet run --project Nanobot.CLI -- websocket` | 启动 WebSocket Agent 网关 |
+| `dotnet run --project Nanobot.Web` | 启动本地浏览器工作台 |
 | `dotnet run --project Nanobot.CLI -- onboard` | 创建默认配置和工作区 |
+
+## WebUI
+
+`Nanobot.Web` 是本地浏览器工作台，用来可视化使用 NanoBot.net runtime。它通过 ASP.NET Core 后端和静态 HTML/CSS/JS 前端提供 runtime 状态、session 聊天、SSE 工具事件和记忆预览。
+
+```bash
+dotnet run --project Nanobot.Web --urls http://127.0.0.1:8788
+```
+
+常规命令需要 .NET 8 SDK 和 ASP.NET Core Runtime 8。如果机器上没有 ASP.NET Core 8 runtime，可以用 self-contained 方式运行：
+
+```bash
+dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0.0.1:8788
+```
+
+即使 Provider 配置不完整，工作台页面也会正常加载。它会在状态面板显示 runtime 错误，并在 `~/.nanobot/config.json` 或 Provider 环境变量配置好并重启 WebUI 后启用聊天。
 
 ## 配置
 
