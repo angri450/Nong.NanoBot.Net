@@ -366,6 +366,55 @@ POST /api/runs/{id}/interrupt
 
 现有 API 可以先保持兼容；新增能力优先围绕这条边界扩展，避免 UI 直接碰 `AgentLoop` 内部。
 
+## GitCode / CodingPlan 吸收路线
+
+AtomCode.net 是 GitCode 免费模型通道的重要参考线，但它不是 NanoBot.net 的新主线，也不应成为 NanoBot 的运行时依赖。NanoBot 要吸收的是“GitCode 登录、CodingPlan 领取、模型目录同步、provider 自动注册、WebUI 控制面”这条产品链路。
+
+详细分析见：
+
+```text
+docs/atomcode-gitcode-codingplan-analysis.zh-CN.md
+```
+
+当前判断：
+
+- 短期默认模型仍保留 DMX `deepseek-v4-pro-guan`，因为它已经能正常对话。
+- GitCode/CodingPlan 作为第二条模型主线接入，优先实现登录、领取、模型同步和状态展示。
+- `gitcode-codingplan` 应作为特殊 provider kind，而不是普通 `openai-compatible` API-key provider。
+- 不复制或逆向 AtomCode 的私有请求签名 overlay。
+- 如果免费网关调用需要官方签名能力，NanoBot 只能选择公开授权协议、官方 AtomCode bridge，或继续回退 DMX。
+
+建议新增 API：
+
+```text
+GET    /api/gitcode/auth/status
+POST   /api/gitcode/auth/login/start
+POST   /api/gitcode/auth/login/{loginId}/poll
+DELETE /api/gitcode/auth/login/{loginId}
+POST   /api/gitcode/auth/logout
+POST   /api/gitcode/codingplan/setup
+GET    /api/gitcode/codingplan/status
+GET    /api/gitcode/codingplan/models
+```
+
+建议新增本地状态：
+
+```text
+~/.nanobot/
+  auth/
+    gitcode.json
+```
+
+WebUI 中要把 GitCode 免费模型做成明确入口：
+
+- 登录 GitCode
+- 同步免费模型
+- 显示领取状态、额度、过期时间、模型上下文窗口
+- 区分“模型已同步”和“模型可调用”
+- 网关不可调用时继续显示 DMX fallback
+
+DeepSeek-TUI 只作为 DeepSeek V4 模型策略参考。可吸收 `deepseek-v4-flash` / `deepseek-v4-pro`、1M context 认知、`off/high/max` thinking、以及简单任务走 Flash、复杂任务升 Pro 的 auto mode 思路。价格信息必须独立校验，不从参考仓库直接固化。
+
 ## 模型配置方案
 
 默认配置：
