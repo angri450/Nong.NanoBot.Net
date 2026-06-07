@@ -52,8 +52,8 @@ cd NanoBot.net
 # 2. 创建 ~/.nanobot/config.json 和 ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. 在 ~/.nanobot/config.json 中填 API key
-#    或设置 OPENAI_API_KEY
+# 3. 在 ~/.nanobot/config.json 中填 DMX API key
+#    或设置 DMX_API_KEY
 
 # 4. 开始聊天
 dotnet run --project Nanobot.CLI
@@ -117,20 +117,20 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
 
 ## 配置
 
-最小 OpenAI 兼容配置：
+最小 DMX DeepSeek V4 Pro 配置：
 
 ```json
 {
   "providers": {
-    "openai": {
+    "dmx": {
       "kind": "openai-compatible",
       "apiKey": "sk-...",
-      "apiBase": "https://api.openai.com/v1/",
-      "defaultModel": "gpt-4o",
+      "apiBase": "https://www.dmxapi.cn/v1/",
+      "defaultModel": "deepseek-v4-pro-guan",
       "models": [
         {
-          "id": "gpt-4o",
-          "apiModelId": "gpt-4o",
+          "id": "deepseek-v4-pro-guan",
+          "apiModelId": "deepseek-v4-pro-guan",
           "supportsStreaming": true,
           "supportsTools": true
         }
@@ -139,8 +139,8 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
   },
   "agents": {
     "defaults": {
-      "model": "openai::gpt-4o",
-      "fallbackModels": ["openai::gpt-4o"],
+      "model": "dmx::deepseek-v4-pro-guan",
+      "fallbackModels": ["dmx::deepseek-v4-pro-guan"],
       "dream": {
         "enabled": true,
         "intervalHours": 6
@@ -158,10 +158,11 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
 ```json
 {
   "providers": {
-    "openai": {
+    "dmx": {
       "kind": "openai-compatible",
       "apiKey": "sk-...",
-      "defaultModel": "gpt-4o"
+      "apiBase": "https://www.dmxapi.cn/v1/",
+      "defaultModel": "deepseek-v4-pro-guan"
     },
     "anthropic": {
       "kind": "anthropic",
@@ -172,16 +173,16 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
       "kind": "azure-openai",
       "apiKey": "...",
       "endpoint": "https://example.openai.azure.com",
-      "deployment": "gpt-4o",
+      "deployment": "my-azure-deployment",
       "apiVersion": "2024-10-21"
     }
   },
   "agents": {
     "defaults": {
       "fallbackModels": [
-        "openai::gpt-4o",
+        "dmx::deepseek-v4-pro-guan",
         "anthropic::claude-sonnet-4-5",
-        "azure-openai::gpt-4o"
+        "azure-openai::my-azure-deployment"
       ]
     }
   }
@@ -314,6 +315,9 @@ CLI / Chat Gateway / WebSocket Gateway
 
 | 变量 | 用途 |
 | --- | --- |
+| `DMX_API_KEY` | DMX OpenAI 兼容中转 API key |
+| `DMX_API_BASE` | 覆盖 DMX base URL，默认 `https://www.dmxapi.cn/v1/` |
+| `DMX_MODEL` | 覆盖 DMX 模型，默认 `deepseek-v4-pro-guan` |
 | `OPENAI_API_KEY` | OpenAI 兼容 provider API key |
 | `OPENAI_API_BASE` | 覆盖 OpenAI 兼容 base URL |
 | `OPENAI_MODEL` | 覆盖默认模型，支持 `provider::model` |
@@ -337,7 +341,7 @@ dotnet test
 dotnet build
 
 # 真实集成测试需要凭据
-NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter RealIntegrationTests
+NANOBOT_RUN_INTEGRATION_TESTS=1 DMX_API_KEY=... dotnet test --filter RealIntegrationTests
 ```
 
 当前本地验证结果：

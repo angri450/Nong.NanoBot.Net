@@ -65,6 +65,51 @@ public class ConfigTests
     }
 
     [Fact]
+    public void ProviderConfigurationFactory_DmxEnvironmentConfiguresDefaultDeepSeekModel()
+    {
+        var result = ProviderConfigurationFactory.Create(new AppConfig(), Env(
+            ("DMX_API_KEY", "env-key")
+        ));
+
+        Assert.Equal("dmx::deepseek-v4-pro-guan", result.DefaultModel.UniqueId);
+        Assert.Equal("deepseek-v4-pro-guan", result.Provider.GetDefaultModel());
+    }
+
+    [Fact]
+    public void ProviderConfigurationFactory_DmxEnvironmentModelOverridesConfig()
+    {
+        var config = new AppConfig
+        {
+            Providers =
+            {
+                ["dmx"] = new ProviderSettings
+                {
+                    Kind = "openai-compatible",
+                    ApiKey = "config-key",
+                    ApiBase = "https://example.invalid/v1/",
+                    DefaultModel = "config-model"
+                }
+            },
+            Agents =
+            {
+                Defaults =
+                {
+                    Model = "dmx::config-model"
+                }
+            }
+        };
+
+        var result = ProviderConfigurationFactory.Create(config, Env(
+            ("DMX_API_KEY", "env-key"),
+            ("DMX_API_BASE", "https://www.dmxapi.cn/v1/"),
+            ("DMX_MODEL", "deepseek-v4-pro-guan")
+        ));
+
+        Assert.Equal("dmx::deepseek-v4-pro-guan", result.DefaultModel.UniqueId);
+        Assert.Equal("deepseek-v4-pro-guan", result.Provider.GetDefaultModel());
+    }
+
+    [Fact]
     public void ProviderConfigurationFactory_KeepsLegacyBareModelCompatible()
     {
         var config = new AppConfig

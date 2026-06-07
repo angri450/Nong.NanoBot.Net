@@ -52,8 +52,8 @@ cd NanoBot.net
 # 2. Create ~/.nanobot/config.json and ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. Add an API key to ~/.nanobot/config.json
-#    or export OPENAI_API_KEY
+# 3. Add a DMX API key to ~/.nanobot/config.json
+#    or export DMX_API_KEY
 
 # 4. Start interactive chat
 dotnet run --project Nanobot.CLI
@@ -117,20 +117,20 @@ Current WebUI behavior:
 
 ## Configuration
 
-Minimal OpenAI-compatible config:
+Minimal DMX DeepSeek V4 Pro config:
 
 ```json
 {
   "providers": {
-    "openai": {
+    "dmx": {
       "kind": "openai-compatible",
       "apiKey": "sk-...",
-      "apiBase": "https://api.openai.com/v1/",
-      "defaultModel": "gpt-4o",
+      "apiBase": "https://www.dmxapi.cn/v1/",
+      "defaultModel": "deepseek-v4-pro-guan",
       "models": [
         {
-          "id": "gpt-4o",
-          "apiModelId": "gpt-4o",
+          "id": "deepseek-v4-pro-guan",
+          "apiModelId": "deepseek-v4-pro-guan",
           "supportsStreaming": true,
           "supportsTools": true
         }
@@ -139,8 +139,8 @@ Minimal OpenAI-compatible config:
   },
   "agents": {
     "defaults": {
-      "model": "openai::gpt-4o",
-      "fallbackModels": ["openai::gpt-4o"],
+      "model": "dmx::deepseek-v4-pro-guan",
+      "fallbackModels": ["dmx::deepseek-v4-pro-guan"],
       "dream": {
         "enabled": true,
         "intervalHours": 6
@@ -158,10 +158,11 @@ Fallback across providers:
 ```json
 {
   "providers": {
-    "openai": {
+    "dmx": {
       "kind": "openai-compatible",
       "apiKey": "sk-...",
-      "defaultModel": "gpt-4o"
+      "apiBase": "https://www.dmxapi.cn/v1/",
+      "defaultModel": "deepseek-v4-pro-guan"
     },
     "anthropic": {
       "kind": "anthropic",
@@ -172,16 +173,16 @@ Fallback across providers:
       "kind": "azure-openai",
       "apiKey": "...",
       "endpoint": "https://example.openai.azure.com",
-      "deployment": "gpt-4o",
+      "deployment": "my-azure-deployment",
       "apiVersion": "2024-10-21"
     }
   },
   "agents": {
     "defaults": {
       "fallbackModels": [
-        "openai::gpt-4o",
+        "dmx::deepseek-v4-pro-guan",
         "anthropic::claude-sonnet-4-5",
-        "azure-openai::gpt-4o"
+        "azure-openai::my-azure-deployment"
       ]
     }
   }
@@ -314,6 +315,9 @@ Important implementation points:
 
 | Variable | Purpose |
 | --- | --- |
+| `DMX_API_KEY` | DMX OpenAI-compatible relay API key |
+| `DMX_API_BASE` | Override DMX base URL, default `https://www.dmxapi.cn/v1/` |
+| `DMX_MODEL` | Override DMX model, default `deepseek-v4-pro-guan` |
 | `OPENAI_API_KEY` | OpenAI-compatible provider API key |
 | `OPENAI_API_BASE` | Override OpenAI-compatible base URL |
 | `OPENAI_MODEL` | Override default model, supports `provider::model` |
@@ -337,7 +341,7 @@ dotnet test
 dotnet build
 
 # Real integration tests need credentials.
-NANOBOT_RUN_INTEGRATION_TESTS=1 OPENAI_API_KEY=... dotnet test --filter RealIntegrationTests
+NANOBOT_RUN_INTEGRATION_TESTS=1 DMX_API_KEY=... dotnet test --filter RealIntegrationTests
 ```
 
 Current local verification:

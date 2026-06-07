@@ -75,15 +75,15 @@ class Program
                 File.WriteAllText(configFile, """
                 {
                   "providers": {
-                    "openai": {
+                    "dmx": {
                       "kind": "openai-compatible",
                       "apiKey": "",
-                      "apiBase": null,
-                      "defaultModel": "gpt-4o",
+                      "apiBase": "https://www.dmxapi.cn/v1/",
+                      "defaultModel": "deepseek-v4-pro-guan",
                       "models": [
                         {
-                          "id": "gpt-4o",
-                          "apiModelId": "gpt-4o",
+                          "id": "deepseek-v4-pro-guan",
+                          "apiModelId": "deepseek-v4-pro-guan",
                           "supportsStreaming": true,
                           "supportsTools": true
                         }
@@ -92,9 +92,9 @@ class Program
                   },
                   "agents": {
                     "defaults": {
-                      "model": "openai::gpt-4o",
+                      "model": "dmx::deepseek-v4-pro-guan",
                       "fallbackModels": [
-                        "openai::gpt-4o"
+                        "dmx::deepseek-v4-pro-guan"
                       ]
                     }
                   },

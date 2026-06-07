@@ -23,13 +23,13 @@ public class RealIntegrationTests
             return;
         }
 
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-        Assert.False(string.IsNullOrWhiteSpace(apiKey), "OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
+        var apiKey = ResolveApiKey();
+        Assert.False(string.IsNullOrWhiteSpace(apiKey), "DMX_API_KEY or OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
 
         var provider = new OpenAICompatibleProvider(
             apiKey!,
-            Environment.GetEnvironmentVariable("OPENAI_API_BASE"),
-            ResolveOpenAIModel()
+            ResolveApiBase(),
+            ResolveModel()
         );
 
         var response = await provider.ChatAsync(
@@ -50,13 +50,13 @@ public class RealIntegrationTests
             return;
         }
 
-        var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-        Assert.False(string.IsNullOrWhiteSpace(apiKey), "OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
+        var apiKey = ResolveApiKey();
+        Assert.False(string.IsNullOrWhiteSpace(apiKey), "DMX_API_KEY or OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
 
         var provider = new OpenAICompatibleProvider(
             apiKey!,
-            Environment.GetEnvironmentVariable("OPENAI_API_BASE"),
-            ResolveOpenAIModel()
+            ResolveApiBase(),
+            ResolveModel()
         );
         var content = new StringBuilder();
         LLMResponse? finalResponse = null;
@@ -134,12 +134,25 @@ public class RealIntegrationTests
         return value is "1" or "true" or "TRUE" or "yes" or "YES";
     }
 
-    private static string ResolveOpenAIModel()
+    private static string? ResolveApiKey()
     {
-        var raw = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+        return Environment.GetEnvironmentVariable("DMX_API_KEY")
+            ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+    }
+
+    private static string? ResolveApiBase()
+    {
+        return Environment.GetEnvironmentVariable("DMX_API_BASE")
+            ?? Environment.GetEnvironmentVariable("OPENAI_API_BASE");
+    }
+
+    private static string ResolveModel()
+    {
+        var raw = Environment.GetEnvironmentVariable("DMX_MODEL")
+            ?? Environment.GetEnvironmentVariable("OPENAI_MODEL");
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return "gpt-4o";
+            return "deepseek-v4-pro-guan";
         }
 
         var separator = raw.IndexOf("::", StringComparison.Ordinal);

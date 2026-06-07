@@ -5,6 +5,9 @@ namespace Nanobot.Core.Config;
 public static class ProviderConfigurationFactory
 {
     private const string OpenAIProviderId = "openai";
+    private const string DmxProviderId = "dmx";
+    private const string DmxDefaultApiBase = "https://www.dmxapi.cn/v1/";
+    private const string DmxDefaultModel = "deepseek-v4-pro-guan";
 
     public static ProviderConfigurationResult Create(
         AppConfig config,
@@ -103,11 +106,16 @@ public static class ProviderConfigurationFactory
         AppConfig config,
         IReadOnlyDictionary<string, string?> environment)
     {
+        var hasDmxApiKey = TryGetEnvironmentValue(environment, "DMX_API_KEY", out _);
+        var hasDmxApiBase = TryGetEnvironmentValue(environment, "DMX_API_BASE", out _);
+        var hasDmxModelOverride = TryGetEnvironmentValue(environment, "DMX_MODEL", out var dmxModelOverride);
+        var hasDmxEnvironment = hasDmxApiKey || hasDmxApiBase || hasDmxModelOverride;
+
         var hasOpenAiModelOverride = TryGetEnvironmentValue(environment, "OPENAI_MODEL", out var openAiModelOverride);
         var shouldCreateOpenAi = providers.ContainsKey(OpenAIProviderId)
             || TryGetEnvironmentValue(environment, "OPENAI_API_KEY", out _)
             || TryGetEnvironmentValue(environment, "OPENAI_API_BASE", out _)
-            || RequiresOpenAIDefault(config, openAiModelOverride);
+            || (!hasDmxEnvironment && RequiresOpenAIDefault(config, openAiModelOverride));
 
         ProviderSettings? openAi = null;
         if (shouldCreateOpenAi)
@@ -131,6 +139,42 @@ public static class ProviderConfigurationFactory
                 openAi.DefaultModel = openAiModelOverride;
                 config.Agents.Defaults.Model = openAiModelOverride;
             }
+        }
+
+        var shouldCreateDmx = providers.ContainsKey(DmxProviderId)
+            || hasDmxApiKey
+            || hasDmxApiBase
+            || RequiresDmxDefault(config, dmxModelOverride);
+
+        ProviderSettings? dmx = null;
+        if (shouldCreateDmx)
+        {
+            dmx = GetOrCreateProvider(providers, DmxProviderId);
+            dmx.Kind ??= "openai-compatible";
+            dmx.ApiBase ??= DmxDefaultApiBase;
+            dmx.DefaultModel ??= DmxDefaultModel;
+
+            ApplyIfPresent(environment, "DMX_API_KEY", value => dmx.ApiKey = value);
+            ApplyIfPresent(environment, "DMX_API_BASE", value => dmx.ApiBase = value);
+        }
+
+        if (hasDmxModelOverride)
+        {
+            if (ModelReference.TryParse(dmxModelOverride, DmxProviderId, out var reference, out _))
+            {
+                config.Agents.Defaults.Provider = reference.ProviderId;
+                config.Agents.Defaults.Model = reference.UniqueId;
+            }
+            else if (dmx is not null)
+            {
+                dmx.DefaultModel = dmxModelOverride;
+                config.Agents.Defaults.Model = dmxModelOverride;
+            }
+        }
+        else if (hasDmxEnvironment && dmx is not null)
+        {
+            config.Agents.Defaults.Provider = DmxProviderId;
+            config.Agents.Defaults.Model = new ModelReference(DmxProviderId, dmx.DefaultModel ?? DmxDefaultModel).UniqueId;
         }
 
         if (TryGetEnvironmentValue(environment, "ANTHROPIC_API_KEY", out var anthropicKey))
@@ -181,6 +225,34 @@ public static class ProviderConfigurationFactory
         if (ModelReference.TryParse(config.Agents.Defaults.Model, OpenAIProviderId, out var configuredModel, out _))
         {
             return configuredModel.ProviderId.Equals(OpenAIProviderId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return false;
+    }
+
+    private static bool RequiresDmxDefault(AppConfig config, string? dmxModelOverride)
+    {
+        if (!string.IsNullOrWhiteSpace(dmxModelOverride)
+            && ModelReference.TryParse(dmxModelOverride, DmxProviderId, out var envModel, out _)
+            && envModel.ProviderId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.Agents.Defaults.Provider)
+            && config.Agents.Defaults.Provider.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(config.Agents.Defaults.Model))
+        {
+            return config.Providers.ContainsKey(DmxProviderId);
+        }
+
+        if (ModelReference.TryParse(config.Agents.Defaults.Model, DmxProviderId, out var configuredModel, out _))
+        {
+            return configuredModel.ProviderId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase);
         }
 
         return false;
