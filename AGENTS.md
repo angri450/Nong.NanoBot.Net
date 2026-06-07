@@ -5,6 +5,7 @@ This file defines the working direction for development inside this repository.
 ## Product Direction
 
 - NanoBot.net is the current main line for the GroundPA / Nong agent-runtime layer.
+- Treat `DEVELOPMENT_PLAN.zh-CN.md` as the active construction plan for this repository. External GUI/runtime repositories are references unless the user explicitly changes the main implementation target.
 - Treat it as an independent .NET runtime, not as a fork/port positioning project.
 - Keep the baseline aligned with Nong CLI and GroundPA: .NET 8, Apache-2.0, local-first operation, deterministic tool bridges, and practical safety boundaries.
 - Prefer improving the runtime that already exists here over starting parallel agent runtimes unless a comparison matrix shows a stronger candidate.
