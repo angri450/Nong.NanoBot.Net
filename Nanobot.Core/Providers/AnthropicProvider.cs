@@ -273,20 +273,22 @@ public class AnthropicProvider : IStreamingLLMProvider
             }
         }
 
+        LLMUsage? parsedUsage = null;
+        if (root["usage"] is JsonObject usage)
+        {
+            var inputTokens = usage["input_tokens"]?.GetValue<int>() ?? 0;
+            var outputTokens = usage["output_tokens"]?.GetValue<int>() ?? 0;
+            parsedUsage = LLMUsage.Basic(inputTokens, outputTokens);
+        }
+
         var result = new LLMResponse
         {
             FinishReason = root["stop_reason"]?.ToString() ?? "stop",
-            Content = textParts.Count == 0 ? null : string.Join("\n", textParts)
+            Content = textParts.Count == 0 ? null : string.Join("\n", textParts),
+            Usage = parsedUsage
         };
 
         result.ToolCalls.AddRange(toolCalls);
-
-        if (root["usage"] is JsonObject usage)
-        {
-            result.Usage["prompt_tokens"] = usage["input_tokens"]?.GetValue<int>() ?? 0;
-            result.Usage["completion_tokens"] = usage["output_tokens"]?.GetValue<int>() ?? 0;
-            result.Usage["total_tokens"] = result.Usage["prompt_tokens"] + result.Usage["completion_tokens"];
-        }
 
         return result;
     }

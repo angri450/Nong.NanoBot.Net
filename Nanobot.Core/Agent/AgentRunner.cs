@@ -12,6 +12,7 @@ public class AgentRunner
 
     private readonly ILLMProvider _provider;
     private readonly ToolRegistry _tools;
+    private readonly ToolRuntime? _toolRuntime;
     private readonly RuntimeEventBus _eventBus;
     private readonly IReadOnlyList<IAgentHook> _hooks;
 
@@ -19,12 +20,14 @@ public class AgentRunner
         ILLMProvider provider,
         ToolRegistry tools,
         RuntimeEventBus? eventBus = null,
-        IEnumerable<IAgentHook>? hooks = null)
+        IEnumerable<IAgentHook>? hooks = null,
+        ToolRuntime? toolRuntime = null)
     {
         _provider = provider;
         _tools = tools;
         _eventBus = eventBus ?? new RuntimeEventBus();
         _hooks = hooks?.ToList() ?? new List<IAgentHook>();
+        _toolRuntime = toolRuntime;
     }
 
     public async Task<string> RunAsync(List<Message> messages, AgentRunContext runContext)
@@ -65,7 +68,8 @@ public class AgentRunner
         List<Message> messages,
         AgentRunContext runContext,
         Func<string, CancellationToken, Task> onDeltaAsync,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, CancellationToken, Task>? onReasoningDeltaAsync = null)
     {
         var currentLoopMessages = new List<Message>(messages);
 
@@ -75,7 +79,8 @@ public class AgentRunner
                 currentLoopMessages,
                 runContext,
                 onDeltaAsync,
-                cancellationToken
+                cancellationToken,
+                onReasoningDeltaAsync
             );
 
             if (!response.HasToolCalls)
@@ -105,7 +110,8 @@ public class AgentRunner
         List<Message> messages,
         AgentRunContext runContext,
         Func<string, CancellationToken, Task> onDeltaAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, CancellationToken, Task>? onReasoningDeltaAsync = null)
     {
         var tools = _tools.GetDefinitions(runContext.Execution.AllowedTools);
         if (_provider is not IStreamingLLMProvider streamingProvider)
@@ -130,6 +136,11 @@ public class AgentRunner
             {
                 streamedContent = true;
                 await onDeltaAsync(chunk.ContentDelta, cancellationToken);
+            }
+
+            if (!string.IsNullOrEmpty(chunk.ReasoningDelta) && onReasoningDeltaAsync is not null)
+            {
+                await onReasoningDeltaAsync(chunk.ReasoningDelta, cancellationToken);
             }
 
             if (chunk.FinalResponse is not null)
@@ -179,7 +190,20 @@ public class AgentRunner
             return toolContext.Result ?? string.Empty;
         }
 
-        var result = await _tools.ExecuteWithResultAsync(toolContext.ToolCall.Name, toolContext.ToolCall.Arguments);
+        ToolExecutionResult result;
+        if (_toolRuntime is not null)
+        {
+            result = await _toolRuntime.ExecuteAsync(
+                toolContext.ToolCall.Name,
+                toolContext.ToolCall.Arguments,
+                runContext.Execution.SessionId,
+                runContext.RunId);
+        }
+        else
+        {
+            result = await _tools.ExecuteWithResultAsync(toolContext.ToolCall.Name, toolContext.ToolCall.Arguments);
+        }
+
         ApplyToolResult(toolContext, result);
 
         if (!result.Success)

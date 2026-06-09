@@ -180,7 +180,7 @@ public class HttpProviderTests
         Assert.Single(response.ToolCalls);
         Assert.Equal("lookup", response.ToolCalls[0].Name);
         Assert.Equal("nano", response.ToolCalls[0].Arguments?["query"]?.ToString());
-        Assert.Equal(7, response.Usage["total_tokens"]);
+        Assert.Equal(7, response.Usage?.TotalTokens);
     }
 
     [Fact]
@@ -228,7 +228,7 @@ public class HttpProviderTests
         Assert.Single(response.ToolCalls);
         Assert.Equal("lookup", response.ToolCalls[0].Name);
         Assert.Equal("nano", response.ToolCalls[0].Arguments?["query"]?.ToString());
-        Assert.Equal(7, response.Usage["total_tokens"]);
+        Assert.Equal(7, response.Usage?.TotalTokens);
     }
 
     [Fact]
@@ -371,6 +371,240 @@ public class HttpProviderTests
         {
             var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken);
             return _handler(request, body);
+        }
+    }
+}
+
+public class LLMUsageTests
+{
+    [Fact]
+    public void CacheHitRate_CalculatesCorrectly()
+    {
+        var usage = LLMUsage.FromDeepSeekResponse(
+            promptTokens: 1000,
+            cacheHitTokens: 800,
+            cacheMissTokens: 200,
+            completionTokens: 300,
+            reasoningTokens: 150);
+
+        Assert.Equal(1000, usage.InputTokens);
+        Assert.Equal(800, usage.CachedInputTokens);
+        Assert.Equal(200, usage.UncachedInputTokens);
+        Assert.Equal(300, usage.OutputTokens);
+        Assert.Equal(150, usage.ReasoningTokens);
+        Assert.Equal(1300, usage.TotalTokens);
+        Assert.Equal(0.8, usage.CacheHitRate, 3);
+    }
+
+    [Fact]
+    public void CacheHitRate_ZeroInput_ReturnsZero()
+    {
+        var usage = LLMUsage.Basic(0, 100);
+        Assert.Equal(0, usage.CacheHitRate);
+    }
+
+    [Fact]
+    public void FromLegacy_ConvertsDictionaryCorrectly()
+    {
+        var legacy = new Dictionary<string, int>
+        {
+            ["prompt_tokens"] = 500,
+            ["completion_tokens"] = 200,
+            ["total_tokens"] = 700,
+            ["prompt_cache_hit_tokens"] = 400,
+            ["prompt_cache_miss_tokens"] = 100,
+            ["reasoning_tokens"] = 50
+        };
+
+        var usage = LLMUsage.FromLegacy(legacy);
+
+        Assert.Equal(500, usage.InputTokens);
+        Assert.Equal(400, usage.CachedInputTokens);
+        Assert.Equal(100, usage.UncachedInputTokens);
+        Assert.Equal(200, usage.OutputTokens);
+        Assert.Equal(50, usage.ReasoningTokens);
+        Assert.Equal(700, usage.TotalTokens);
+    }
+}
+
+public class DeepSeekV4ProviderTests
+{
+    [Fact]
+    public void ParseDeepSeekUsage_ExtractsAllFields()
+    {
+        var usageJson = new JsonObject
+        {
+            ["prompt_tokens"] = 100000,
+            ["completion_tokens"] = 5000,
+            ["total_tokens"] = 105000,
+            ["prompt_cache_hit_tokens"] = 95000,
+            ["prompt_cache_miss_tokens"] = 5000,
+            ["completion_tokens_details"] = new JsonObject
+            {
+                ["reasoning_tokens"] = 2000
+            }
+        };
+
+        var usage = DeepSeekV4Provider.ParseDeepSeekUsage(usageJson);
+
+        Assert.Equal(100000, usage.InputTokens);
+        Assert.Equal(95000, usage.CachedInputTokens);
+        Assert.Equal(5000, usage.UncachedInputTokens);
+        Assert.Equal(5000, usage.OutputTokens);
+        Assert.Equal(2000, usage.ReasoningTokens);
+        Assert.Equal(0.95, usage.CacheHitRate, 3);
+    }
+
+    [Fact]
+    public void ParseDeepSeekUsage_NullUsage_ReturnsZeroed()
+    {
+        var usage = DeepSeekV4Provider.ParseDeepSeekUsage(null);
+        Assert.Equal(0, usage.TotalTokens);
+    }
+
+    [Fact]
+    public void DeepSeekV4Models_DetectsKnownModels()
+    {
+        Assert.True(DeepSeekV4Models.IsDeepSeekV4("deepseek-v4-flash"));
+        Assert.True(DeepSeekV4Models.IsDeepSeekV4("deepseek-v4-pro"));
+        Assert.True(DeepSeekV4Models.IsDeepSeekV4("deepseek-v4-pro-guan"));
+        Assert.False(DeepSeekV4Models.IsDeepSeekV4("gpt-4o"));
+        Assert.False(DeepSeekV4Models.IsDeepSeekV4(null));
+    }
+
+    [Fact]
+    public void DeepSeekV4Profile_HasExpectedValues()
+    {
+        var profile = DeepSeekV4Models.GetProfile("deepseek-v4-flash");
+
+        Assert.Equal(1_000_000, profile.ContextWindow);
+        Assert.Equal(384_000, profile.MaxOutput);
+        Assert.True(profile.SupportsStreaming);
+        Assert.True(profile.SupportsTools);
+        Assert.True(profile.SupportsReasoning);
+        Assert.True(profile.SupportsInterleavedThinking);
+        Assert.True(profile.SupportsPromptCacheMetrics);
+        Assert.Equal("high", profile.DefaultReasoningEffort);
+    }
+
+    [Fact]
+    public async Task DeepSeekV4Provider_StreamsReasoningContent()
+    {
+        var handler = new FakeDeepSeekHandler(ss =>
+        {
+            ss.WriteLine("data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"Thinking...\"}}]}");
+            ss.WriteLine();
+            ss.WriteLine("data: {\"choices\":[{\"delta\":{\"content\":\"Hello\"}}]}");
+            ss.WriteLine();
+            ss.WriteLine("data: {\"choices\":[{\"delta\":{\"content\":\" world\"}}]}");
+            ss.WriteLine();
+            ss.WriteLine("data: {\"choices\":[{\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}");
+            ss.WriteLine();
+            ss.WriteLine("data: [DONE]");
+            ss.WriteLine();
+        });
+
+        var provider = new DeepSeekV4Provider("test-key", httpClient: new HttpClient(handler));
+        var deltas = new List<string>();
+        var reasoning = new List<string>();
+        LLMResponse? final = null;
+
+        await foreach (var chunk in provider.ChatStreamAsync(new List<Message> { new("user", "hi") }))
+        {
+            if (chunk.ReasoningDelta is not null) reasoning.Add(chunk.ReasoningDelta);
+            if (chunk.ContentDelta is not null) deltas.Add(chunk.ContentDelta);
+            final = chunk.FinalResponse ?? final;
+        }
+
+        Assert.Equal(new[] { "Thinking..." }, reasoning);
+        Assert.Equal(new[] { "Hello", " world" }, deltas);
+        Assert.NotNull(final);
+        Assert.Equal("Hello world", final!.Content);
+        Assert.Equal("deepseek", final.Provider);
+    }
+
+    [Fact]
+    public async Task DeepSeekV4Provider_ParsesStreamingToolCalls()
+    {
+        var handler = new FakeDeepSeekHandler(ss =>
+        {
+            ss.WriteLine("""data: {"choices":[{"delta":{"content":"I'll look it up."}}]}""");
+            ss.WriteLine();
+            ss.WriteLine("""data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"read_file","arguments":"{\"path\": \"/tmp/test.txt\"}"}}]}}]}""");
+            ss.WriteLine();
+            ss.WriteLine("""data: {"choices":[{"finish_reason":"tool_calls"}]}""");
+            ss.WriteLine();
+            ss.WriteLine("""data: [DONE]""");
+            ss.WriteLine();
+        });
+
+        var provider = new DeepSeekV4Provider("test-key", httpClient: new HttpClient(handler));
+        LLMResponse? final = null;
+
+        await foreach (var chunk in provider.ChatStreamAsync(new List<Message> { new("user", "read file") }))
+        {
+            final = chunk.FinalResponse ?? final;
+        }
+
+        Assert.NotNull(final);
+        Assert.Equal("tool_calls", final!.FinishReason);
+        Assert.Single(final.ToolCalls);
+        Assert.Equal("read_file", final.ToolCalls[0].Name);
+        Assert.Equal("call-1", final.ToolCalls[0].Id);
+    }
+
+    [Fact]
+    public async Task DeepSeekV4Provider_StreamsCacheUsage()
+    {
+        var handler = new FakeDeepSeekHandler(ss =>
+        {
+            ss.WriteLine("data: {\"choices\":[{\"delta\":{\"content\":\"Done.\"}}]}");
+            ss.WriteLine();
+            ss.WriteLine("data: {\"choices\":[{\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":1000,\"completion_tokens\":50,\"total_tokens\":1050,\"prompt_cache_hit_tokens\":980,\"prompt_cache_miss_tokens\":20,\"completion_tokens_details\":{\"reasoning_tokens\":30}}}");
+            ss.WriteLine();
+            ss.WriteLine("data: [DONE]");
+            ss.WriteLine();
+        });
+
+        var provider = new DeepSeekV4Provider("test-key", httpClient: new HttpClient(handler));
+        LLMResponse? final = null;
+
+        await foreach (var chunk in provider.ChatStreamAsync(new List<Message> { new("user", "hi") }))
+        {
+            final = chunk.FinalResponse ?? final;
+        }
+
+        Assert.NotNull(final);
+        Assert.NotNull(final!.Usage);
+        Assert.Equal(1000, final.Usage!.InputTokens);
+        Assert.Equal(980, final.Usage.CachedInputTokens);
+        Assert.Equal(20, final.Usage.UncachedInputTokens);
+        Assert.Equal(50, final.Usage.OutputTokens);
+        Assert.Equal(30, final.Usage.ReasoningTokens);
+        Assert.Equal(0.98, final.Usage.CacheHitRate, 3);
+    }
+
+    private sealed class FakeDeepSeekHandler : HttpMessageHandler
+    {
+        private readonly Action<StreamWriter> _writeResponse;
+
+        public FakeDeepSeekHandler(Action<StreamWriter> writeResponse)
+        {
+            _writeResponse = writeResponse;
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var ms = new MemoryStream();
+            var writer = new StreamWriter(ms);
+            _writeResponse(writer);
+            await writer.FlushAsync(cancellationToken);
+            ms.Position = 0;
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(ms)
+            };
         }
     }
 }

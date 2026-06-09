@@ -874,3 +874,132 @@ h2 {
     width: 100%;
   }
 }
+
+/* Reasoning block in messages */
+.reasoning-block {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 0.88em;
+}
+
+.reasoning-block summary {
+  color: var(--accent-warm);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+}
+
+.reasoning-content {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--panel);
+  border-radius: 4px;
+  color: var(--muted);
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow: auto;
+}
+
+/* Usage display in inspector */
+.usage-display {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.usage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.88em;
+  color: var(--text);
+}
+
+.usage-row span:first-child {
+  color: var(--muted);
+}
+
+.usage-row span:last-child {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Status pill variants */
+.status-pill.warn {
+  background: var(--accent-warm);
+  color: var(--bg);
+}
+
+/* GitCode panel */
+.gitcode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gitcode-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.gitcode-user span {
+  font-weight: 600;
+}
+
+.gitcode-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gitcode-actions .primary-button,
+.gitcode-actions .secondary-button {
+  font-size: 0.85em;
+  padding: 6px 12px;
+}
+
+.gitcode-login-status {
+  padding: 8px;
+  background: var(--panel-2);
+  border-radius: 6px;
+}
+
+.gitcode-setup-result {
+  font-size: 0.85em;
+}
+
+.gitcode-model-list {
+  max-height: 200px;
+  overflow: auto;
+}
+
+.gitcode-model-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.85em;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.gitcode-model-item.locked {
+  opacity: 0.5;
+}
+
+.gitcode-model-item small {
+  color: var(--muted);
+}
+
+.gitcode-model-item small.danger {
+  color: var(--danger);
+}
+
+.settings-hint a {
+  color: var(--accent);
+  text-decoration: underline;
+}

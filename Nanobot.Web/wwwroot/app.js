@@ -83,7 +83,37 @@ const i18n = {
     keySourceNone: "请输入中转站调用密钥，保存后写入本机配置。",
     keepExistingKey: "留空表示保留现有 Key。",
     settingsSaved: "模型配置已保存。",
-    settingsError: "设置保存失败"
+    settingsError: "设置保存失败",
+    thinkingMode: "思考模式",
+    thinkingAuto: "自动",
+    thinkingHigh: "高",
+    thinkingMax: "最大",
+    thinkingOff: "关闭",
+    usageCache: "用量与缓存",
+    cacheHitRate: "缓存命中率",
+    cachedTokens: "命中 Token",
+    uncachedTokens: "未命中 Token",
+    outputTokens: "输出 Token",
+    reasoningTokens: "思考 Token",
+    totalTokens: "总计 Token",
+    cacheHit: "命中",
+    cacheMiss: "未命中",
+    reasoning: "思考过程",
+    gitCodeAccount: "GitCode 账号",
+    gitCodeNotLoggedIn: "未登录",
+    gitCodeLoggedIn: "已登录",
+    gitCodeLogin: "登录 GitCode",
+    gitCodeLogout: "退出登录",
+    gitCodeSync: "同步免费模型",
+    gitCodeSyncing: "同步中...",
+    gitCodeOpenBrowser: "请在新打开的浏览器窗口中完成授权",
+    gitCodeTokenExpiring: "Token 即将过期，请重新登录",
+    gitCodeTokenValid: "Token 有效",
+    gitCodeCatalogOnly: "仅同步模型目录，暂不能直连免费网关",
+    gitCodeModelsSynced: "个模型已同步",
+    gitCodeSetupSuccess: "CodingPlan 设置完成",
+    gitCodeSetupFailed: "设置失败",
+    gitCodeClaimPlanClaimed: "计划已领取"
   },
   en: {
     product: "NanoBot.net",
@@ -169,7 +199,37 @@ const i18n = {
     keySourceNone: "Enter the relay API key; it will be saved to local config.",
     keepExistingKey: "Leave blank to keep the existing key.",
     settingsSaved: "Model settings saved.",
-    settingsError: "Settings save failed"
+    settingsError: "Settings save failed",
+    thinkingMode: "Thinking",
+    thinkingAuto: "Auto",
+    thinkingHigh: "High",
+    thinkingMax: "Max",
+    thinkingOff: "Off",
+    usageCache: "Usage & Cache",
+    cacheHitRate: "Cache Hit Rate",
+    cachedTokens: "Cached Tokens",
+    uncachedTokens: "Uncached Tokens",
+    outputTokens: "Output Tokens",
+    reasoningTokens: "Reasoning Tokens",
+    totalTokens: "Total Tokens",
+    cacheHit: "Hit",
+    cacheMiss: "Miss",
+    reasoning: "Reasoning",
+    gitCodeAccount: "GitCode Account",
+    gitCodeNotLoggedIn: "Not logged in",
+    gitCodeLoggedIn: "Logged in",
+    gitCodeLogin: "Login GitCode",
+    gitCodeLogout: "Logout",
+    gitCodeSync: "Sync Free Models",
+    gitCodeSyncing: "Syncing...",
+    gitCodeOpenBrowser: "Complete authorization in the opened browser window",
+    gitCodeTokenExpiring: "Token expiring, please login again",
+    gitCodeTokenValid: "Token valid",
+    gitCodeCatalogOnly: "Models synced only, gateway not callable yet",
+    gitCodeModelsSynced: "models synced",
+    gitCodeSetupSuccess: "CodingPlan setup complete",
+    gitCodeSetupFailed: "Setup failed",
+    gitCodeClaimPlanClaimed: "Plan claimed"
   }
 };
 
@@ -204,6 +264,8 @@ const elements = {
   runtimeNong: document.getElementById("runtimeNong"),
   runtimeReadyPill: document.getElementById("runtimeReadyPill"),
   runtimeModelPill: document.getElementById("runtimeModelPill"),
+  runtimeCachePill: document.getElementById("runtimeCachePill"),
+  runtimeUsagePill: document.getElementById("runtimeUsagePill"),
   runtimeNongPill: document.getElementById("runtimeNongPill"),
   runtimeNotice: document.getElementById("runtimeNotice"),
   modelSettingsForm: document.getElementById("modelSettingsForm"),
@@ -215,6 +277,7 @@ const elements = {
   keyStatus: document.getElementById("keyStatus"),
   clearApiKey: document.getElementById("clearApiKey"),
   settingsNotice: document.getElementById("settingsNotice"),
+  thinkingMode: document.getElementById("thinkingMode"),
   sessionTitle: document.getElementById("sessionTitle"),
   sessionCount: document.getElementById("sessionCount"),
   prompt: document.getElementById("prompt"),
@@ -225,7 +288,25 @@ const elements = {
   reloadStatus: document.getElementById("reloadStatus"),
   refreshFiles: document.getElementById("refreshFiles"),
   themeToggle: document.getElementById("themeToggle"),
-  languageToggle: document.getElementById("languageToggle")
+  languageToggle: document.getElementById("languageToggle"),
+  cacheHitRate: document.getElementById("cacheHitRate"),
+  cachedTokens: document.getElementById("cachedTokens"),
+  uncachedTokens: document.getElementById("uncachedTokens"),
+  outputTokens: document.getElementById("outputTokens"),
+  reasoningTokens: document.getElementById("reasoningTokens"),
+  totalTokens: document.getElementById("totalTokens"),
+  gitCodeAuthStatus: document.getElementById("gitCodeAuthStatus"),
+  gitCodeUserInfo: document.getElementById("gitCodeUserInfo"),
+  gitCodeUserName: document.getElementById("gitCodeUserName"),
+  gitCodeTokenStatus: document.getElementById("gitCodeTokenStatus"),
+  gitCodeLoginBtn: document.getElementById("gitCodeLoginBtn"),
+  gitCodeLogoutBtn: document.getElementById("gitCodeLogoutBtn"),
+  gitCodeSyncBtn: document.getElementById("gitCodeSyncBtn"),
+  gitCodeLoginStatus: document.getElementById("gitCodeLoginStatus"),
+  gitCodeLoginHint: document.getElementById("gitCodeLoginHint"),
+  gitCodeSyncActions: document.getElementById("gitCodeSyncActions"),
+  gitCodeSetupResult: document.getElementById("gitCodeSetupResult"),
+  gitCodeModelList: document.getElementById("gitCodeModelList")
 };
 
 function t(key) {
@@ -369,6 +450,24 @@ function applyStatus(status) {
   elements.composerModel.textContent = status.model || status.Model || "NanoBot";
   elements.memoryPreview.textContent = status.memoryPreview || status.MemoryPreview || t("noMemory");
 
+  const cacheRate = status.cacheHitRate ?? status.CacheHitRate;
+  if (cacheRate !== null && cacheRate !== undefined) {
+    elements.runtimeCachePill.hidden = false;
+    elements.runtimeCachePill.textContent = `${t("cacheHit")} ${(cacheRate * 100).toFixed(1)}%`;
+    elements.runtimeCachePill.className = `status-pill ${cacheRate > 0.5 ? "ready" : "warn"}`;
+  }
+
+  const ctxTokens = status.contextTokens ?? status.ContextTokens;
+  if (ctxTokens !== null && ctxTokens !== undefined) {
+    elements.runtimeUsagePill.hidden = false;
+    elements.runtimeUsagePill.textContent = `Token ${formatNumber(ctxTokens)}`;
+  }
+
+  const thinkingMode = status.thinkingMode ?? status.ThinkingMode;
+  if (thinkingMode && elements.thinkingMode) {
+    elements.thinkingMode.value = thinkingMode;
+  }
+
   if (error || warning) {
     elements.runtimeNotice.hidden = false;
     elements.runtimeNotice.textContent = error || warning;
@@ -397,6 +496,11 @@ function renderModelSettings() {
   elements.apiBase.value = settings.apiBase || settings.ApiBase || "https://www.dmxapi.cn/v1/";
   elements.modelId.value = settings.model || settings.Model || "deepseek-v4-pro-guan";
   elements.apiKey.value = "";
+
+  const thinkingMode = settings.thinkingMode || settings.ThinkingMode || "auto";
+  if (elements.thinkingMode) {
+    elements.thinkingMode.value = thinkingMode;
+  }
 
   const hasKey = settings.hasApiKey ?? settings.HasApiKey ?? false;
   const keySource = settings.keySource || settings.KeySource || "none";
@@ -468,8 +572,33 @@ function handleStreamEvent(event, assistantNode) {
     return;
   }
 
+  if (type === "reasoning") {
+    const reasoning = event.reasoning || event.Reasoning || event.content || event.Content || "";
+    let reasoningBlock = assistantNode.querySelector(".reasoning-block");
+    if (!reasoningBlock) {
+      reasoningBlock = document.createElement("details");
+      reasoningBlock.className = "reasoning-block";
+      reasoningBlock.innerHTML = `<summary>${t("reasoning")}</summary><div class="reasoning-content"></div>`;
+      assistantNode.insertBefore(reasoningBlock, assistantNode.firstChild);
+    }
+    reasoningBlock.querySelector(".reasoning-content").textContent += reasoning;
+    reasoningBlock.open = true;
+    elements.messages.scrollTop = elements.messages.scrollHeight;
+    return;
+  }
+
   if (type === "delta") {
     appendMessage(assistantNode, event.content || event.Content || "");
+    return;
+  }
+
+  if (type === "usage") {
+    updateUsageDisplay({
+      cacheHitRate: event.cacheHitRate ?? event.CacheHitRate,
+      inputTokens: event.inputTokens ?? event.InputTokens,
+      outputTokens: event.outputTokens ?? event.OutputTokens,
+      cachedTokens: event.cachedTokens ?? event.CachedTokens
+    });
     return;
   }
 
@@ -625,6 +754,35 @@ function connectEvents() {
   };
 }
 
+function updateUsageDisplay(data) {
+  if (data.cacheHitRate !== null && data.cacheHitRate !== undefined) {
+    elements.cacheHitRate.textContent = (data.cacheHitRate * 100).toFixed(1) + "%";
+  }
+  if (data.cachedTokens !== null && data.cachedTokens !== undefined) {
+    elements.cachedTokens.textContent = formatNumber(data.cachedTokens);
+  }
+  if (data.inputTokens !== null && data.inputTokens !== undefined) {
+    const uncached = data.inputTokens - (data.cachedTokens || 0);
+    elements.uncachedTokens.textContent = formatNumber(uncached);
+  }
+  if (data.outputTokens !== null && data.outputTokens !== undefined) {
+    elements.outputTokens.textContent = formatNumber(data.outputTokens);
+  }
+  if (data.reasoningTokens !== null && data.reasoningTokens !== undefined) {
+    elements.reasoningTokens.textContent = formatNumber(data.reasoningTokens);
+  }
+  if (data.totalTokens !== null && data.totalTokens !== undefined) {
+    elements.totalTokens.textContent = formatNumber(data.totalTokens);
+  }
+}
+
+function formatNumber(value) {
+  if (value === null || value === undefined) return "--";
+  if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + "M";
+  if (value >= 1_000) return (value / 1_000).toFixed(1) + "K";
+  return String(value);
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -775,9 +933,154 @@ async function boot() {
     loadSessions().catch(error => addMessage("system", `${t("requestError")}: ${error.message}`)),
     loadFiles("").catch(error => {
       elements.fileList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
-    })
+    }),
+    loadGitCodeAuthStatus().catch(() => {})
   ]);
   connectEvents();
+}
+
+// GitCode auth functions
+async function loadGitCodeAuthStatus() {
+  const status = await apiJson("/api/gitcode/auth/status");
+  renderGitCodeAuthStatus(status);
+}
+
+function renderGitCodeAuthStatus(status) {
+  const loggedIn = status.loggedIn ?? false;
+  elements.gitCodeAuthStatus.textContent = loggedIn ? t("gitCodeLoggedIn") : t("gitCodeNotLoggedIn");
+  elements.gitCodeAuthStatus.className = `section-count ${loggedIn ? "status-ready" : ""}`;
+
+  if (loggedIn) {
+    elements.gitCodeLoginBtn.hidden = true;
+    elements.gitCodeLogoutBtn.hidden = false;
+    elements.gitCodeSyncActions.hidden = false;
+    elements.gitCodeUserInfo.hidden = false;
+    elements.gitCodeUserName.textContent = status.login || status.name || "User";
+
+    const tokenValid = status.tokenValid ?? false;
+    elements.gitCodeTokenStatus.textContent = tokenValid ? t("gitCodeTokenValid") : t("gitCodeTokenExpiring");
+    elements.gitCodeTokenStatus.className = tokenValid ? "" : "danger";
+  } else {
+    elements.gitCodeLoginBtn.hidden = false;
+    elements.gitCodeLogoutBtn.hidden = true;
+    elements.gitCodeSyncActions.hidden = true;
+    elements.gitCodeUserInfo.hidden = true;
+  }
+}
+
+elements.gitCodeLoginBtn.addEventListener("click", async () => {
+  try {
+    elements.gitCodeLoginBtn.disabled = true;
+    elements.gitCodeLoginBtn.textContent = t("running");
+    const login = await apiJson("/api/gitcode/auth/login/start", { method: "POST" });
+    elements.gitCodeLoginStatus.hidden = false;
+    elements.gitCodeLoginHint.textContent = login.loginUrl || "";
+    window.open(login.loginUrl, "_blank");
+    state.gitCodeLoginId = login.loginId;
+    await pollGitCodeLogin();
+  } catch (error) {
+    elements.gitCodeLoginHint.textContent = `${t("requestError")}: ${error.message}`;
+  } finally {
+    elements.gitCodeLoginBtn.disabled = false;
+    elements.gitCodeLoginBtn.textContent = t("gitCodeLogin");
+  }
+});
+
+async function pollGitCodeLogin() {
+  const loginId = state.gitCodeLoginId;
+  if (!loginId) return;
+
+  let attempts = 0;
+  const maxAttempts = 60;
+  const poll = async () => {
+    if (attempts >= maxAttempts) {
+      elements.gitCodeLoginHint.textContent = "Login timed out.";
+      elements.gitCodeLoginStatus.hidden = true;
+      return;
+    }
+    attempts++;
+
+    try {
+      const result = await apiJson(`/api/gitcode/auth/login/${encodeURIComponent(loginId)}/poll`, { method: "POST" });
+      if (result.status === "authorized") {
+        elements.gitCodeLoginStatus.hidden = true;
+        await loadGitCodeAuthStatus();
+        addMessage("system", t("gitCodeLoggedIn"));
+      } else if (result.status === "expired" || result.status === "failed") {
+        elements.gitCodeLoginStatus.hidden = true;
+        elements.gitCodeLoginHint.textContent = `Login ${result.status}`;
+      } else {
+        setTimeout(poll, 2000);
+      }
+    } catch (error) {
+      elements.gitCodeLoginHint.textContent = `Poll error: ${error.message}`;
+      setTimeout(poll, 2000);
+    }
+  };
+  poll();
+}
+
+elements.gitCodeLogoutBtn.addEventListener("click", async () => {
+  try {
+    await apiJson("/api/gitcode/auth/logout", { method: "POST" });
+    await loadGitCodeAuthStatus();
+    elements.gitCodeModelList.innerHTML = "";
+    elements.gitCodeSetupResult.hidden = true;
+  } catch (error) {
+    addMessage("system", `${t("requestError")}: ${error.message}`);
+  }
+});
+
+elements.gitCodeSyncBtn.addEventListener("click", async () => {
+  try {
+    elements.gitCodeSyncBtn.disabled = true;
+    elements.gitCodeSyncBtn.textContent = t("gitCodeSyncing");
+    const result = await apiJson("/api/gitcode/codingplan/setup", { method: "POST" });
+    elements.gitCodeSetupResult.hidden = false;
+    elements.gitCodeSetupResult.innerHTML = result.success
+      ? `<div class="settings-notice success">${t("gitCodeSetupSuccess")}: ${result.steps?.claim?.message || ""}, ${result.steps?.models?.message || ""}</div>`
+      : `<div class="settings-notice error">${t("gitCodeSetupFailed")}: ${result.steps?.claim?.message || ""}</div>`;
+
+    // Render synced models
+    const models = result.models || [];
+    renderGitCodeModels(models);
+    await loadStatus();
+    await loadGitCodeAuthStatus();
+  } catch (error) {
+    elements.gitCodeSetupResult.hidden = false;
+    elements.gitCodeSetupResult.innerHTML = `<div class="settings-notice error">${t("gitCodeSetupFailed")}: ${error.message}</div>`;
+  } finally {
+    elements.gitCodeSyncBtn.disabled = false;
+    elements.gitCodeSyncBtn.textContent = t("gitCodeSync");
+  }
+});
+
+function renderGitCodeModels(models) {
+  elements.gitCodeModelList.innerHTML = "";
+  if (models.length === 0) return;
+
+  const heading = document.createElement("div");
+  heading.className = "section-title";
+  heading.textContent = `${models.length} ${t("gitCodeModelsSynced")}`;
+  elements.gitCodeModelList.appendChild(heading);
+
+  models.forEach(model => {
+    const row = document.createElement("div");
+    row.className = `gitcode-model-item${!model.planAvailable ? " locked" : ""}`;
+    row.innerHTML = `
+      <span>${escapeHtml(model.displayModelName || model.DisplayModelName || "")}</span>
+      <small>${(model.contextWindow || model.ContextWindow || 0) >= 1000000 ? "1M" : formatNumber(model.contextWindow || model.ContextWindow || 0)} ctx</small>
+    `;
+    if (!model.planAvailable) {
+      row.innerHTML += `<small class="danger">locked</small>`;
+    }
+    elements.gitCodeModelList.appendChild(row);
+  });
+
+  const note = document.createElement("div");
+  note.className = "settings-hint";
+  note.textContent = t("gitCodeCatalogOnly");
+  elements.gitCodeModelList.appendChild(note);
 }
 
 boot();

@@ -4,6 +4,7 @@ public class RuntimeEventBus
 {
     private readonly object _lock = new();
     private readonly List<Func<RuntimeEvent, Task>> _subscribers = new();
+    private long _sequence;
 
     public IDisposable Subscribe(Action<RuntimeEvent> handler)
     {
@@ -26,6 +27,8 @@ public class RuntimeEventBus
 
     public async Task PublishAsync(RuntimeEvent runtimeEvent)
     {
+        runtimeEvent = runtimeEvent with { Sequence = Interlocked.Increment(ref _sequence) };
+
         Func<RuntimeEvent, Task>[] subscribers;
         lock (_lock)
         {

@@ -9,7 +9,14 @@ public sealed record AgentStreamEvent(
     string SessionId,
     string? Content = null,
     string? Answer = null,
-    string? Error = null);
+    string? Error = null,
+    string? Reasoning = null,
+    string? ToolName = null,
+    string? ToolCallId = null,
+    double? CacheHitRate = null,
+    int? InputTokens = null,
+    int? OutputTokens = null,
+    int? CachedTokens = null);
 
 public sealed record ApiErrorResponse(string Error);
 
@@ -20,7 +27,11 @@ public sealed record RuntimeStatusResponse(
     string MemoryPreview,
     bool Ready,
     string? Error,
-    string? Warning);
+    string? Warning,
+    double? CacheHitRate = null,
+    int? ContextTokens = null,
+    int? ContextWindow = null,
+    string? ThinkingMode = null);
 
 public sealed record ModelSettingsResponse(
     string ProviderId,
@@ -29,7 +40,8 @@ public sealed record ModelSettingsResponse(
     bool HasApiKey,
     string ApiKeyPreview,
     string KeySource,
-    string ConfigPath);
+    string ConfigPath,
+    string? ThinkingMode = null);
 
 public sealed record SaveModelSettingsRequest(
     string? ProviderId,
@@ -50,7 +62,8 @@ public sealed record WebSessionSummary(
     string Title,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    int MessageCount);
+    int MessageCount,
+    bool Resumed = false);
 
 public sealed record WebSessionDto(
     string Id,
@@ -63,7 +76,8 @@ public sealed record WebChatMessageDto(
     string Id,
     string Role,
     string Content,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? Reasoning = null);
 
 public sealed record WorkspaceFileListResponse(
     string Path,

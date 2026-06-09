@@ -7,5 +7,6 @@ public enum ProviderCapabilities
     Chat = 1,
     Tools = 2,
     Streaming = 4,
-    Images = 8
+    Images = 8,
+    Reasoning = 16
 }

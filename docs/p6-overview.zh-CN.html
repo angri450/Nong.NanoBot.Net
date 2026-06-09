@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanoBot.net P6 — 智能体项目横向调研与吸收路线</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d2991d;
+    --red: #f85149;
+    --purple: #a371f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  h1 { font-size: 2em; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 8px; }
+  h2 { font-size: 1.35em; margin-top: 40px; margin-bottom: 12px; color: var(--accent); }
+  h3 { font-size: 1.1em; margin-top: 24px; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); font-size: 0.95em; margin-bottom: 32px; }
+  p { margin-bottom: 14px; }
+  ul, ol { margin: 0 0 14px 20px; }
+  li { margin-bottom: 4px; }
+  code { background: var(--surface); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px; overflow-x: auto; margin-bottom: 16px; font-size: 0.88em; line-height: 1.5; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: 600; }
+  .badge-green { background: #1a3a1a; color: var(--green); }
+  .badge-orange { background: #3a2e0a; color: var(--orange); }
+  .badge-red { background: #3a0a0a; color: var(--red); }
+  .badge-purple { background: #2a1a3a; color: var(--purple); }
+
+  .verdict {
+    background: var(--surface);
+    border-left: 3px solid var(--green);
+    border-radius: 0 6px 6px 0;
+    padding: 16px 20px;
+    margin: 20px 0;
+  }
+  .verdict strong { color: var(--green); }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+  }
+  .card h3 { margin-top: 0; font-size: 1.05em; }
+  .card .tag-row { margin: 8px 0; }
+  .card .value-list { font-size: 0.9em; color: var(--muted); }
+  .card .risk { font-size: 0.85em; color: var(--orange); margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px; }
+
+  .rank-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92em; }
+  .rank-table th, .rank-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  .rank-table th { color: var(--muted); font-weight: 600; font-size: 0.82em; text-transform: uppercase; }
+  .rank-table .num { color: var(--muted); width: 28px; }
+
+  .roadmap { counter-reset: step; list-style: none; margin-left: 0; }
+  .roadmap li { counter-increment: step; padding: 10px 0 10px 40px; position: relative; border-left: 2px solid var(--border); margin-left: 10px; }
+  .roadmap li::before {
+    content: counter(step);
+    position: absolute;
+    left: -14px;
+    top: 8px;
+    width: 26px; height: 26px;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-size: 0.82em;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .roadmap li strong { display: block; }
+
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85em; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>NanoBot.net P6</h1>
+<p class="subtitle">智能体项目横向调研与吸收路线 &middot; 2026-06-08</p>
+
+<h2>P6 是什么</h2>
+<p>
+  P6 是 NanoBot.net 在继续施工新功能之前的一次横向调研阶段。核心原则是：
+  <strong>一个问题不能两头都是谜团</strong>。先把外部智能体项目研究清楚，再决定 NanoBot.net 后续吸收什么。
+</p>
+<p>
+  本轮共调研 <strong>7 个外部智能体项目</strong>，研究副本已浅克隆到
+  <code>C:\Users\Administrator\Documents\Github\_agent-research-p6</code>，
+  分册版 Wiki 入口见 <code>docs/p6-wiki/00-index.zh-CN.md</code>。
+</p>
+
+<div class="verdict">
+  <strong>总体结论：NanoBot.net 仍然最适合作为主线。</strong><br>
+  这 7 个项目各有价值，但没有一个同时满足 NanoBot 的目标组合 —— .NET 8 主线、Apache-2.0、
+  本地优先、不用 WebView2/Electron 做桌面壳、能分发 MSI、能和 Nong/GroundPA-Toolkit 走 plugin/bootstrap、
+  能把 DeepSeek V4 Flash / GitCode / DMX / Nong / WebUI / 未来原生 UI 统一到一个 runtime。
+</div>
+
+<h2>调研的 7 个项目</h2>
+
+<div class="card-grid">
+
+  <div class="card">
+    <h3>1. CodeWhale.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-green">Rust</span>
+      <span class="badge badge-purple">最像 runtime</span>
+    </div>
+    <p>DeepSeek-TUI 改名后的 Rust 终端 coding agent，围绕 DeepSeek V4 Pro/Flash 构建。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      DeepSeek V4 Flash profile、reasoning_content 回传、cache hit/miss 成本统计、
+      子 agent 后台并发模型、LSP post-edit diagnostics、side-git snapshot、durable task manager、
+      approval policy 与工具级 ask rule。
+    </div>
+    <div class="risk">风险：Rust 实现不能直接移植，部分 sandbox 能力 Windows 不可等价。</div>
+  </div>
+
+  <div class="card">
+    <h3>2. DeepSeek-GUI.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-orange">Electron/Vite</span>
+      <span class="badge badge-purple">UI 参考</span>
+    </div>
+    <p>以 Kun 为本地运行时的桌面工作台，产品形态完整：Code、Write、手机连接、Skill/MCP 管理、计划、Review。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      WebUI 信息架构、HTTP/SSE 边界、ImmutablePrefix 稳定指纹、
+      token economy 设置、FileSessionStore + JSONL event replay、approvalGate/userInputGate 模型。
+    </div>
+    <div class="risk">风险：Electron 桌面壳不符合要求，Kun 是 TypeScript runtime。</div>
+  </div>
+
+  <div class="card">
+    <h3>3. PilotDeck.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-red">AGPL-3.0</span>
+      <span class="badge badge-purple">Agent OS 参考</span>
+    </div>
+    <p>WorkSpace-centric Agent OS：workspace 隔离、白盒 memory、smart routing、always-on 后台执行。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      WorkSpace 一等边界、白盒 memory 可追踪/可编辑/可回滚、
+      Smart routing 按任务难度分派模型、Always-on 任务生命周期、
+      plugin.json 扩展协议、多渠道 SessionMapper。
+    </div>
+    <div class="risk">风险：AGPL-3.0，Node/TS 体系，不适合直接吸收代码。</div>
+  </div>
+
+  <div class="card">
+    <h3>4. GenericAgent.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-green">Python</span>
+      <span class="badge badge-purple">极简工具参考</span>
+    </div>
+    <p>极简、自进化、自举型 Python agent。9 个原子工具 + ~100 行 agent loop + 分层记忆 + 自动沉淀 skill。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      工具集最小化、自进化 skill 沉淀、L0-L4 分层 memory、
+      Morphling mode 外部能力吸收、Agent BBS 多 agent 协作。
+    </div>
+    <div class="risk">风险：code_run 权限过大，NanoBot 须保留严格 allowlist。</div>
+  </div>
+
+  <div class="card">
+    <h3>5. EvoScientist.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-green">Python</span>
+      <span class="badge badge-purple">多 agent 参考</span>
+    </div>
+    <p>科研工作流 agent，基于 DeepAgents/LangGraph，多 agent team + 科研 lifecycle + 多渠道。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      多渠道 message bus 统一调度、channel session key 边界、
+      streaming event 分类（thinking/tool_call/subagent_text/approval/ask_user）、
+      科研 workflow 角色拆分、Agent 主动问用户。
+    </div>
+    <div class="risk">风险：Python/LangGraph 路线与 .NET 主线差异大。</div>
+  </div>
+
+  <div class="card">
+    <h3>6. soloncode.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-green">Java/Solon</span>
+      <span class="badge badge-purple">三端体验参考</span>
+    </div>
+    <p>Java coding agent，CLI/Web/IDE 三端统一，中文提示驱动，Solon ReActAgent 扩展。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      一个 runtime 同时服务 CLI/Web/IDE、@agentName task 交互、
+      extension demo builder/interceptor、中文优先配置体验、
+      channel 绑定与本地 credential store。
+    </div>
+    <div class="risk">风险：Java/Solon 体系，sessionWindowSize=8 与 1M 长上下文路线不同。</div>
+  </div>
+
+  <div class="card">
+    <h3>7. agent-framework.net</h3>
+    <div class="tag-row">
+      <span class="badge badge-green">.NET</span>
+      <span class="badge badge-purple">抽象层参考</span>
+    </div>
+    <p>Microsoft 生产级 .NET/Python agent 和 workflow 框架，不是 coding agent 产品而是基础设施。</p>
+    <div class="value-list">
+      对 NanoBot 最有价值：
+      .NET agent/workflow abstraction、Human-in-the-loop 节点、
+      OpenTelemetry tracing、Durable workflow/checkpointing、
+      Declarative agents/skills schema、ASP.NET + OpenAI-compatible hosting。
+    </div>
+    <div class="risk">风险：体系很重，容易把 NanoBot 变成框架集成项目。</div>
+  </div>
+
+</div>
+
+<h2>横向排名</h2>
+
+<table class="rank-table">
+  <tr><th></th><th>最像可吸收 runtime</th><th>说明</th></tr>
+  <tr>
+    <td class="num">1</td>
+    <td>CodeWhale.net</td>
+    <td>工具、会话、runtime API、任务、MCP、skills、hooks、DeepSeek V4 最完整。Rust 主线是唯一短板。</td>
+  </tr>
+  <tr>
+    <td class="num">2</td>
+    <td>PilotDeck.net</td>
+    <td>Agent OS 思路明确，WorkSpace / memory / router / plugin 边界值得学习。AGPL-3.0 + Node/TS。</td>
+  </tr>
+  <tr>
+    <td class="num">3</td>
+    <td>agent-framework.net</td>
+    <td>.NET 生产级抽象最有参考价值，尤其 workflow、hosting、observability、HITL。体系偏重。</td>
+  </tr>
+</table>
+
+<table class="rank-table">
+  <tr><th></th><th>最像 UI / 产品形态参考</th><th>说明</th></tr>
+  <tr>
+    <td class="num">1</td>
+    <td>DeepSeek-GUI.net</td>
+    <td>Code / Write / 手机连接 / Skill/MCP / 计划 / Review / diff 审查信息架构完整。Electron 壳。</td>
+  </tr>
+  <tr>
+    <td class="num">2</td>
+    <td>PilotDeck.net</td>
+    <td>WorkSpace、white-box memory、multi-agent 可视化适合 NanoBot WebUI P6/P7。</td>
+  </tr>
+  <tr>
+    <td class="num">3</td>
+    <td>GenericAgent.net</td>
+    <td>PyQt / Textual / Streamlit 前端实用，但产品质感不应作为主 UI 标杆。</td>
+  </tr>
+</table>
+
+<table class="rank-table">
+  <tr><th></th><th>最像模型 / 上下文 / DeepSeek 参考</th></tr>
+  <tr><td class="num">1</td><td>CodeWhale.net</td></tr>
+  <tr><td class="num">2</td><td>DeepSeek-GUI.net / Kun</td></tr>
+  <tr><td class="num">3</td><td>soloncode.net</td></tr>
+</table>
+
+<h2>不适合作为主线的项目</h2>
+<ul>
+  <li><strong>DeepSeek-GUI.net</strong>：Electron 桌面壳，不符合用户桌面分发偏好。</li>
+  <li><strong>CodeWhale.net</strong>：Rust 主线太强，适合参考，不适合替换 .NET 主线。</li>
+  <li><strong>PilotDeck.net</strong>：AGPL-3.0，协议和技术栈都不适合直接吸收代码。</li>
+  <li><strong>GenericAgent.net</strong>：Python 极简路线优秀，但和 .NET/Nong/GroundPA 统一目标不一致。</li>
+  <li><strong>EvoScientist.net</strong>：科研 agent 方向强，但主线偏 Python + LangGraph/DeepAgents。</li>
+  <li><strong>soloncode.net</strong>：Java/Solon 生态，适合作为三端和中文体验参考。</li>
+  <li><strong>agent-framework.net</strong>：可学抽象，不能把 NanoBot 变成 Azure/Foundry 重框架附属。</li>
+</ul>
+
+<h2>P6 吸收策略</h2>
+
+<h3>先吸收共识能力，不追单个项目</h3>
+<p>多个项目都重复出现的能力，优先进入 NanoBot：</p>
+<ul>
+  <li>Runtime API + SSE event stream</li>
+  <li>Stable session/thread/turn/item model</li>
+  <li>ToolRegistry + ToolRuntime + approval policy</li>
+  <li>Memory 可视化和可编辑</li>
+  <li>Workspace isolation</li>
+  <li>Plugin/Skill marketplace</li>
+  <li>DeepSeek V4 Flash reasoning/cache usage</li>
+  <li>多渠道 session mapper</li>
+</ul>
+
+<h3>NanoBot 不换主线</h3>
+<p>P6 调研不是为了决定"换成某个项目"，而是为了让 NanoBot 少走弯路。每个项目的角色：</p>
+<pre>NanoBot.net          = .NET 8 GroundPA runtime host（主线）
+CodeWhale / Kun      = DeepSeek 和 token economy 教材
+PilotDeck            = workspace / memory / router / always-on 教材
+GenericAgent         = 极简工具和自进化 skill 教材
+EvoScientist         = 多 agent 科研 workflow 和 channel bus 教材
+soloncode            = 中文 CLI/Web/IDE 体验教材
+agent-framework      = .NET workflow / hosting / observability 教材</pre>
+
+<h2>P6 之后建议施工顺序</h2>
+<ol class="roadmap">
+  <li><strong>DeepSeek V4 Flash provider 和 usage/cache metrics</strong>模型接入与用量统计</li>
+  <li><strong>Stable context renderer</strong>immutable prefix、工具 schema 排序、历史工具结果冻结</li>
+  <li><strong>Runtime event model</strong>content / reasoning / tool / usage / cache / approval / user_input 事件</li>
+  <li><strong>Session/thread/turn/item 持久化</strong>会话结构落盘与恢复</li>
+  <li><strong>WebUI 展示</strong>reasoning、tool detail、cache hit rate、workspace、memory 可视化</li>
+  <li><strong>Plugin/Skill marketplace 设计</strong>扩展市场架构</li>
+  <li><strong>Workspace-scoped white-box memory</strong>工作区级白盒记忆</li>
+  <li><strong>Smart routing / sub-agent / always-on task</strong>智能路由、子代理、后台任务</li>
+</ol>
+<p style="color: var(--muted); margin-top: 12px;">
+  顺序逻辑：先让 NanoBot 的<strong>单 agent loop 可靠、可观测、可持久</strong>，再上多 agent、always-on 和复杂 workspace。
+</p>
+
+<h2>能力矩阵维度</h2>
+<p>P6.1 将对每个项目按以下维度固化成表（详见 <code>docs/p6-wiki/02-capability-matrix.zh-CN.md</code>）：</p>
+<pre>流式输出  |  reasoning/thinking  |  工具调用  |  工具调用详情
+会话持久化  |  跨会话记忆  |  workspace 隔离  |  文件树/文件编辑
+shell/command approval  |  MCP  |  skills/plugin  |  子 agent
+任务队列/always-on  |  模型路由  |  缓存命中率  |  runtime API
+WebUI/TUI/CLI/IM  |  安装分发  |  license 风险  |  NanoBot 可吸收优先级</pre>
+
+<div class="footer">
+  <p>
+    NanoBot.net P6 调研 &middot; 2026-06-08 &middot;
+    <a href="https://github.com/angri450/NanoBot.net">GitHub</a> &middot;
+    完整分册 Wiki：<code>docs/p6-wiki/00-index.zh-CN.md</code>
+  </p>
+</div>
+
+</body>
+</html>

@@ -2,11 +2,14 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Nanobot.Core.Agent;
+using Nanobot.Core.Auth;
+using Nanobot.Core.CodingPlan;
 using Nanobot.Core.Config;
 using Nanobot.Core.Events;
 using Nanobot.Core.Memory;
 using Nanobot.Core.Mcp;
 using Nanobot.Core.Providers;
+using Nanobot.Core.Sessions;
 using Nanobot.Core.Tools;
 using Nanobot.Core.Tools.Builtin;
 using Nanobot.Web;
@@ -168,8 +171,29 @@ app.MapGet("/api/events", async (
     CancellationToken cancellationToken) =>
 {
     context.Response.Headers.ContentType = "text/event-stream";
+    context.Response.Headers.CacheControl = "no-cache";
+
+    // SSE replay from Last-Event-ID
+    if (context.Request.Headers.TryGetValue("Last-Event-ID", out var lastEventIdValues)
+        && long.TryParse(lastEventIdValues.FirstOrDefault(), out var sinceSequence)
+        && sinceSequence > 0)
+    {
+        await foreach (var item in runtime.ReplayEventsAsync(sinceSequence, cancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested) break;
+            await context.Response.WriteAsync($"id: {item.EventId}\n", cancellationToken);
+            await context.Response.WriteAsync($"event: runtime\n", cancellationToken);
+            await context.Response.WriteAsync(
+                $"data: {JsonSerializer.Serialize(item, NanobotWebJson.EventOptions)}\n\n",
+                cancellationToken);
+            await context.Response.Body.FlushAsync(cancellationToken);
+        }
+    }
+
     await foreach (var runtimeEvent in runtime.ListenAsync(cancellationToken))
     {
+        if (cancellationToken.IsCancellationRequested) break;
+        await context.Response.WriteAsync($"id: {runtimeEvent.Sequence}\n", cancellationToken);
         await context.Response.WriteAsync($"event: runtime\n", cancellationToken);
         await context.Response.WriteAsync(
             $"data: {JsonSerializer.Serialize(runtimeEvent, NanobotWebJson.EventOptions)}\n\n",
@@ -179,6 +203,82 @@ app.MapGet("/api/events", async (
 });
 
 app.MapGet("/favicon.ico", () => Results.NoContent());
+
+// GitCode Auth endpoints
+app.MapGet("/api/gitcode/auth/status", (NanobotWebRuntime runtime) => runtime.GetGitCodeAuthStatus());
+
+app.MapPost("/api/gitcode/auth/login/start", async (NanobotWebRuntime runtime) =>
+{
+    try
+    {
+        var state = await runtime.StartGitCodeLoginAsync();
+        return Results.Ok(new
+        {
+            loginId = state.LoginId,
+            loginUrl = state.LoginUrl,
+            status = state.Status.ToString().ToLowerInvariant()
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new ApiErrorResponse($"Login start failed: {ex.Message}"),
+            statusCode: StatusCodes.Status502BadGateway);
+    }
+});
+
+app.MapPost("/api/gitcode/auth/login/{loginId}/poll", async (string loginId, NanobotWebRuntime runtime) =>
+{
+    var result = await runtime.PollGitCodeLoginAsync(loginId);
+    if (result is null)
+    {
+        return Results.NotFound(new ApiErrorResponse("Login session not found."));
+    }
+
+    return Results.Ok(new
+    {
+        loginId = result.LoginId,
+        status = result.Status.ToString().ToLowerInvariant()
+    });
+});
+
+app.MapDelete("/api/gitcode/auth/login/{loginId}", (string loginId, NanobotWebRuntime runtime) =>
+{
+    runtime.CancelGitCodeLogin(loginId);
+    return Results.Ok(new { loginId, cancelled = true });
+});
+
+app.MapPost("/api/gitcode/auth/logout", (NanobotWebRuntime runtime) =>
+{
+    runtime.LogoutGitCode();
+    return Results.Ok(new { loggedOut = true });
+});
+
+// GitCode CodingPlan endpoints
+app.MapPost("/api/gitcode/codingplan/setup", async (NanobotWebRuntime runtime) =>
+{
+    try
+    {
+        var result = await runtime.SetupCodingPlanAsync();
+        return Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new ApiErrorResponse($"CodingPlan setup failed: {ex.Message}"),
+            statusCode: StatusCodes.Status502BadGateway);
+    }
+});
+
+app.MapGet("/api/gitcode/codingplan/models", async (NanobotWebRuntime runtime) =>
+{
+    var models = await runtime.GetCodingPlanModelsAsync();
+    return Results.Ok(models);
+});
+
+app.MapGet("/api/gitcode/codingplan/status", async (NanobotWebRuntime runtime) =>
+{
+    var status = await runtime.GetCodingPlanStatusAsync();
+    return Results.Ok(status);
+});
 
 app.Run();
 
@@ -207,6 +307,11 @@ public sealed class NanobotWebRuntime
     private readonly FileMemoryStore _memory;
     private readonly WebSessionStore _sessions;
     private readonly WorkspaceFileBrowser _files;
+    private readonly JsonlSessionStore _jsonlStore;
+    private readonly GitCodeAuthStore _gitCodeAuthStore;
+    private readonly GitCodeAuthService _gitCodeAuthService;
+    private readonly GitCodeCodingPlanService _gitCodeCodingPlanService;
+    private readonly Dictionary<string, GitCodeLoginState> _gitCodeLoginStates = new();
     private AppConfig _config = new();
     private ILLMProvider? _provider;
     private Agent? _agent;
@@ -225,6 +330,13 @@ public sealed class NanobotWebRuntime
         _memory = new FileMemoryStore(_workspace);
         _sessions = new WebSessionStore(_workspace);
         _files = new WorkspaceFileBrowser(_workspace);
+        _jsonlStore = new JsonlSessionStore(_nanoDir, _eventBus);
+        _gitCodeAuthStore = new GitCodeAuthStore(_nanoDir);
+        _gitCodeAuthService = new GitCodeAuthService(_gitCodeAuthStore);
+        _gitCodeCodingPlanService = new GitCodeCodingPlanService(
+            new GitCodeCodingPlanClient(() => _gitCodeAuthStore.GetValidAccessToken()),
+            _gitCodeAuthStore,
+            _configFile);
         ReloadRuntime();
     }
 
@@ -301,7 +413,12 @@ public sealed class NanobotWebRuntime
                 ["id"] = model,
                 ["apiModelId"] = model,
                 ["supportsStreaming"] = true,
-                ["supportsTools"] = true
+                ["supportsTools"] = true,
+                ["providerModelFamily"] = DeepSeekV4Models.IsDeepSeekV4(model) ? "deepseek-v4" : null,
+                ["supportsReasoning"] = DeepSeekV4Models.IsDeepSeekV4(model),
+                ["supportsPromptCacheMetrics"] = DeepSeekV4Models.IsDeepSeekV4(model),
+                ["contextWindow"] = DeepSeekV4Models.IsDeepSeekV4(model) ? 1_000_000 : null,
+                ["maxOutputTokens"] = DeepSeekV4Models.IsDeepSeekV4(model) ? 384_000 : null
             }
         };
 
@@ -470,7 +587,11 @@ public sealed class NanobotWebRuntime
             {
                 await onStreamEventAsync(new AgentStreamEvent("delta", sessionId, Content: delta), token);
             },
-            cancellationToken);
+            cancellationToken,
+            onReasoningDeltaAsync: async (reasoning, token) =>
+            {
+                await onStreamEventAsync(new AgentStreamEvent("reasoning", sessionId, Reasoning: reasoning), token);
+            });
 
         _sessions.AppendMessage(sessionId, "assistant", answer);
         return new AgentMessageResponse(sessionId, answer);
@@ -495,6 +616,136 @@ public sealed class NanobotWebRuntime
 
             yield return runtimeEvent;
         }
+    }
+
+    public async IAsyncEnumerable<RuntimeEvent> ReplayEventsAsync(
+        long sinceSequence,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        // Read from JSONL store for the active session
+        // Since events are session-scoped, we find the most recent session
+        var sessions = _sessions.List();
+        var sessionId = sessions.FirstOrDefault()?.Id;
+        if (sessionId is null) yield break;
+
+        await foreach (var item in _jsonlStore.ReadItemsAsync(sessionId, sessionId))
+        {
+            if (cancellationToken.IsCancellationRequested) break;
+
+            yield return new RuntimeEvent
+            {
+                Type = MapItemType(item.Type),
+                RunId = item.ToolCallId ?? item.Id,
+                SessionId = sessionId,
+                ThreadId = item.ThreadId,
+                Content = item.Content,
+                ToolName = item.ToolName,
+                ToolCallId = item.ToolCallId,
+                Timestamp = item.Timestamp
+            };
+        }
+    }
+
+    private static RuntimeEventType MapItemType(SessionItemType itemType)
+    {
+        return itemType switch
+        {
+            SessionItemType.ToolCall => RuntimeEventType.ToolStarted,
+            SessionItemType.ToolResult => RuntimeEventType.ToolCompleted,
+            SessionItemType.Reasoning => RuntimeEventType.ReasoningCompleted,
+            SessionItemType.AssistantMessage => RuntimeEventType.ContentCompleted,
+            SessionItemType.UserMessage => RuntimeEventType.RunStarted,
+            SessionItemType.Usage => RuntimeEventType.UsageUpdated,
+            _ => RuntimeEventType.RunCompleted
+        };
+    }
+
+    public object GetGitCodeAuthStatus()
+    {
+        var data = _gitCodeAuthService.GetStatus();
+        return new
+        {
+            loggedIn = data.IsLoggedIn,
+            login = data.User?.Login,
+            name = data.User?.Name,
+            avatarUrl = data.User?.AvatarUrl,
+            tokenValid = data.Token?.IsValid ?? false,
+            expiresAt = data.Token?.ExpiresAt,
+            needsRefresh = data.NeedsRefresh
+        };
+    }
+
+    public async Task<GitCodeLoginState> StartGitCodeLoginAsync()
+    {
+        var state = await _gitCodeAuthService.StartLoginAsync();
+        _gitCodeLoginStates[state.LoginId] = state;
+        return state;
+    }
+
+    public async Task<GitCodeLoginState?> PollGitCodeLoginAsync(string loginId)
+    {
+        if (!_gitCodeLoginStates.TryGetValue(loginId, out var state))
+        {
+            return null;
+        }
+
+        var updated = await _gitCodeAuthService.PollLoginAsync(state);
+        if (updated.Status == GitCodeLoginStatus.Authorized)
+        {
+            await _gitCodeAuthService.FinishLoginAsync(updated);
+            _gitCodeLoginStates.Remove(loginId);
+        }
+        else if (updated.Status is GitCodeLoginStatus.Expired or GitCodeLoginStatus.Failed)
+        {
+            _gitCodeLoginStates.Remove(loginId);
+        }
+
+        _gitCodeLoginStates[loginId] = updated;
+        return updated;
+    }
+
+    public void CancelGitCodeLogin(string loginId)
+    {
+        _gitCodeLoginStates.Remove(loginId);
+    }
+
+    public void LogoutGitCode()
+    {
+        _gitCodeAuthService.Logout();
+        _gitCodeLoginStates.Clear();
+    }
+
+    public async Task<CodingPlanSetupResult> SetupCodingPlanAsync()
+    {
+        var result = await _gitCodeCodingPlanService.SetupAsync();
+        if (result.Success)
+        {
+            ReloadRuntime();
+        }
+
+        return result;
+    }
+
+    public async Task<List<GitCodeModelEntry>> GetCodingPlanModelsAsync()
+    {
+        var client = new GitCodeCodingPlanClient(() => _gitCodeAuthStore.GetValidAccessToken());
+        var models = new List<GitCodeModelEntry>();
+        foreach (var planType in new[] { PlanType.Max, PlanType.Pro, PlanType.Lite })
+        {
+            try
+            {
+                models.AddRange(await client.ListModelsAsync(planType));
+            }
+            catch { }
+        }
+
+        return models.GroupBy(m => m.DisplayModelName).Select(g => g.First()).ToList();
+    }
+
+    public async Task<GitCodeCodingPlanStatus> GetCodingPlanStatusAsync()
+    {
+        var client = new GitCodeCodingPlanClient(() => _gitCodeAuthStore.GetValidAccessToken());
+        return await client.GetStatusAsync();
     }
 
     private ToolRegistry CreateToolRegistry(ILLMProvider provider)

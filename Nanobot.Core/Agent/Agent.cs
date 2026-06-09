@@ -34,13 +34,15 @@ public class Agent
     public Task<string> RunStreamingAsync(
         string input,
         Func<string, CancellationToken, Task> onDeltaAsync,
-        CancellationToken cancellationToken = default) =>
-        _loop.RunStreamingAsync(input, onDeltaAsync, cancellationToken);
+        CancellationToken cancellationToken = default,
+        Func<string, CancellationToken, Task>? onReasoningDeltaAsync = null) =>
+        _loop.RunStreamingAsync(input, onDeltaAsync, cancellationToken, onReasoningDeltaAsync);
 
     public Task<string> RunStreamingAsync(
         string input,
         AgentExecutionContext executionContext,
         Func<string, CancellationToken, Task> onDeltaAsync,
-        CancellationToken cancellationToken = default) =>
-        _loop.RunStreamingAsync(input, executionContext, onDeltaAsync, cancellationToken);
+        CancellationToken cancellationToken = default,
+        Func<string, CancellationToken, Task>? onReasoningDeltaAsync = null) =>
+        _loop.RunStreamingAsync(input, executionContext, onDeltaAsync, cancellationToken, onReasoningDeltaAsync);
 }

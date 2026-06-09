@@ -376,6 +376,14 @@ AtomCode.net 是 GitCode 免费模型通道的重要参考线，但它不是 Nan
 docs/atomcode-gitcode-codingplan-analysis.zh-CN.md
 ```
 
+DeepSeek V4 Flash 的调用层、1M 上下文、思考模式、工具调用和缓存命中率工程已经提升为 P5 主任务。详细方案见：
+
+```text
+docs/deepseek-v4-flash-long-context-design.zh-CN.md
+```
+
+这里的关键判断是：GitCode 免费模型的价值最终要落在 DeepSeek V4 Flash 的长上下文工具能力上。因此 NanoBot 不能只做“登录 GitCode + 同步模型列表”，还要先把 DeepSeek V4 的协议细节吃透，包括 `reasoning_content` 回传、`reasoning_effort` 控制、流式思考块、`prompt_cache_hit_tokens` / `prompt_cache_miss_tokens` 解析，以及稳定前缀渲染。
+
 当前判断：
 
 - 短期默认模型仍保留 DMX `deepseek-v4-pro-guan`，因为它已经能正常对话。
@@ -458,20 +466,46 @@ $env:DMX_MODEL = "deepseek-v4-pro-guan"
 
 ## 近期执行清单
 
-1. 固定 plugin 策略：出场不自带完整能力包，但内置 marketplace、安装、升级、检测和后台部署。
-2. 设计 NanoBot `plugin.json` manifest，并预留 Claude Code plugin manifest 兼容映射。
-3. 为 `nanobot plugin marketplace add/install/status/update` 设计 CLI contract。
-4. 将 `nanobot groundpa ...` 做成 GroundPA plugin 的语义糖。
-5. 增加 plugin / GroundPA / Nong 状态 API：ready、missing、installing、failed、update available。
-6. 在 WebUI 展示 plugin、GroundPA-Toolkit、Nong 的安装进度和健康状态。
-7. 通过 `nong commands --json` 生成 capability catalog。
-8. 把 runtime events 整理成稳定 DTO，减少 WebUI 对内部字段的猜测。
-9. 增加 approval / user input gate 的 core contract 和 WebUI 展示。
-10. 增强 memory 面板：展示、编辑、刷新、Dream 状态。
-11. 增强 Nong tool detail：展示 command、args、cwd、exit code、stdout/stderr、截断状态。
-12. 增加 usage/model 状态：当前 provider、模型、streaming、token usage、错误原因。
-13. 设计 MSI 分发方案：安装路径、开始菜单、PATH、升级策略、卸载保留用户数据。
-14. 等 NanoBot Web API 足够稳定后，再评估原生 WinUI/WPF 客户端；不得使用 WebView2 或 Electron。
+P6 先做调研收敛，不急着在两个谜团上同时施工。外部项目横向调研 Wiki 已形成第一版，入口见：
+
+```text
+docs/p6-agent-projects-research-wiki.zh-CN.md
+docs/p6-wiki/00-index.zh-CN.md
+docs/p6-wiki/10-p6-roadmap.zh-CN.md
+docs/p7-runtime-engineering-plan.zh-CN.md
+```
+
+P6 第一版已完成：
+
+1. 建立 7 个候选项目的能力矩阵：流式、reasoning、工具、记忆、workspace、MCP、skills、子 agent、任务队列、模型路由、runtime API、安装分发、license 风险。
+2. 为 CodeWhale.net、DeepSeek-GUI.net / Kun、PilotDeck.net、GenericAgent.net、EvoScientist.net、soloncode.net、agent-framework.net 建立 scorecard。
+3. 固定 NanoBot.net 不换主线，只吸收外部项目的局部设计。
+4. 固定 P6 后第一优先级：DeepSeek V4 Flash provider、稳定上下文、runtime event model、session/thread/turn/item 持久化。
+5. 固定高风险边界：不复制 AGPL 代码，不采用 Electron/WebView 桌面壳，不引入第二套 runtime。
+
+P7 当前施工阶段：
+
+1. DeepSeek usage/cache DTO 和 provider gate。
+2. RuntimeEvent 扩展和 sequence。
+3. JSONL event store。
+4. ContextRenderer fingerprint。
+5. DeepSeek V4 streaming parser。
+6. ToolRuntime/PermissionRuntime。
+7. WebUI event/timeline/usage/cache 展示。
+8. GitCode `deepseek-v4-flash` profile 绑定。
+
+P7 完成后，再进入 P8：
+
+1. GitCode/CodingPlan 登录、领取、模型同步和状态展示。
+2. 固定 plugin 策略：出场不自带完整能力包，但内置 marketplace、安装、升级、检测和后台部署。
+3. 设计 NanoBot `plugin.json` manifest，并预留 Claude Code plugin manifest 兼容映射。
+4. 增加 plugin / GroundPA / Nong 状态 API：ready、missing、installing、failed、update available。
+5. 在 WebUI 展示 plugin、GroundPA-Toolkit、Nong 的安装进度和健康状态。
+6. 通过 `nong commands --json` 生成 capability catalog。
+7. 增强 memory 面板：展示、编辑、刷新、Dream 状态。
+8. 增强 Nong tool detail：展示 command、args、cwd、exit code、stdout/stderr、截断状态。
+9. 设计 MSI 分发方案：安装路径、开始菜单、PATH、升级策略、卸载保留用户数据。
+10. 等 NanoBot Web API 足够稳定后，再评估原生 WinUI/WPF 客户端；不得使用 WebView2 或 Electron。
 
 ## 验证标准
 

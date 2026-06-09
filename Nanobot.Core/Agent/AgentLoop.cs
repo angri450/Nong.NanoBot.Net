@@ -14,12 +14,14 @@ public class AgentLoop
     private const int MaxMemoryContextChars = 20000;
 
     private readonly IMemory _memory;
+    private readonly ILLMProvider _provider;
     private readonly AgentRunner _runner;
     private readonly RuntimeEventBus _eventBus;
     private readonly SkillLoader _skillLoader;
     private readonly IReadOnlyList<IAgentHook> _hooks;
     private readonly Dictionary<string, List<Message>> _historyBySession = new();
     private readonly string _defaultWorkspace;
+    private readonly ContextRenderer? _contextRenderer;
 
     public AgentLoop(
         ILLMProvider provider,
@@ -29,11 +31,14 @@ public class AgentLoop
         IEnumerable<IAgentHook>? hooks = null,
         SkillLoader? skillLoader = null)
     {
+        _provider = provider;
         _memory = memory;
         _eventBus = eventBus ?? new RuntimeEventBus();
         _hooks = hooks?.ToList() ?? new List<IAgentHook>();
         _skillLoader = skillLoader ?? new SkillLoader();
-        _runner = new AgentRunner(provider, tools, _eventBus, _hooks);
+        _runner = new AgentRunner(provider, tools, _eventBus, _hooks,
+            new ToolRuntime(tools, new ToolPermissionPolicy(PermissionMode.Default, _defaultWorkspace ?? Environment.CurrentDirectory)));
+        _contextRenderer = new ContextRenderer(tools);
         _defaultWorkspace = memory is IWorkspaceMemory workspaceMemory
             ? workspaceMemory.Workspace
             : Environment.CurrentDirectory;
@@ -91,13 +96,15 @@ public class AgentLoop
     public Task<string> RunStreamingAsync(
         string input,
         Func<string, CancellationToken, Task> onDeltaAsync,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, CancellationToken, Task>? onReasoningDeltaAsync = null)
     {
         return RunStreamingAsync(
             input,
             AgentExecutionContext.CreateRoot(_defaultWorkspace),
             onDeltaAsync,
-            cancellationToken
+            cancellationToken,
+            onReasoningDeltaAsync
         );
     }
 
@@ -105,7 +112,8 @@ public class AgentLoop
         string input,
         AgentExecutionContext executionContext,
         Func<string, CancellationToken, Task> onDeltaAsync,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<string, CancellationToken, Task>? onReasoningDeltaAsync = null)
     {
         var runContext = new AgentRunContext(Guid.NewGuid().ToString("N"), executionContext, input);
 
@@ -125,7 +133,8 @@ public class AgentLoop
                 messages,
                 runContext,
                 onDeltaAsync,
-                cancellationToken
+                cancellationToken,
+                onReasoningDeltaAsync
             );
             runContext.Result = finalContent;
 
@@ -156,14 +165,43 @@ public class AgentLoop
 
     private List<Message> BuildMessages(string input, AgentExecutionContext executionContext)
     {
+        var defaultModel = _provider.GetDefaultModel();
+        var isDeepSeekV4 = DeepSeekV4Models.IsDeepSeekV4(defaultModel);
+        var systemPrompt = BuildSystemPrompt(executionContext);
+        var history = GetHistory(executionContext);
+
+        if (_contextRenderer is not null)
+        {
+            var rendered = _contextRenderer.Render(
+                systemInstruction: systemPrompt,
+                projectGuidance: null,
+                history: history.TakeLast(MaxHistoryMessages).ToList(),
+                userInput: input,
+                isDeepSeekV4: isDeepSeekV4
+            );
+
+            // Emit cache change diagnostics
+            if (_contextRenderer.LastCacheChange is not null)
+            {
+                _ = _eventBus.PublishAsync(new RuntimeEvent
+                {
+                    Type = RuntimeEventType.CacheMetricsUpdated,
+                    RunId = "",
+                    SessionId = executionContext.SessionId,
+                    Content = _contextRenderer.LastCacheChange
+                });
+            }
+
+            return rendered.ToMessages();
+        }
+
+        // Fallback: original manual construction
         var messages = new List<Message>
         {
-            new("system", BuildSystemPrompt(executionContext))
+            new("system", systemPrompt)
         };
-
-        messages.AddRange(GetHistory(executionContext).TakeLast(MaxHistoryMessages));
+        messages.AddRange(history.TakeLast(MaxHistoryMessages));
         messages.Add(new Message("user", input));
-
         return messages;
     }
 

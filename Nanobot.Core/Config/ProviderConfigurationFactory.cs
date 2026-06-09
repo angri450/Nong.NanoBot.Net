@@ -88,7 +88,16 @@ public static class ProviderConfigurationFactory
                 ApiModelId = model.ApiModelId,
                 Enabled = model.Enabled,
                 SupportsStreaming = model.SupportsStreaming,
-                SupportsTools = model.SupportsTools
+                SupportsTools = model.SupportsTools,
+                DisplayName = model.DisplayName,
+                ContextWindow = model.ContextWindow,
+                MaxOutputTokens = model.MaxOutputTokens,
+                SupportsReasoning = model.SupportsReasoning,
+                SupportsInterleavedThinking = model.SupportsInterleavedThinking,
+                SupportsPromptCacheMetrics = model.SupportsPromptCacheMetrics,
+                ReasoningEffort = model.ReasoningEffort,
+                PlanAvailable = model.PlanAvailable,
+                ProviderModelFamily = model.ProviderModelFamily
             }).ToList(),
             Capabilities = new ProviderCapabilitySettings
             {
@@ -374,22 +383,34 @@ public static class ProviderConfigurationFactory
     {
         var kind = ResolveKind(providerId, settings);
         var defaultModel = ResolveProviderDefaultModel(providerId, settings);
+        var apiKey = RequireApiKey(providerId, settings);
+        var apiBase = settings.ApiBase ?? settings.BaseUrl;
+
+        // Detect DeepSeek V4 models: if any enabled model is DeepSeek V4 family,
+        // or the default model itself is a DeepSeek V4 model, use DeepSeekV4Provider
+        var isDeepSeekV4 = IsDeepSeekV4Provider(settings, defaultModel);
 
         return kind switch
         {
+            "openai" or "openai-compatible" when isDeepSeekV4 && !string.IsNullOrWhiteSpace(apiKey) =>
+                new DeepSeekV4Provider(apiKey, apiBase, new DeepSeekV4Options
+                {
+                    Model = defaultModel,
+                    ReasoningEffort = ResolveReasoningEffort(settings, defaultModel) ?? "high"
+                }),
             "openai" or "openai-compatible" => new OpenAIProvider(
-                RequireApiKey(providerId, settings),
-                settings.ApiBase ?? settings.BaseUrl,
+                apiKey,
+                apiBase,
                 defaultModel ?? "gpt-4o"
             ),
             "anthropic" => new AnthropicProvider(
-                RequireApiKey(providerId, settings),
+                apiKey,
                 defaultModel ?? "claude-sonnet-4-5",
-                baseUrl: settings.ApiBase ?? settings.BaseUrl
+                baseUrl: apiBase
             ),
             "azure-openai" or "azure" => new AzureOpenAIProvider(
-                RequireField(providerId, settings.Endpoint ?? settings.ApiBase ?? settings.BaseUrl, "endpoint"),
-                RequireApiKey(providerId, settings),
+                RequireField(providerId, settings.Endpoint ?? apiBase, "endpoint"),
+                apiKey,
                 RequireField(providerId, settings.Deployment ?? defaultModel, "deployment"),
                 settings.ApiVersion ?? AzureOpenAIProvider.DefaultApiVersion
             ),
@@ -397,6 +418,26 @@ public static class ProviderConfigurationFactory
                 $"Provider '{providerId}' has unsupported kind '{kind}'. Supported kinds: openai-compatible, anthropic, azure-openai."
             )
         };
+    }
+
+    private static bool IsDeepSeekV4Provider(ProviderSettings settings, string? defaultModel)
+    {
+        if (!string.IsNullOrWhiteSpace(defaultModel) && DeepSeekV4Models.IsDeepSeekV4(defaultModel))
+        {
+            return true;
+        }
+
+        return settings.Models.Any(model =>
+            model.Enabled
+            && !string.IsNullOrWhiteSpace(model.ProviderModelFamily)
+            && model.ProviderModelFamily.Equals("deepseek-v4", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string? ResolveReasoningEffort(ProviderSettings settings, string? modelId)
+    {
+        var model = settings.Models.FirstOrDefault(item =>
+            item.Enabled && string.Equals(item.Id, modelId, StringComparison.OrdinalIgnoreCase));
+        return model?.ReasoningEffort;
     }
 
     private static ProviderRegistration CreateModelBoundRegistration(
@@ -517,6 +558,12 @@ public static class ProviderConfigurationFactory
         if (settings.Capabilities.Images)
         {
             capabilities |= ProviderCapabilities.Images;
+        }
+
+        var reasoningSupported = model?.SupportsReasoning ?? false;
+        if (reasoningSupported)
+        {
+            capabilities |= ProviderCapabilities.Reasoning;
         }
 
         return capabilities;

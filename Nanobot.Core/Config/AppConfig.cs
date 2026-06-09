@@ -56,6 +56,15 @@ public class ModelSettings
     public bool Enabled { get; set; } = true;
     public bool? SupportsStreaming { get; set; }
     public bool? SupportsTools { get; set; }
+    public string? DisplayName { get; set; }
+    public int? ContextWindow { get; set; }
+    public int? MaxOutputTokens { get; set; }
+    public bool? SupportsReasoning { get; set; }
+    public bool? SupportsInterleavedThinking { get; set; }
+    public bool? SupportsPromptCacheMetrics { get; set; }
+    public string? ReasoningEffort { get; set; }
+    public bool? PlanAvailable { get; set; }
+    public string? ProviderModelFamily { get; set; }
 }
 
 public class ProviderCapabilitySettings

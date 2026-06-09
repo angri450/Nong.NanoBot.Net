@@ -72,6 +72,15 @@
             <input id="modelId" type="text" autocomplete="off" spellcheck="false" value="deepseek-v4-pro-guan">
           </label>
           <label>
+            <span data-i18n="thinkingMode">思考模式</span>
+            <select id="thinkingMode">
+              <option value="auto" data-i18n="thinkingAuto">自动</option>
+              <option value="high" data-i18n="thinkingHigh">高</option>
+              <option value="max" data-i18n="thinkingMax">最大</option>
+              <option value="off" data-i18n="thinkingOff">关闭</option>
+            </select>
+          </label>
+          <label>
             <span data-i18n="apiKey">调用密钥</span>
             <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-...">
           </label>
@@ -82,6 +91,32 @@
           </div>
           <div id="settingsNotice" class="settings-notice" hidden></div>
         </form>
+      </section>
+
+      <section class="panel-block gitcode-block">
+        <div class="section-head">
+          <div class="section-title" data-i18n="gitCodeAccount">GitCode 账号</div>
+          <span id="gitCodeAuthStatus" class="section-count" data-i18n="gitCodeNotLoggedIn">未登录</span>
+        </div>
+        <div class="gitcode-panel">
+          <div id="gitCodeUserInfo" class="gitcode-user" hidden>
+            <span id="gitCodeUserName"></span>
+            <small id="gitCodeTokenStatus"></small>
+          </div>
+          <div class="gitcode-actions">
+            <button id="gitCodeLoginBtn" class="primary-button" type="button" data-i18n="gitCodeLogin">登录 GitCode</button>
+            <button id="gitCodeLogoutBtn" class="secondary-button" type="button" hidden data-i18n="gitCodeLogout">退出登录</button>
+          </div>
+          <div id="gitCodeLoginStatus" class="gitcode-login-status" hidden>
+            <div class="section-title" data-i18n="gitCodeOpenBrowser">请在新打开的浏览器窗口中完成授权</div>
+            <div id="gitCodeLoginHint" class="settings-hint"></div>
+          </div>
+          <div class="gitcode-actions" id="gitCodeSyncActions" hidden>
+            <button id="gitCodeSyncBtn" class="primary-button" type="button" data-i18n="gitCodeSync">同步免费模型</button>
+          </div>
+          <div id="gitCodeSetupResult" class="gitcode-setup-result" hidden></div>
+          <div id="gitCodeModelList" class="gitcode-model-list"></div>
+        </div>
       </section>
 
       <section class="panel-block">
@@ -122,6 +157,8 @@
         <div class="status-strip">
           <span id="runtimeReadyPill" class="status-pill">Loading</span>
           <span id="runtimeModelPill" class="status-pill muted">Model</span>
+          <span id="runtimeCachePill" class="status-pill muted" hidden>缓存 --</span>
+          <span id="runtimeUsagePill" class="status-pill muted" hidden>Token --</span>
           <span id="runtimeNongPill" class="status-pill muted">Nong</span>
         </div>
         <div class="topbar-actions">
@@ -170,6 +207,17 @@
       <section class="inspector-section">
         <div class="section-title" data-i18n="toolDetail">工具详情</div>
         <div id="toolDetail" class="tool-detail"></div>
+      </section>
+      <section class="inspector-section">
+        <div class="section-title" data-i18n="usageCache">用量与缓存</div>
+        <div id="usageDisplay" class="usage-display">
+          <div class="usage-row"><span data-i18n="cacheHitRate">缓存命中率</span><span id="cacheHitRate">--</span></div>
+          <div class="usage-row"><span data-i18n="cachedTokens">命中 Token</span><span id="cachedTokens">--</span></div>
+          <div class="usage-row"><span data-i18n="uncachedTokens">未命中 Token</span><span id="uncachedTokens">--</span></div>
+          <div class="usage-row"><span data-i18n="outputTokens">输出 Token</span><span id="outputTokens">--</span></div>
+          <div class="usage-row"><span data-i18n="reasoningTokens">思考 Token</span><span id="reasoningTokens">--</span></div>
+          <div class="usage-row"><span data-i18n="totalTokens">总计 Token</span><span id="totalTokens">--</span></div>
+        </div>
       </section>
       <section class="inspector-section">
         <div class="section-title" data-i18n="filePreview">文件预览</div>

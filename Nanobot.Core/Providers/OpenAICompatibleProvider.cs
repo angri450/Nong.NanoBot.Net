@@ -68,7 +68,7 @@ public class OpenAICompatibleProvider : IStreamingLLMProvider
         var toolCalls = new List<StreamingToolCallBuilder>();
         StreamingToolCallBuilder? lastToolCall = null;
         string? finishReason = null;
-        Dictionary<string, int> usage = new();
+        int promptTokens = 0, completionTokens = 0;
 
         IAsyncEnumerable<StreamingChatCompletionUpdate>? updates = null;
         LLMResponse? startupError = null;
@@ -116,12 +116,8 @@ public class OpenAICompatibleProvider : IStreamingLLMProvider
             var updateUsage = update.Usage;
             if (updateUsage is not null)
             {
-                usage = new Dictionary<string, int>
-                {
-                    { "prompt_tokens", updateUsage.InputTokenCount },
-                    { "completion_tokens", updateUsage.OutputTokenCount },
-                    { "total_tokens", updateUsage.TotalTokenCount }
-                };
+                promptTokens = updateUsage.InputTokenCount;
+                completionTokens = updateUsage.OutputTokenCount;
             }
         }
 
@@ -129,7 +125,7 @@ public class OpenAICompatibleProvider : IStreamingLLMProvider
         {
             Content = content.Length == 0 ? null : content.ToString(),
             FinishReason = finishReason ?? "stop",
-            Usage = usage
+            Usage = LLMUsage.Basic(promptTokens, completionTokens)
         };
 
         foreach (var toolCall in toolCalls)
@@ -236,12 +232,9 @@ public class OpenAICompatibleProvider : IStreamingLLMProvider
         {
             Content = completion.Content?.Count > 0 ? completion.Content[0].Text : null,
             FinishReason = completion.FinishReason.ToString().ToLowerInvariant(),
-            Usage = completion.Usage != null ? new Dictionary<string, int>
-            {
-                { "prompt_tokens", completion.Usage.InputTokenCount },
-                { "completion_tokens", completion.Usage.OutputTokenCount },
-                { "total_tokens", completion.Usage.TotalTokenCount }
-            } : new Dictionary<string, int>()
+            Usage = completion.Usage != null
+                ? LLMUsage.Basic(completion.Usage.InputTokenCount, completion.Usage.OutputTokenCount)
+                : null
         };
 
         if (completion.ToolCalls != null && completion.ToolCalls.Count > 0)

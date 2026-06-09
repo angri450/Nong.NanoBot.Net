@@ -202,10 +202,19 @@ public class AzureOpenAIProvider : IStreamingLLMProvider
         var root = JsonNode.Parse(json) as JsonObject ?? new JsonObject();
         var choice = root["choices"]?[0] as JsonObject;
         var message = choice?["message"] as JsonObject;
+        LLMUsage? parsedUsage = null;
+        if (root["usage"] is JsonObject usage)
+        {
+            var promptTokens = usage["prompt_tokens"]?.GetValue<int>() ?? 0;
+            var completionTokens = usage["completion_tokens"]?.GetValue<int>() ?? 0;
+            parsedUsage = LLMUsage.Basic(promptTokens, completionTokens);
+        }
+
         var result = new LLMResponse
         {
             Content = message?["content"]?.ToString(),
-            FinishReason = choice?["finish_reason"]?.ToString() ?? "stop"
+            FinishReason = choice?["finish_reason"]?.ToString() ?? "stop",
+            Usage = parsedUsage
         };
 
         if (message?["tool_calls"] is JsonArray toolCalls)
@@ -229,13 +238,6 @@ public class AzureOpenAIProvider : IStreamingLLMProvider
                     arguments
                 ));
             }
-        }
-
-        if (root["usage"] is JsonObject usage)
-        {
-            result.Usage["prompt_tokens"] = usage["prompt_tokens"]?.GetValue<int>() ?? 0;
-            result.Usage["completion_tokens"] = usage["completion_tokens"]?.GetValue<int>() ?? 0;
-            result.Usage["total_tokens"] = usage["total_tokens"]?.GetValue<int>() ?? 0;
         }
 
         return result;

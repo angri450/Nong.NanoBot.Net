@@ -1,14 +1,16 @@
+using Nanobot.Core.Providers;
+
 namespace Nanobot.Core.Models;
 
-/// <summary>
-/// Response from an LLM provider.
-/// </summary>
 public record LLMResponse
 {
     public string? Content { get; init; }
     public List<ToolCallRequest> ToolCalls { get; init; } = new();
     public string FinishReason { get; init; } = "stop";
-    public Dictionary<string, int> Usage { get; init; } = new();
+    public LLMUsage? Usage { get; init; }
+    public string? ReasoningContent { get; init; }
+    public string? Model { get; init; }
+    public string? Provider { get; init; }
 
     public bool HasToolCalls => ToolCalls.Count > 0;
 
