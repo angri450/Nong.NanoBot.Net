@@ -1,4 +1,4 @@
-# NanoBot.net 施工规范
+# Nong.NanoBot.Net 施工规范
 
 这个文件只固定开发节奏，不做过多产品约束。原则是：先对齐方向，快速施工，验证结果，留下记录。
 
@@ -35,8 +35,8 @@
 
 ## 默认判断
 
-- NanoBot.net 是当前主线。
+- Nong.NanoBot.Net 是当前主线。
 - 默认技术基线是 .NET 8、Apache-2.0、本地优先。
 - WebUI 中文优先，深色/浅色都要能用。
-- GroundPA-Toolkit / Nong 走 plugin/bootstrap，不默认打包进主安装包。
+- Nong.Toolkit.Net / Nong.Cli.Net 走 plugin/bootstrap，不默认打包进主安装包。
 - GitCode/CodingPlan 可以积极接入，但不复制或逆向私有签名实现。

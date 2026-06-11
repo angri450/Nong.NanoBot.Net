@@ -97,3 +97,19 @@ public sealed record WorkspaceFileContentResponse(
     long Size,
     bool Truncated,
     DateTimeOffset ModifiedAt);
+
+public sealed record SystemStatusResponse(
+    RuntimeStatusResponse Runtime,
+    NongStatusResponse? Nong,
+    ToolkitStatusResponse? Toolkit);
+
+public sealed record NongStatusResponse(
+    bool Installed,
+    string? Version,
+    int CommandCount,
+    IReadOnlyList<string> AvailableRoots);
+
+public sealed record ToolkitStatusResponse(
+    bool Installed,
+    int SkillCount,
+    IReadOnlyList<string> SkillNames);

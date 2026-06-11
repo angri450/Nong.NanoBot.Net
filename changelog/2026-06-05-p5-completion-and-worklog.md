@@ -1,4 +1,4 @@
-# NanoBot.net P5 完成记录与工作量
+# Nong.NanoBot.Net P5 完成记录与工作量
 
 > 记录日期：2026-06-05
 > 背景文档：`changelog/2026-06-05-p4-completion-and-worklog.md`
@@ -27,7 +27,7 @@ P5 被定义为“CI、配置化、release、streaming、gateway 认证和真实
 交付：
 
 - 对照 cherry-studio 的 provider/model 分离设计。
-- 在 NanoBot.net 中确立 `providerId::modelId` 为稳定模型身份。
+- 在 Nong.NanoBot.Net 中确立 `providerId::modelId` 为稳定模型身份。
 - 保留旧配置兼容：裸模型名默认解释为 `openai::<model>`。
 - 明确 provider 配置、模型选择、fallback chain 的边界。
 

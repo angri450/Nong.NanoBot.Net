@@ -41,7 +41,7 @@ function Convert-ToWixId([string]$Prefix, [string]$Value) {
 }
 
 function Convert-ToStableGuid([string]$Value) {
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes("NanoBot.net MSI component: $Value")
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes("Nong.NanoBot.Net MSI component: $Value")
     $md5 = [System.Security.Cryptography.MD5]::Create()
     try {
         $hash = $md5.ComputeHash($bytes)

@@ -14,7 +14,7 @@ Move the browser workbench from a status/chat shell into a usable local Agent wo
 - Reworked the frontend as a Chinese-default Agent workbench with an optional English toggle.
 - Added dark and light theme support from the WebUI header.
 - Added streaming chat rendering, session list, workspace file tree, file preview, runtime status, memory preview, tool timeline, and tool detail panels.
-- Added root `AGENTS.md` to lock the repository direction: independent .NET 8 runtime, Nong/GroundPA alignment, Apache-2.0, Chinese-first WebUI, and CodeBuddy as UX reference only.
+- Added root `AGENTS.md` to lock the repository direction: independent .NET 8 runtime, Nong/Nong.Toolkit.Net alignment, Apache-2.0, Chinese-first WebUI, and CodeBuddy as UX reference only.
 
 ## Design Notes
 

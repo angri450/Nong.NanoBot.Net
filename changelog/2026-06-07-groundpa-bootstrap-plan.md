@@ -1,47 +1,47 @@
-# 2026-06-07 Plugin And GroundPA Bootstrap Plan
+# 2026-06-07 Plugin And Nong.Toolkit.Net Bootstrap Plan
 
 ## Decision
 
-NanoBot.net should become the GroundPA host, but it should not ship with full external skill payloads bundled by default.
+Nong.NanoBot.Net should become the Nong.Toolkit.Net host, but it should not ship with full external skill payloads bundled by default.
 
-The product should ship with a generic plugin / skill-pack bootstrap system. Any repository with `plugin.json` should be installable, deployable, updatable, and health-checkable by NanoBot. GroundPA-Toolkit and Nong are first-class plugins on top of this system, not hard-bundled payloads.
+The product should ship with a generic plugin / skill-pack bootstrap system. Any repository with `plugin.json` should be installable, deployable, updatable, and health-checkable by NanoBot. Nong.Toolkit.Net and Nong.Cli.Net are first-class plugins on top of this system, not hard-bundled payloads.
 
 - configure plugin marketplace sources
 - install repositories with `plugin.json`
-- install GroundPA-Toolkit / Nong on demand through the same plugin mechanism
+- install Nong.Toolkit.Net / Nong on demand through the same plugin mechanism
 - continue deployment in the background while NanoBot is already running
 - detect local Nong health and version
-- update installed GroundPA components
-- expose plugin, GroundPA, and Nong readiness and capability discovery to the WebUI
+- update installed Nong.Toolkit.Net components
+- expose plugin, Nong.Toolkit.Net, and Nong.Cli.Net readiness and capability discovery to the WebUI
 
 ## Reference
 
 Claude Code plugin marketplace installation flow is the UX reference:
 
 ```text
-claude plugin marketplace add https://gitcode.com/angri450/GroundPA-Toolkit.git
-claude plugin install groundpa-toolkit@angri450
+claude plugin marketplace add https://gitcode.com/angri450/Nong.Toolkit.Net.git
+claude plugin install nong-toolkit@angri450
 ```
 
 NanoBot should implement its own equivalent flow, for example:
 
 ```text
-nanobot plugin marketplace add https://gitcode.com/angri450/GroundPA-Toolkit.git
-nanobot plugin install groundpa-toolkit@angri450
+nanobot plugin marketplace add https://gitcode.com/angri450/Nong.Toolkit.Net.git
+nanobot plugin install nong-toolkit@angri450
 nanobot plugin status
 nanobot plugin update
 
-nanobot groundpa marketplace add https://gitcode.com/angri450/GroundPA-Toolkit.git
-nanobot groundpa install groundpa-toolkit@angri450
-nanobot groundpa status
-nanobot groundpa update
+nanobot nong-toolkit marketplace add https://gitcode.com/angri450/Nong.Toolkit.Net.git
+nanobot nong-toolkit install nong-toolkit@angri450
+nanobot nong-toolkit status
+nanobot nong-toolkit update
 ```
 
-The `groundpa` commands are semantic sugar over the generic plugin installer.
+The `nong-toolkit` commands are semantic sugar over the generic plugin installer.
 
 ## Updated Plan
 
-- P4 is now plugin / GroundPA bootstrap plus agent control panels.
-- Runtime API should include plugin status/install/update endpoints plus GroundPA status, install, update, and capability discovery endpoints.
-- WebUI should show ready / missing / installing / failed / update-available states for plugins, GroundPA-Toolkit, and Nong.
-- GroundPA-Toolkit and Nong can update independently from NanoBot.
+- P4 is now plugin / Nong.Toolkit.Net bootstrap plus agent control panels.
+- Runtime API should include plugin status/install/update endpoints plus Nong.Toolkit.Net status, install, update, and capability discovery endpoints.
+- WebUI should show ready / missing / installing / failed / update-available states for plugins, Nong.Toolkit.Net, and Nong.
+- Nong.Toolkit.Net and Nong.Cli.Net can update independently from NanoBot.

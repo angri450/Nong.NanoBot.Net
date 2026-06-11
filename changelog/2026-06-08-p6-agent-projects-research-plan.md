@@ -2,7 +2,7 @@
 
 ## 背景
 
-用户指出“一个问题不能有两头都是谜团”，因此 P6 不直接继续堆功能，而是先把若干有特色的智能体项目系统研究清楚，再决定 NanoBot.net 后续吸收路线。
+用户指出“一个问题不能有两头都是谜团”，因此 P6 不直接继续堆功能，而是先把若干有特色的智能体项目系统研究清楚，再决定 Nong.NanoBot.Net 后续吸收路线。
 
 ## 研究副本
 
@@ -33,7 +33,7 @@ PilotDeck.net clone 时 Git LFS 额度不足，已改用 `GIT_LFS_SKIP_SMUDGE=1`
 - 新增 7 个项目 scorecard，覆盖 CodeWhale、DeepSeek-GUI/Kun、PilotDeck、GenericAgent、EvoScientist、soloncode、agent-framework。
 - 新增 3 条 P6 ADR，固定 NanoBot 主线、runtime API/SSE 优先、DeepSeek V4 Flash 一等模型。
 - 新增 `docs/p6-wiki/10-p6-roadmap.zh-CN.md`，作为 P6 后施工路线。
-- 固定 P6 的定位：NanoBot.net 仍为主线，外部项目作为教材和能力来源。
+- 固定 P6 的定位：Nong.NanoBot.Net 仍为主线，外部项目作为教材和能力来源。
 - 梳理 7 个项目的定位、功能、工具、架构贯穿、NanoBot 可吸收点和风险。
 - 初步判断：
   - CodeWhale.net 是 DeepSeek V4 Flash / 长上下文 / 缓存命中 / runtime API 最重要参考。

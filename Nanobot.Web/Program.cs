@@ -12,6 +12,7 @@ using Nanobot.Core.Providers;
 using Nanobot.Core.Sessions;
 using Nanobot.Core.Tools;
 using Nanobot.Core.Tools.Builtin;
+using Nanobot.Core.Skills;
 using Nanobot.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +30,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.MapGet("/api/runtime/status", (NanobotWebRuntime runtime) => runtime.GetStatus());
+app.MapGet("/api/system/status", (NanobotWebRuntime runtime) => runtime.GetSystemStatus());
 
 app.MapGet("/api/settings/model", (NanobotWebRuntime runtime) => runtime.GetModelSettings());
 
@@ -351,6 +353,59 @@ public sealed class NanobotWebRuntime
             Error: _startupError,
             Warning: _startupWarning
         );
+    }
+
+    public SystemStatusResponse GetSystemStatus()
+    {
+        var nong = ProbeNongStatus();
+        var toolkit = ProbeToolkitStatus();
+        return new SystemStatusResponse(GetStatus(), nong, toolkit);
+    }
+
+    static NongStatusResponse? ProbeNongStatus()
+    {
+        try
+        {
+            using var proc = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "nong",
+                    Arguments = "commands --json",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            proc.Start();
+            proc.WaitForExit(5000);
+            if (proc.ExitCode != 0) return null;
+            var json = proc.StandardOutput.ReadToEnd();
+            var doc = JsonNode.Parse(json);
+            if (doc?["status"]?.ToString() != "ok") return null;
+            var version = doc["meta"]?["version"]?.ToString();
+            var data = doc["data"]?.AsArray();
+            var roots = data?.Select(c => c["group"]?.ToString() ?? "").Distinct().OrderBy(r => r).ToList() ?? new List<string>();
+            return new NongStatusResponse(true, version, data?.Count ?? 0, roots!);
+        }
+        catch { return null; }
+    }
+
+    static ToolkitStatusResponse? ProbeToolkitStatus()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var skillsDir = Path.Combine(home, ".nanobot", "workspace", "skills");
+        if (!Directory.Exists(skillsDir)) return null;
+        var skillNames = Directory.GetDirectories(skillsDir)
+            .Select(Path.GetFileName)
+            .Where(n => n != null)
+            .Select(n => n!)
+            .OrderBy(n => n)
+            .ToList();
+        return skillNames.Count > 0
+            ? new ToolkitStatusResponse(true, skillNames.Count, skillNames)
+            : null;
     }
 
     public ModelSettingsResponse GetModelSettings()
@@ -767,6 +822,12 @@ public sealed class NanobotWebRuntime
         {
             registry.Register(new NongTool(_workspace, _config.Tools.Nong));
         }
+
+        // Skill tools (2-phase progressive disclosure)
+        var skillLoader = new SkillLoader();
+        registry.Register(new GetSkillCatalogTool(skillLoader, _workspace));
+        registry.Register(new LoadSkillTool(skillLoader, _workspace));
+        registry.Register(new LoadSkillReferenceTool(skillLoader, _workspace));
 
         var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN")
             ?? (_config.Providers.TryGetValue("github", out var gh) ? gh.ApiKey : null);

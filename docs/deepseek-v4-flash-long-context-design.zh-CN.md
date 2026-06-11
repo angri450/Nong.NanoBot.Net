@@ -2,7 +2,7 @@
 
 调研日期：2026-06-08
 
-本文把 DeepSeek V4 Flash 接入提升为 NanoBot.net 的主任务之一。目标不是只把模型 ID 加进列表，而是让 NanoBot 真正吃到 DeepSeek V4 Flash 的 1M 上下文、思考模式、工具调用、流式输出和上下文缓存收益。
+本文把 DeepSeek V4 Flash 接入提升为 Nong.NanoBot.Net 的主任务之一。目标不是只把模型 ID 加进列表，而是让 NanoBot 真正吃到 DeepSeek V4 Flash 的 1M 上下文、思考模式、工具调用、流式输出和上下文缓存收益。
 
 参考资料：
 

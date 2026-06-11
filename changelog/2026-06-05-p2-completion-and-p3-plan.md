@@ -1,4 +1,4 @@
-# NanoBot.net P2 完成记录与 P3 计划
+# Nong.NanoBot.Net P2 完成记录与 P3 计划
 
 > 记录日期：2026-06-05
 > 背景文档：`changelog/2026-06-05-agent-implementation-plan.md`

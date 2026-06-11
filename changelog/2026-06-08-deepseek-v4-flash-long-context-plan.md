@@ -2,7 +2,7 @@
 
 ## 背景
 
-GitCode / AtomCode 的免费模型通道让 DeepSeek V4 Flash 成为 NanoBot.net 下一阶段的核心模型候选。用户明确要求把 DeepSeek 调用、1M 上下文、交错思考、工具调用和上下文命中率作为主要任务深入挖掘。
+GitCode / AtomCode 的免费模型通道让 DeepSeek V4 Flash 成为 Nong.NanoBot.Net 下一阶段的核心模型候选。用户明确要求把 DeepSeek 调用、1M 上下文、交错思考、工具调用和上下文命中率作为主要任务深入挖掘。
 
 ## 记录
 

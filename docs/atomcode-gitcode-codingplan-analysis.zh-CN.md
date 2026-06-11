@@ -7,7 +7,7 @@
 - `C:\Users\Administrator\Documents\Github\atomcode.net`
 - `C:\Users\Administrator\Documents\Github\DeepSeek-TUI`
 
-本方案的目标不是把 AtomCode 变成 NanoBot.net 的依赖，而是把它的 GitCode 登录、CodingPlan 免费模型领取、动态模型注册和 WebUI 控制面这条链路吃透，再用 .NET 8 在 NanoBot.net 里实现一套可维护、可测试、可替换的能力。
+本方案的目标不是把 AtomCode 变成 Nong.NanoBot.Net 的依赖，而是把它的 GitCode 登录、CodingPlan 免费模型领取、动态模型注册和 WebUI 控制面这条链路吃透，再用 .NET 8 在 Nong.NanoBot.Net 里实现一套可维护、可测试、可替换的能力。
 
 ## 结论
 
@@ -452,7 +452,7 @@ Callable: 已具备合法签名/桥接能力，可以直接对话
 - NanoBot 不随 MSI 打包 AtomCode。
 - WebUI 提供“检测本机 AtomCode”。
 - 用户自己安装后，NanoBot 可调用其 daemon 或 CLI。
-- 桥接失败时不影响 DMX、Nong、GroundPA 主线。
+- 桥接失败时不影响 DMX、Nong、Nong.Toolkit.Net 主线。
 
 ### P4.5：WebUI
 

@@ -1,4 +1,4 @@
-# NanoBot.net P3 完成记录
+# Nong.NanoBot.Net P3 完成记录
 
 > 记录日期：2026-06-05
 > 背景文档：`changelog/2026-06-05-p2-completion-and-p3-plan.md`

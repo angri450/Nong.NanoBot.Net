@@ -1,6 +1,6 @@
 const i18n = {
   zh: {
-    product: "NanoBot.net",
+    product: "Nong.NanoBot.Net",
     workbench: "Agent 工作台",
     railChat: "对话",
     railFiles: "文件",
@@ -116,7 +116,7 @@ const i18n = {
     gitCodeClaimPlanClaimed: "计划已领取"
   },
   en: {
-    product: "NanoBot.net",
+    product: "Nong.NanoBot.Net",
     workbench: "Agent Workbench",
     railChat: "Chat",
     railFiles: "Files",
@@ -1081,6 +1081,85 @@ function renderGitCodeModels(models) {
   note.className = "settings-hint";
   note.textContent = t("gitCodeCatalogOnly");
   elements.gitCodeModelList.appendChild(note);
+}
+
+// ===== Status Panel =====
+
+let statusViewActive = false;
+
+async function refreshStatusPanel() {
+  if (!statusViewActive) return;
+  try {
+    const status = await apiJson("/api/system/status");
+    const nong = status.nong || status.Nong;
+    const toolkit = status.toolkit || status.Toolkit;
+    const rt = status.runtime || status.Runtime;
+
+    document.getElementById("statusNanoState").textContent = (rt && (rt.ready || rt.Ready)) ? "就绪" : "未配置";
+    document.getElementById("statusNanoModel").textContent = rt ? (rt.model || rt.Model || "-") : "-";
+    document.getElementById("statusNanoWorkspace").textContent = rt ? (rt.workspace || rt.Workspace || "-") : "-";
+
+    if (nong) {
+      document.getElementById("statusNongState").textContent = "已安装";
+      document.getElementById("statusNongState").className = "status-ready";
+      document.getElementById("statusNongVersion").textContent = nong.version || nong.Version || "-";
+      document.getElementById("statusNongCommands").textContent = nong.commandCount || nong.CommandCount || "-";
+    } else {
+      document.getElementById("statusNongState").textContent = "未安装";
+      document.getElementById("statusNongState").className = "status-error";
+      document.getElementById("statusNongVersion").textContent = "-";
+      document.getElementById("statusNongCommands").textContent = "-";
+    }
+
+    if (toolkit) {
+      document.getElementById("statusToolkitState").textContent = toolkit.installed || toolkit.Installed ? "已加载" : "未加载";
+      document.getElementById("statusToolkitState").className = (toolkit.installed || toolkit.Installed) ? "status-ready" : "status-error";
+      document.getElementById("statusToolkitSkills").textContent = toolkit.skillCount || toolkit.SkillCount || "-";
+      const detail = document.getElementById("statusDetail");
+      if (toolkit.skillNames || toolkit.SkillNames) {
+        const names = toolkit.skillNames || toolkit.SkillNames;
+        detail.innerHTML = "<h4>已加载的技能</h4><div class='skill-tags'>" +
+          names.map(n => "<span class='skill-tag'>" + escapeHtml(n) + "</span>").join("") +
+          "</div>";
+      }
+    } else {
+      document.getElementById("statusToolkitState").textContent = "未加载";
+      document.getElementById("statusToolkitState").className = "status-error";
+      document.getElementById("statusToolkitSkills").textContent = "-";
+      document.getElementById("statusDetail").innerHTML = "";
+    }
+  } catch (e) {
+    document.getElementById("statusNongState").textContent = "检测失败";
+    document.getElementById("statusNongState").className = "status-error";
+  }
+}
+
+document.querySelectorAll(".rail-button[data-view='status']").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".rail-button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("messages").style.display = "none";
+    document.getElementById("composer").style.display = "none";
+    document.getElementById("statusPanel").style.display = "block";
+    statusViewActive = true;
+    refreshStatusPanel();
+  });
+});
+
+// Switch back to chat view when other rail buttons are clicked
+document.querySelectorAll(".rail-button[data-view='chat']").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.getElementById("messages").style.display = "";
+    document.getElementById("composer").style.display = "";
+    document.getElementById("statusPanel").style.display = "none";
+    statusViewActive = false;
+  });
+});
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 boot();

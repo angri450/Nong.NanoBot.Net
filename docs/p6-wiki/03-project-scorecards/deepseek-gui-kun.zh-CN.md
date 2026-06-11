@@ -107,5 +107,5 @@ React Renderer
 - Kun 是 TS runtime，不能直接替换 .NET Core。
 - Write/FIM 绕过 Kun 的路径不适合 NanoBot，容易形成第二套模型、权限和成本逻辑。
 - Shell 长任务和 `approvalPolicy:auto` 需要更严格宿主限制。
-- 记忆偏轻量，不足以直接作为 GroundPA 长期白盒记忆。
+- 记忆偏轻量，不足以直接作为 Nong.Toolkit.Net 长期白盒记忆。
 

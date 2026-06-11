@@ -1,4 +1,4 @@
-# NanoBot.net Agent 编程行动规划
+# Nong.NanoBot.Net Agent 编程行动规划
 
 > 记录日期：2026-06-05
 > 背景文档：`changelog/2026-06-01-research-report.md`
@@ -26,13 +26,13 @@ YYYY-MM-DD-topic.md
 
 | 原路径 | 新路径 | 说明 |
 |---|---|---|
-| `docs/research-report-2026-06-01.md` | `changelog/2026-06-01-research-report.md` | NanoBot.net 与 Python 原版差距调研报告 |
+| `docs/research-report-2026-06-01.md` | `changelog/2026-06-01-research-report.md` | Nong.NanoBot.Net 与 Python 原版差距调研报告 |
 
 ---
 
 ## 二、当前判断
 
-`NanoBot.net` 不只是缺少新功能，本记录初始版本确认当前基线已经不可构建。`dotnet test` 失败，原因是 `Nanobot.Core.Memory` 命名空间、`IMemory`、`FileMemoryStore` 被引用但项目中不存在。
+`Nong.NanoBot.Net` 不只是缺少新功能，本记录初始版本确认当前基线已经不可构建。`dotnet test` 失败，原因是 `Nanobot.Core.Memory` 命名空间、`IMemory`、`FileMemoryStore` 被引用但项目中不存在。
 
 2026-06-05 施工更新：已补齐最小 `Nanobot.Core.Memory`，删除空占位测试，`dotnet test` 已恢复通过。
 

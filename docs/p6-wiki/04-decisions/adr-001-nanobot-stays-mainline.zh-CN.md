@@ -1,4 +1,4 @@
-# ADR-001：NanoBot.net 保持主线
+# ADR-001：Nong.NanoBot.Net 保持主线
 
 日期：2026-06-08
 
@@ -12,11 +12,11 @@ P6 调研覆盖 CodeWhale.net、DeepSeek-GUI.net、PilotDeck.net、GenericAgent.
 - CLI first，WebUI second
 - MSI 分发
 - 不使用 WebView2 / Electron 桌面壳
-- GroundPA-Toolkit / Nong 通过 plugin/bootstrap 接入
+- Nong.Toolkit.Net / Nong 通过 plugin/bootstrap 接入
 
 ## 决策
 
-NanoBot.net 继续作为 GroundPA / Nong agent runtime 主线。外部项目只作为研究教材和局部能力来源。
+Nong.NanoBot.Net 继续作为 Nong.Toolkit.Net / Nong.Cli.Net agent runtime 主线。外部项目只作为研究教材和局部能力来源。
 
 ## 影响
 

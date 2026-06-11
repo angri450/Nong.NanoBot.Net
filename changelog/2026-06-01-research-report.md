@@ -1,7 +1,7 @@
-# NanoBot.net 调研报告与移植建议
+# Nong.NanoBot.Net 调研报告与移植建议
 
 > 调研日期：2026-06-05（更新）
-> 对比基准：lepollo/NanoBot.net (2026-02-24 停更) vs HKUDS/nanobot (2026-06-04, v0.2.1)
+> 对比基准：lepollo/Nong.NanoBot.Net (2026-02-24 停更) vs HKUDS/nanobot (2026-06-04, v0.2.1)
 > 上次报告：2026-06-01（v0.2.0 基线）
 > 本次更新：原版 main 分支又前进了 71 个 commit，版本号升至 v0.2.1
 
@@ -9,7 +9,7 @@
 
 ## 一、现状速览
 
-**NanoBot.net** 是 lepollo 在 2026 年 2 月用 6 个 commit 完成的 .NET 10 移植版，核心约 30 个 .cs 文件，不足 2000 行。它忠实复刻了当时原版 nanobot 的"极简个人助手"定位：单一 Agent 循环 + 工具调用 + 文件记忆 + Telegram 网关 + 定时任务。MIT 许可证。
+**Nong.NanoBot.Net** 是 lepollo 在 2026 年 2 月用 6 个 commit 完成的 .NET 10 移植版，核心约 30 个 .cs 文件，不足 2000 行。它忠实复刻了当时原版 nanobot 的"极简个人助手"定位：单一 Agent 循环 + 工具调用 + 文件记忆 + Telegram 网关 + 定时任务。MIT 许可证。
 
 但 2 月至今的 4 个月里，原版 Python 项目从 v0.1.3 一路涨到 **v0.2.1**，合并了上百个 PR，架构已经发生了质变。仅 6 月 1 日到 6 月 4 日这 4 天，main 分支就又推进了 71 个 commit。
 
@@ -190,7 +190,7 @@
 
 3. **维护成本**：原版有 645 个开放 PR 在并行推进，合并速度约每天 15-20 个 commit。一个人不可能全部跟上。必须有取舍。
 
-4. **lepollo 失联**：已向 lepollo/NanoBot.net 提 issue 沟通，目前无回应。上游 .NET 移植作者大概率弃坑，你的 fork 就是新的上游。这意味着没有"参考实现"可以抄，每个功能都要自己读懂原版 Python 再做 .NET 移植。
+4. **lepollo 失联**：已向 lepollo/Nong.NanoBot.Net 提 issue 沟通，目前无回应。上游 .NET 移植作者大概率弃坑，你的 fork 就是新的上游。这意味着没有"参考实现"可以抄，每个功能都要自己读懂原版 Python 再做 .NET 移植。
 
 ---
 

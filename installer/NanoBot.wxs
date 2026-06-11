@@ -1,25 +1,25 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
-    Name="NanoBot.net"
+    Name="Nong.NanoBot.Net"
     Manufacturer="Angri450"
     Version="$(var.ProductVersion)"
     UpgradeCode="{2D736C6F-6E63-6F64-652D-4E616E6F426F}"
     Scope="perUser">
-    <SummaryInformation Description="NanoBot.net GroundPA runtime" Manufacturer="Angri450" />
-    <MajorUpgrade DowngradeErrorMessage="A newer version of NanoBot.net is already installed." />
+    <SummaryInformation Description="Nong.NanoBot.Net Nong.Toolkit.Net runtime" Manufacturer="Angri450" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Nong.NanoBot.Net is already installed." />
     <MediaTemplate EmbedCab="yes" />
-    <Property Id="ARPURLINFOABOUT" Value="https://github.com/angri450/NanoBot.net" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/angri450/Nong.NanoBot.Net" />
     <Property Id="ARPCONTACT" Value="angri450" />
     <Property Id="ARPNOREPAIR" Value="yes" />
 
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="ProgramsFolder" Name="Programs">
-        <Directory Id="INSTALLFOLDER" Name="NanoBot.net" />
+        <Directory Id="INSTALLFOLDER" Name="Nong.NanoBot.Net" />
       </Directory>
     </StandardDirectory>
 
     <StandardDirectory Id="ProgramMenuFolder">
-      <Directory Id="ApplicationProgramsFolder" Name="NanoBot.net" />
+      <Directory Id="ApplicationProgramsFolder" Name="Nong.NanoBot.Net" />
     </StandardDirectory>
 
     <StandardDirectory Id="DesktopFolder" />
@@ -42,7 +42,7 @@
       <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
       <RegistryValue
         Root="HKCU"
-        Key="Software\Angri450\NanoBot.net"
+        Key="Software\Angri450\Nong.NanoBot.Net"
         Name="StartMenuShortcuts"
         Type="integer"
         Value="1"
@@ -59,7 +59,7 @@
         Advertise="no" />
       <RegistryValue
         Root="HKCU"
-        Key="Software\Angri450\NanoBot.net"
+        Key="Software\Angri450\Nong.NanoBot.Net"
         Name="DesktopShortcut"
         Type="integer"
         Value="1"
@@ -77,7 +77,7 @@
         System="no" />
       <RegistryValue
         Root="HKCU"
-        Key="Software\Angri450\NanoBot.net"
+        Key="Software\Angri450\Nong.NanoBot.Net"
         Name="InstallDir"
         Type="string"
         Value="[INSTALLFOLDER]"
@@ -96,7 +96,7 @@
       <Custom Action="LaunchWebUiAfterInstall" After="InstallFinalize" Condition="(NOT Installed) AND (NOT REMOVE) AND (UILevel &gt;= 3)" />
     </InstallExecuteSequence>
 
-    <Feature Id="MainFeature" Title="NanoBot.net" Level="1">
+    <Feature Id="MainFeature" Title="Nong.NanoBot.Net" Level="1">
       <ComponentGroupRef Id="PublishedFiles" />
       <ComponentRef Id="StartMenuShortcuts" />
       <ComponentRef Id="DesktopShortcut" />

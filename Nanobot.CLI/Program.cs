@@ -13,6 +13,7 @@ using Nanobot.Core.Models;
 using Nanobot.Core.Channels;
 using Nanobot.Core.Mcp;
 using Nanobot.Core.Heartbeat;
+using Nanobot.Core.Skills;
 
 class Program
 {
@@ -47,6 +48,12 @@ class Program
             {
                 registry.Register(new NongTool(workspace, config.Tools.Nong));
             }
+
+            // Skill tools (2-phase progressive disclosure)
+            var skillLoader = new SkillLoader();
+            registry.Register(new GetSkillCatalogTool(skillLoader, workspace));
+            registry.Register(new LoadSkillTool(skillLoader, workspace));
+            registry.Register(new LoadSkillReferenceTool(skillLoader, workspace));
             
             string? githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? (config.Providers.TryGetValue("github", out var gh) ? gh.ApiKey : null);
             registry.Register(new GitHubTool(githubToken));
@@ -130,7 +137,10 @@ class Program
                         "skill",
                         "pptx",
                         "ocr",
-                        "pdf"
+                        "pdf",
+                        "lit",
+                        "slice",
+                        "progress"
                       ]
                     }
                   }

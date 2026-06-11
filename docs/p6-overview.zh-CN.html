@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NanoBot.net P6 — 智能体项目横向调研与吸收路线</title>
+<title>Nong.NanoBot.Net P6 — 智能体项目横向调研与吸收路线</title>
 <style>
   :root {
     --bg: #0d1117;
@@ -100,13 +100,13 @@
 </head>
 <body>
 
-<h1>NanoBot.net P6</h1>
+<h1>Nong.NanoBot.Net P6</h1>
 <p class="subtitle">智能体项目横向调研与吸收路线 &middot; 2026-06-08</p>
 
 <h2>P6 是什么</h2>
 <p>
-  P6 是 NanoBot.net 在继续施工新功能之前的一次横向调研阶段。核心原则是：
-  <strong>一个问题不能两头都是谜团</strong>。先把外部智能体项目研究清楚，再决定 NanoBot.net 后续吸收什么。
+  P6 是 Nong.NanoBot.Net 在继续施工新功能之前的一次横向调研阶段。核心原则是：
+  <strong>一个问题不能两头都是谜团</strong>。先把外部智能体项目研究清楚，再决定 Nong.NanoBot.Net 后续吸收什么。
 </p>
 <p>
   本轮共调研 <strong>7 个外部智能体项目</strong>，研究副本已浅克隆到
@@ -115,9 +115,9 @@
 </p>
 
 <div class="verdict">
-  <strong>总体结论：NanoBot.net 仍然最适合作为主线。</strong><br>
+  <strong>总体结论：Nong.NanoBot.Net 仍然最适合作为主线。</strong><br>
   这 7 个项目各有价值，但没有一个同时满足 NanoBot 的目标组合 —— .NET 8 主线、Apache-2.0、
-  本地优先、不用 WebView2/Electron 做桌面壳、能分发 MSI、能和 Nong/GroundPA-Toolkit 走 plugin/bootstrap、
+  本地优先、不用 WebView2/Electron 做桌面壳、能分发 MSI、能和 Nong/Nong.Toolkit.Net 走 plugin/bootstrap、
   能把 DeepSeek V4 Flash / GitCode / DMX / Nong / WebUI / 未来原生 UI 统一到一个 runtime。
 </div>
 
@@ -289,7 +289,7 @@
   <li><strong>DeepSeek-GUI.net</strong>：Electron 桌面壳，不符合用户桌面分发偏好。</li>
   <li><strong>CodeWhale.net</strong>：Rust 主线太强，适合参考，不适合替换 .NET 主线。</li>
   <li><strong>PilotDeck.net</strong>：AGPL-3.0，协议和技术栈都不适合直接吸收代码。</li>
-  <li><strong>GenericAgent.net</strong>：Python 极简路线优秀，但和 .NET/Nong/GroundPA 统一目标不一致。</li>
+  <li><strong>GenericAgent.net</strong>：Python 极简路线优秀，但和 .NET/Nong/Nong.Toolkit.Net 统一目标不一致。</li>
   <li><strong>EvoScientist.net</strong>：科研 agent 方向强，但主线偏 Python + LangGraph/DeepAgents。</li>
   <li><strong>soloncode.net</strong>：Java/Solon 生态，适合作为三端和中文体验参考。</li>
   <li><strong>agent-framework.net</strong>：可学抽象，不能把 NanoBot 变成 Azure/Foundry 重框架附属。</li>
@@ -312,7 +312,7 @@
 
 <h3>NanoBot 不换主线</h3>
 <p>P6 调研不是为了决定"换成某个项目"，而是为了让 NanoBot 少走弯路。每个项目的角色：</p>
-<pre>NanoBot.net          = .NET 8 GroundPA runtime host（主线）
+<pre>Nong.NanoBot.Net          = .NET 8 Nong.Toolkit.Net runtime host（主线）
 CodeWhale / Kun      = DeepSeek 和 token economy 教材
 PilotDeck            = workspace / memory / router / always-on 教材
 GenericAgent         = 极简工具和自进化 skill 教材
@@ -345,8 +345,8 @@ WebUI/TUI/CLI/IM  |  安装分发  |  license 风险  |  NanoBot 可吸收优先
 
 <div class="footer">
   <p>
-    NanoBot.net P6 调研 &middot; 2026-06-08 &middot;
-    <a href="https://github.com/angri450/NanoBot.net">GitHub</a> &middot;
+    Nong.NanoBot.Net P6 调研 &middot; 2026-06-08 &middot;
+    <a href="https://github.com/angri450/Nong.NanoBot.Net">GitHub</a> &middot;
     完整分册 Wiki：<code>docs/p6-wiki/00-index.zh-CN.md</code>
   </p>
 </div>

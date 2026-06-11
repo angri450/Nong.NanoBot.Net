@@ -1,6 +1,6 @@
 # P6 后施工路线
 
-P6 的出口不是“换项目”，而是把研究结论转成 NanoBot.net 的施工顺序。
+P6 的出口不是“换项目”，而是把研究结论转成 Nong.NanoBot.Net 的施工顺序。
 
 P7 已单独拆成 runtime engineering 施工方案：
 
@@ -41,14 +41,14 @@ docs/p7-runtime-engineering-plan.zh-CN.md
 5. Shell/Nong 继续使用 argument array、workspace、allowlist、timeout、输出上限。
 6. 工具结果支持截断、去重、句柄化。
 
-## 第四批施工：Memory / Plugin / GroundPA
+## 第四批施工：Memory / Plugin / Nong.Toolkit.Net
 
 1. 白盒 memory：查看、编辑、删除、回滚、来源 trace。
 2. `plugin.json` manifest 第一版。
 3. marketplace add/install/status/update。
-4. GroundPA-Toolkit 作为第一块 plugin 样板。
+4. Nong.Toolkit.Net 作为第一块 plugin 样板。
 5. Nong 能力通过 `nong commands --json` 生成 capability catalog。
-6. WebUI 展示 plugin、GroundPA、Nong 的 ready/installing/failed/update 状态。
+6. WebUI 展示 plugin、Nong.Toolkit.Net、Nong 的 ready/installing/failed/update 状态。
 
 ## 第五批施工：多 agent / task / always-on
 

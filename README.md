@@ -1,10 +1,10 @@
 <div align="center">
 
-# NanoBot.net
+# Nong.NanoBot.Net
 
 **A typed .NET 8 personal-agent runtime for local automation, chat gateways, tools, memory, MCP, and multi-provider LLM routing.**
 
-[中文说明](README.zh-CN.md) · [Releases](https://github.com/angri450/NanoBot.net/releases) · [GitHub](https://github.com/angri450/NanoBot.net)
+[中文说明](README.zh-CN.md) · [Releases](https://github.com/angri450/Nong.NanoBot.Net/releases) · [GitHub](https://github.com/angri450/Nong.NanoBot.Net)
 
 ![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
@@ -16,9 +16,9 @@
 
 ## What It Is
 
-NanoBot.net is an independent .NET 8 personal-agent runtime for local automation, tool execution, memory, chat gateways, MCP, and multi-provider LLM routing. It is designed as a compact but production-shaped foundation for building local-first agents in the C# ecosystem.
+Nong.NanoBot.Net is an independent .NET 8 personal-agent runtime for local automation, tool execution, memory, chat gateways, MCP, and multi-provider LLM routing. It is designed as a compact but production-shaped foundation for building local-first agents in the C# ecosystem.
 
-The project keeps a simple operating model: local config, local workspace, local memory, direct tool execution, and no mandatory cloud control plane. It was originally informed by lightweight personal-agent systems such as [HKUDS/nanobot](https://github.com/HKUDS/nanobot), but NanoBot.net now evolves as its own runtime rather than a line-by-line port.
+The project keeps a simple operating model: local config, local workspace, local memory, direct tool execution, and no mandatory cloud control plane. It was originally informed by lightweight personal-agent systems such as [HKUDS/nanobot](https://github.com/HKUDS/nanobot), but Nong.NanoBot.Net now evolves as its own runtime rather than a line-by-line port.
 
 The current codebase is a mature integration-ready baseline: agent loop, provider routing, streaming, tools, memory write path, Dream consolidation, MCP stdio/HTTP/SSE, cron, heartbeat, WebSocket gateway, and multiple chat-channel adapters are implemented and covered by tests.
 
@@ -47,8 +47,8 @@ It is not a hardened public multi-tenant service yet. Treat it as a strong perso
 
 ```bash
 # 1. Prerequisite: .NET 8 SDK
-git clone https://github.com/angri450/NanoBot.net.git
-cd NanoBot.net
+git clone https://github.com/angri450/Nong.NanoBot.Net.git
+cd Nong.NanoBot.Net
 
 # 2. Create ~/.nanobot/config.json and ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
@@ -128,7 +128,7 @@ Current WebUI behavior:
 
 ## Windows MSI
 
-NanoBot.net can be packaged as a Windows x64 MSI without WebView2, Electron, or a resident browser shell. The MSI installs the self-contained CLI and WebUI runtime, creates Start Menu shortcuts, and adds `nanobot.exe` to the current user's PATH. GroundPA-Toolkit and Nong are still installed later through the plugin/bootstrap path; they are not bundled into the MSI payload.
+Nong.NanoBot.Net can be packaged as a Windows x64 MSI without WebView2, Electron, or a resident browser shell. The MSI installs the self-contained CLI and WebUI runtime, creates Start Menu shortcuts, and adds `nanobot.exe` to the current user's PATH. Nong.Toolkit.Net and Nong.Cli.Net are still installed later through the plugin/bootstrap path; they are not bundled into the MSI payload.
 
 Build a local MSI:
 
@@ -391,7 +391,7 @@ Current local verification:
 
 ## Safety Boundary
 
-NanoBot.net has practical guardrails, not a complete hostile-user sandbox.
+Nong.NanoBot.Net has practical guardrails, not a complete hostile-user sandbox.
 
 - Shell execution is bounded to the configured workspace.
 - Nong execution uses argument arrays rather than shell command strings and rejects working directories outside the workspace.

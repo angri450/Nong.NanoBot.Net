@@ -10,5 +10,5 @@
 
 ## Notes
 
-- GroundPA-Toolkit and Nong are not bundled in the MSI payload. They remain plugin/bootstrap responsibilities.
+- Nong.Toolkit.Net and Nong.Cli.Net are not bundled in the MSI payload. They remain plugin/bootstrap responsibilities.
 - Generated packages are written to `artifacts/installer/` and stay out of git.

@@ -22,7 +22,7 @@
 - Read-before-edit / fresh read snapshot：修改文件前必须有足够新的读取依据。
 - DeepSeek usage/cache metrics：解析并展示 `prompt_cache_hit_tokens`、`prompt_cache_miss_tokens`、`reasoning_tokens`。
 - 白盒 memory：能看、能编辑、能删除、能回滚，并能追踪来源。
-- Plugin/Skill marketplace：GroundPA-Toolkit 和 Nong 通过 `plugin.json` 安装，不内置完整负载。
+- Plugin/Skill marketplace：Nong.Toolkit.Net 和 Nong 通过 `plugin.json` 安装，不内置完整负载。
 
 ## 暂缓能力
 

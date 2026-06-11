@@ -1003,3 +1003,82 @@ h2 {
   color: var(--accent);
   text-decoration: underline;
 }
+
+/* ===== Status Panel ===== */
+
+.status-panel {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: calc(100vh - 120px);
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.status-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.status-card h3 {
+  font-size: 16px;
+  margin: 0 0 12px;
+  color: var(--accent);
+}
+
+.status-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.status-card dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status-card dd {
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-ready { color: var(--green); }
+.status-error { color: var(--red); }
+
+.status-detail {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.status-detail h4 {
+  font-size: 14px;
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--fg);
+}

@@ -83,7 +83,7 @@ CLI / TUI / WebUI / channel
 ## 风险
 
 - Python + LangGraph/DeepAgents 重依赖，不进入 NanoBot 主 runtime。
-- 科研工作流强，但 NanoBot 当前主线是本地 GroundPA/coding runtime。
+- 科研工作流强，但 NanoBot 当前主线是本地 Nong.Toolkit.Net/coding runtime。
 - Tool selector 会多一次模型调用，只在工具数量明显过多时使用。
 - 上下文编辑和压缩可能破坏 DeepSeek prefix cache，必须可观测。
 

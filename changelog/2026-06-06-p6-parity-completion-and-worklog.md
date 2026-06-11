@@ -2,7 +2,7 @@
 
 ## Summary
 
-P6 closed the six README audit gaps and moved NanoBot.net from an integration-ready baseline to a mature personal-agent runtime baseline. The implementation follows the parity order requested by the project owner:
+P6 closed the six README audit gaps and moved Nong.NanoBot.Net from an integration-ready baseline to a mature personal-agent runtime baseline. The implementation follows the parity order requested by the project owner:
 
 1. Memory/Dream
 2. MCP HTTP/SSE
@@ -129,4 +129,4 @@ Final verification:
 
 ## Maturity Assessment
 
-NanoBot.net is now mature as a local personal-agent runtime and internal integration platform. The remaining boundary is product hardening for hostile/public multi-tenant operation: stronger deployment auth, rate limiting, hosted lifecycle management, deeper observability, and end-to-end tests against real third-party chat platforms.
+Nong.NanoBot.Net is now mature as a local personal-agent runtime and internal integration platform. The remaining boundary is product hardening for hostile/public multi-tenant operation: stronger deployment auth, rate limiting, hosted lifecycle management, deeper observability, and end-to-end tests against real third-party chat platforms.

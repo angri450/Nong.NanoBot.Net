@@ -222,6 +222,39 @@ public class ToolTests
     }
 
     [Fact]
+    public async Task NongTool_DefaultAllowlistIncludesLitSliceProgress()
+    {
+        var workspace = CreateWorkspace();
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, "ok", ""));
+        // Use default settings (no custom AllowedRoots)
+        var tool = new NongTool(workspace, new NongToolSettings(), runner);
+
+        var litResult = await tool.ExecuteAsync(JsonNode.Parse("""{"args":["lit","search","test"]}"""));
+        Assert.DoesNotContain("nong_root_not_allowed", litResult);
+
+        var sliceResult = await tool.ExecuteAsync(JsonNode.Parse("""{"args":["slice","inspect","test.slice"]}"""));
+        Assert.DoesNotContain("nong_root_not_allowed", sliceResult);
+
+        var progressResult = await tool.ExecuteAsync(JsonNode.Parse("""{"args":["progress","report"]}"""));
+        Assert.DoesNotContain("nong_root_not_allowed", progressResult);
+    }
+
+    [Fact]
+    public async Task NongTool_DiscoverCapabilitiesAsync_ParsesJsonOutput()
+    {
+        var workspace = CreateWorkspace();
+        var fakeJson = @"{""status"":""ok"",""command"":""commands"",""data"":[{""name"":""word check"",""description"":""Check DOCX"",""group"":""word"",""status"":""implemented""},{""name"":""pdf check"",""description"":""Check PDF"",""group"":""pdf"",""status"":""implemented""}],""meta"":{""version"":""4.0.0""}}";
+        var runner = new FakeNongRunner(new NongCommandResult(0, false, fakeJson, ""));
+        var tool = new NongTool(workspace, new NongToolSettings { Command = "fake-nong" }, runner);
+
+        var cap = await tool.DiscoverCapabilitiesAsync();
+        Assert.NotNull(cap);
+        Assert.Equal(2, cap!.CommandCount);
+        Assert.Contains(cap.Commands, c => c.Name == "word check");
+        Assert.Contains(cap.Commands, c => c.Status == "implemented");
+    }
+
+    [Fact]
     public async Task ShellTool_RejectsWorkingDirectoryOutsideWorkspace()
     {
         var workspace = CreateWorkspace();

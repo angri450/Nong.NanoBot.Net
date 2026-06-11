@@ -21,7 +21,10 @@ public class NongTool : ITool
         "skill",
         "pptx",
         "ocr",
-        "pdf"
+        "pdf",
+        "lit",
+        "slice",
+        "progress"
     };
 
     private const int MinTimeoutMs = 1000;
@@ -254,7 +257,56 @@ public class NongTool : ITool
             }
         });
     }
+
+    /// <summary>Discover Nong CLI capabilities by running nong commands --json.</summary>
+    public async Task<NongCapabilityInfo?> DiscoverCapabilitiesAsync()
+    {
+        try
+        {
+            var request = new NongCommandRequest(
+                string.IsNullOrWhiteSpace(_settings.Command) ? "nong" : _settings.Command,
+                new List<string> { "commands", "--json" },
+                _workspaceRoot,
+                30000
+            );
+            var result = await _runner.RunAsync(request);
+            if (result.ExitCode != 0) return null;
+
+            var doc = JsonNode.Parse(result.Stdout);
+            if (doc?["status"]?.ToString() != "ok") return null;
+
+            var versionNode = doc["meta"]?["version"];
+            var version = versionNode?.GetValue<string>() ?? "unknown";
+
+            var data = doc["data"]?.AsArray();
+            if (data == null) return null;
+
+            var commands = data.Select(c => new NongCommandInfo(
+                c["name"]?.ToString() ?? "",
+                c["description"]?.ToString() ?? "",
+                c["group"]?.ToString() ?? "",
+                c["status"]?.ToString() ?? "unknown"
+            )).ToList();
+
+            return new NongCapabilityInfo(
+                Version: version,
+                CommandCount: commands.Count,
+                Commands: commands
+            );
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }
+
+public sealed record NongCommandInfo(string Name, string Description, string Group, string Status);
+
+public sealed record NongCapabilityInfo(
+    string Version,
+    int CommandCount,
+    IReadOnlyList<NongCommandInfo> Commands);
 
 public interface INongCommandRunner
 {

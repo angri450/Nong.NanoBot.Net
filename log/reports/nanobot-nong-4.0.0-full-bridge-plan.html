@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanoBot Nong 4.0.0 全桥接方案 — Nong.NanoBot.Net</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif; line-height: 1.72; color: #172033; background: #f5f7fb; }
+.container { max-width: 1520px; margin: 0 auto; padding: 28px 18px 48px; }
+header { margin-bottom: 22px; }
+h1 { font-size: 30px; color: #0f172a; margin-bottom: 8px; }
+.subtitle { color: #64748b; font-size: 14px; }
+h2 { font-size: 22px; margin: 34px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #d9dee7; color: #111827; }
+h3 { font-size: 18px; margin: 22px 0 10px; color: #263248; }
+p { margin: 8px 0; }
+code { background: #edf0f5; border: 1px solid #dde3ee; padding: 1px 5px; border-radius: 4px; font-family: "Cascadia Code", Consolas, monospace; font-size: 0.88em; }
+.dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 18px 0 26px; }
+.card { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; padding: 18px; box-shadow: 0 1px 3px rgba(15,23,42,0.06); }
+.card-num { font-size: 30px; font-weight: 800; color: #0f172a; }
+.card-label { color: #64748b; font-size: 13px; margin-top: 4px; }
+.note { background: #fff; border: 1px solid #dbe3ef; border-left: 5px solid #2563eb; border-radius: 8px; padding: 15px 18px; margin: 14px 0 18px; }
+.good { border-left-color: #16a34a; background: #f4fbf6; }
+.warn { border-left-color: #d97706; background: #fffaf0; }
+.bad { border-left-color: #dc2626; background: #fff7f7; }
+table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; overflow: hidden; margin: 12px 0 22px; font-size: 14px; box-shadow: 0 1px 3px rgba(15,23,42,0.05); }
+th { background: #eef2f7; color: #334155; font-size: 12px; text-transform: uppercase; letter-spacing: 0.02em; text-align: left; padding: 10px 12px; border-bottom: 1px solid #dce3ed; }
+td { padding: 10px 12px; border-bottom: 1px solid #edf0f5; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+.tag { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.ok { background: #dcfce7; color: #166534; }
+.watch { background: #fef3c7; color: #92400e; }
+.gap { background: #fee2e2; color: #991b1b; }
+.info { background: #dbeafe; color: #1d4ed8; }
+.purple { background: #ede9fe; color: #5b21b6; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.box { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15,23,42,0.04); }
+ul { margin: 8px 0 8px 22px; }
+li { margin: 4px 0; }
+footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid #dce3ed; color: #64748b; font-size: 13px; }
+.step-card { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; padding: 20px 22px; margin: 14px 0; box-shadow: 0 1px 3px rgba(15,23,42,0.06); border-left: 5px solid #2563eb; }
+.step-card h3 { margin: 0 0 8px; font-size: 18px; }
+.step-card .step-label { font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+.step-tag { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+.gap-fill { background: #fee2e2; color: #991b1b; }
+.gap-mid { background: #fef3c7; color: #92400e; }
+.gap-new { background: #dbeafe; color: #1d4ed8; }
+pre { background: #f0f2f7; border: 1px solid #dde3ee; border-radius: 6px; padding: 12px 16px; font-family: "Cascadia Code", Consolas, monospace; font-size: 0.85em; line-height: 1.6; overflow-x: auto; margin: 10px 0; }
+.arch-diagram { background: #fff; border: 1px solid #e4e8f0; border-radius: 8px; padding: 20px 24px; margin: 14px 0; box-shadow: 0 1px 3px rgba(15,23,42,0.04); }
+.arch-diagram pre { background: #f8f9fc; margin: 0; }
+@media (max-width: 980px) {
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  table { font-size: 13px; }
+  th, td { padding: 8px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+<h1>NanoBot Nong 4.0.0 全桥接方案</h1>
+<p class="subtitle">2026-06-10 | 目标：把 NanoBot 的 run_nong 桥、SkillLoader、Plugin 机制和 WebUI 状态面板全部对齐 Nong 4.0.0 + Toolkit 2.4.0，做成完整胳膊。</p>
+</header>
+
+<div class="dashboard">
+<div class="card"><div class="card-num" style="color:#2563eb">3</div><div class="card-label">项目分工（CLI / Toolkit / NanoBot）</div></div>
+<div class="card"><div class="card-num" style="color:#16a34a">1</div><div class="card-label">已有坚实基础（run_nong 桥）</div></div>
+<div class="card"><div class="card-num" style="color:#dc2626">4</div><div class="card-label">缺口：allowlist / SkillLoader / Plugin / 状态面板</div></div>
+<div class="card"><div class="card-num" style="color:#7c3aed">4</div><div class="card-label">建议施工步数</div></div>
+</div>
+
+<h2>一句话结论</h2>
+<div class="note bad">
+<p><strong>NanoBot 已经有手腕了（run_nong 桥），但还没把 CLI 这只手、Toolkit 这套动作说明书接成完整胳膊。</strong></p>
+<p>四个缺口按优先级排：allowlist 缺 lit/slice/progress 是最小最稳马上见效的；SkillLoader 还是全量塞入而不是精准触发+渐进披露；Plugin 安装体系还没做；WebUI 还不是"Toolkit/Nong 控制台"。</p>
+</div>
+
+<h2>1. 三项目分工（说人话版）</h2>
+
+<div class="arch-diagram">
+<pre>
+Nong.Cli.Net           — 手和工具箱（确定性执行层）
+  96 个命令，15 个命令模块，一个 nong.dll
+  负责 Word/PDF/OCR/slice/skill/progress 这些命令的确定性执行
+  不教 AI 怎么用，只负责把活干完
+
+Nong.Toolkit.Net       — 说明书和动作策略（技能教学层）
+  15 个 SKILL.md，告诉 AI 什么时候用哪个命令、怎么读证据、怎么避免乱来
+  不放 C# 执行逻辑，只放文档和少量辅助脚本
+  核心机制：精准触发 + 渐进披露（先 SKILL.md 入口，再按需加载 reference）
+
+Nong.NanoBot.Net       — 运行时和驾驶舱（Agent 运行层）
+  负责模型、会话、工具调用、WebUI、记忆、事件、插件安装、状态展示
+  内置 run_nong 桥：用参数数组调用 nong，有 workspace 限制、allowlist、超时、输出截断
+  内置 SkillLoader：加载 Toolkit skill 进 Agent 上下文
+</pre>
+</div>
+
+<h2>2. 现有基础：run_nong 桥（已做对的事）</h2>
+
+<div class="note good">
+<p><strong>run_nong 桥的方向是对的，底层实现也是扎实的。</strong></p>
+<p>它在 <code>Nanobot.Core/Tools/Builtin/NongTool.cs</code> 里，已经做对了这几件事：</p>
+<ul>
+<li><strong>参数数组而非 shell 字符串</strong>：AI 传 <code>["pdf", "check", "paper.pdf"]</code>，不由字符串拼接，避免注入和转义问题。</li>
+<li><strong>workspace 限制</strong>：workingDirectory 不能逃出 ~/.nanobot/workspace，防止 AI 乱读系统文件。</li>
+<li><strong>allowlist 白名单</strong>：只有白名单里的 root 命令能执行，不是所有 nong 命令都开放。</li>
+<li><strong>超时 + 输出截断</strong>：默认 120s 超时、20000 字符截断，防止失控。</li>
+<li><strong>结构化错误</strong>：missing_args / nong_root_not_allowed / working_directory_not_found / nong_execution_error 都有明确错误码。</li>
+<li><strong>--json 自动追加</strong>：默认 appendJson=true，确保输出是机器可读的 JSON。</li>
+<li><strong>空 allowlist 拒绝一切</strong>：不会因为配置错误变成全开放。</li>
+<li><strong>可配置</strong>：通过 config.json 的 <code>tools.nong</code> 段控制 command、timeoutMs、maxOutputChars、allowedRoots。</li>
+</ul>
+</div>
+
+<h2>3. 四个缺口现状</h2>
+
+<h3>缺口 1：allowlist 缺 lit、slice、progress</h3>
+
+<div class="note bad">
+<p><strong>NongTool.DefaultAllowedRoots 还是 Nong 3.x 时代的命令面，没跟上 4.0.0。</strong></p>
+<p>当前默认白名单有 12 个 root：<code>commands, word, inspect, chart, excel, diagram, genre, icons, skill, pptx, ocr, pdf</code></p>
+<p>Nong 4.0.0 实际有 15 个命令模块。缺了 3 个：<strong>lit、slice、progress</strong>。</p>
+<p>这意味着 NanoBot 明明接了 Nong 4.0.0，却不能调用文献检索（lit）、统一切片（slice）、进度报告（progress）三个完整命令面。</p>
+</div>
+
+<table>
+<thead><tr><th>命令模块</th><th>子命令数</th><th>Nong 4.0.0 存在</th><th>NanoBot allowlist 默认</th><th>onboard config</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td><code>word</code></td><td>39</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>chart</code></td><td>7</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>excel</code></td><td>5</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>diagram</code></td><td>3</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>pdf</code></td><td>4</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>pptx</code></td><td>3</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>ocr</code></td><td>7</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>inspect</code></td><td>11</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>genre</code></td><td>2</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>icons</code></td><td>2</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>skill</code></td><td>4</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr><td><code>commands</code></td><td>1</td><td>是</td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td><span class="tag ok">OK</span></td></tr>
+<tr style="background:#fff7f7;"><td><code>lit</code></td><td>5</td><td>是</td><td><span class="tag gap">缺</span></td><td><span class="tag gap">缺</span></td><td><span class="tag gap">缺口</span></td></tr>
+<tr style="background:#fff7f7;"><td><code>slice</code></td><td>4</td><td>是</td><td><span class="tag gap">缺</span></td><td><span class="tag gap">缺</span></td><td><span class="tag gap">缺口</span></td></tr>
+<tr style="background:#fff7f7;"><td><code>progress</code></td><td>1</td><td>是</td><td><span class="tag gap">缺</span></td><td><span class="tag gap">缺</span></td><td><span class="tag gap">缺口</span></td></tr>
+<tr style="background:#f0f4ff;"><td><code>__render-worker</code></td><td>1</td><td>是（内部）</td><td><span class="tag info">N/A</span></td><td><span class="tag info">N/A</span></td><td><span class="tag info">内部命令，不需要开放</span></td></tr>
+</tbody>
+</table>
+
+<h3>缺口 2：SkillLoader 还是全量塞入，不是精准触发+渐进披露</h3>
+
+<div class="note bad">
+<p><strong>当前 SkillLoader 只是把 <code>~/.nanobot/workspace/skills/*/SKILL.md</code> 全部读出来拼成一个字符串塞进上下文。</strong></p>
+<p>这和 Toolkit 设计的"精准触发 + 渐进披露"是两回事：</p>
+<ul>
+<li><strong>精准触发</strong>：AI 应该先看 skill 列表（名字+一句话描述），根据当前任务选择激活哪个 skill。不是一股脑把所有 skill 的完整内容都灌进去。</li>
+<li><strong>渐进披露</strong>：激活一个 skill 后，先看 SKILL.md 入口（简短），需要时再按 reference 下钻。不是把 references/ 里的文件也一次性全读。</li>
+<li><strong>当前实现</strong>：SkillLoader.BuildSkillSection() 只读了 SKILL.md 文件内容，没读 references/ 子目录。所以 references 下钻功能根本不存在。</li>
+<li><strong>Toolkit 侧已经准备好的东西</strong>：word 有 7 个 reference、excel 有 3 个、multimodal 有 3 个。这些 reference 文件现在对 NanoBot 是完全不可见的。</li>
+</ul>
+</div>
+
+<h3>缺口 3：Plugin/bootstrap 还在计划里，没实现</h3>
+
+<div class="note bad">
+<p><strong>以下全部缺失：</strong></p>
+<ul>
+<li>没有 <code>nanobot plugin marketplace add/install/status/update</code> 命令。</li>
+<li>没有 <code>plugin.json</code> 安装器（指定 skill 来源、版本、依赖）。</li>
+<li>没有 <code>nong commands --json</code> capability catalog 集成。NanoBot 不知道已安装的 nong 有哪些命令可用。</li>
+<li>WebUI 看不到 Toolkit 和 Nong 的安装状态。</li>
+</ul>
+</div>
+
+<h3>缺口 4：WebUI 是可用工作台，但不是"Toolkit/Nong 控制台"</h3>
+
+<div class="note warn">
+<p><strong>当前 WebUI 能做：</strong>聊天、流式、看文件、看工具事件。</p>
+<p><strong>当前 WebUI 不能做：</strong></p>
+<ul>
+<li>看不到 Nong CLI 是否安装、版本号是多少。</li>
+<li>看不到 Toolkit 是否安装、有哪些 skill 已加载。</li>
+<li>看不到命令能力是否完整（哪些 root 可用、哪些被 allowlist 挡住了）。</li>
+<li>看不到 OCR runtime 是否就绪。</li>
+<li>看不到 skill catalog 状态。</li>
+</ul>
+</div>
+
+<h2>4. 施工顺序和理由</h2>
+
+<div class="step-card" style="border-left-color:#dc2626;">
+<div class="step-label">第 1 步 · P0 · 最小最稳马上见效</div>
+<h3>补 NanoBot 的 Nong 4.0.0 命令面：allowedRoots 加 lit、slice、progress</h3>
+<p><strong>改哪里：</strong></p>
+<ul>
+<li><code>Nanobot.Core/Tools/Builtin/NongTool.cs</code> — DefaultAllowedRoots 数组加 "lit"、"slice"、"progress"。</li>
+<li><code>Nanobot.CLI/Program.cs</code> — onboard 默认 config 的 allowedRoots 加同样的三项。</li>
+<li><code>Nanobot.Tests/ToolTests.cs</code> — 加一个测试：验证默认 allowlist 包含 14 个 root（不含 __render-worker），且 lit/slice/progress 都能通过 IsAllowedRoot。</li>
+<li><code>README.md</code> + <code>README.zh-CN.md</code> — 在 Tools 行的 Nong CLI bridge 描述里注明支持的 14 个命令模块。</li>
+</ul>
+<p><strong>不改什么：</strong>不改 Nong 4.0.0 本身，不改 Toolkit，不改 WebUI。</p>
+<p><strong>风险：</strong>几乎为零。lit/slice/progress 三个命令模块在 Nong 4.0.0 中已经稳定实现。allowlist 只是放行，不影响已有命令的执行逻辑。</p>
+<p><strong>验证：</strong><code>dotnet test</code> 全部通过，新增 allowlist 覆盖测试通过。</p>
+</div>
+
+<div class="step-card" style="border-left-color:#d97706;">
+<div class="step-label">第 2 步 · P1 · 把 CLI 能力面变成 NanoBot 可查询的数据</div>
+<h3>做 nong commands --json capability discovery</h3>
+<p><strong>改哪里：</strong></p>
+<ul>
+<li><code>Nanobot.Core/Tools/Builtin/NongTool.cs</code> — 新增 <code>CapabilityDiscovery</code> 方法，调用 <code>nong commands --json</code> 并解析返回的 96 个命令列表。</li>
+<li><code>Nanobot.Core/Models/</code> — 新增 <code>NongCapability</code> 模型（Root、Command、Description、Parameters）。</li>
+<li><code>Nanobot.CLI/Program.cs</code> — 启动时跑一次 capability discovery，把结果缓存进内存，供 WebUI API 查询。</li>
+<li><code>Nanobot.Web/</code> — 新增一个 <code>/api/nong/capabilities</code> 端点，返回 capability 列表。</li>
+</ul>
+<p><strong>设计要点：</strong></p>
+<ul>
+<li>capability discovery 是只读操作，不走 allowlist 拦截（commands 本身已在 allowlist 中）。</li>
+<li>缓存策略：启动时跑一次，后续手动刷新。不在每次工具调用时跑。</li>
+<li>如果 nong 未安装或版本不对，返回结构化错误而不是崩溃。</li>
+</ul>
+<p><strong>不改什么：</strong>不改 Nong 4.0.0 的 <code>nong commands --json</code> 输出格式（已经稳定）。</p>
+<p><strong>风险：</strong>低。只在启动时多跑一个进程，不影响运行时性能。</p>
+</div>
+
+<div class="step-card" style="border-left-color:#2563eb;">
+<div class="step-label">第 3 步 · P2 · 不再靠手动丢进 workspace/skills</div>
+<h3>做 Toolkit skill 安装/加载机制</h3>
+<p><strong>改哪里：</strong></p>
+<ul>
+<li><code>Nanobot.Core/Skills/SkillLoader.cs</code> — 重写为两阶段：Phase 1 返回 skill 索引（名字+描述），Phase 2 按需加载指定 skill 的 SKILL.md + references。</li>
+<li><code>Nanobot.Core/Skills/SkillPackage.cs</code> — 新增模型：plugin.json 解析、skill 元数据、依赖声明。</li>
+<li><code>Nanobot.Core/Skills/SkillInstaller.cs</code> — 新增：从本地目录或 Git 仓库安装 skill 到 workspace/skills。</li>
+<li><code>Nanobot.CLI/Program.cs</code> — 新增 <code>nanobot plugin</code> 子命令组：list、install、remove、update、status。</li>
+<li><code>Nanobot.Tests/SkillLoaderTests.cs</code> — 扩展：测试两阶段加载、reference 下钻、截断策略。</li>
+</ul>
+<p><strong>设计要点：</strong></p>
+<ul>
+<li>Skill 索引阶段返回简洁列表（名字+一句话描述），不超过 500 字符，不挤占上下文。</li>
+<li>激活阶段：AI 通过工具调用 <code>load_skill(name)</code> 来加载具体 skill 的 SKILL.md。</li>
+<li>下钻阶段：AI 通过 <code>load_skill_reference(name, ref)</code> 来按需加载 reference 文件。</li>
+<li>Toolkit 的 plugin.json 格式：<code>{"id":"nong-toolkit","version":"2.4.0","skills":[...],"requires":{"nong":"4.0.0+"}}</code></li>
+</ul>
+<p><strong>不改什么：</strong>不改 Toolkit 的 SKILL.md 文件结构和 reference 目录布局（已经规范）。</p>
+<p><strong>风险：</strong>中。SkillLoader 重写会影响所有依赖 skill 的 Agent 运行。需要充分测试两阶段加载和向后兼容。</p>
+</div>
+
+<div class="step-card" style="border-left-color:#7c3aed;">
+<div class="step-label">第 4 步 · P3 · 一屏看清整条胳膊</div>
+<h3>做 WebUI 状态面板：Nong.Cli、Nong.Toolkit、OCR runtime、skill catalog、命令能力</h3>
+<p><strong>改哪里：</strong></p>
+<ul>
+<li><code>Nanobot.Web/wwwroot/index.html</code> — 在侧边栏加第 6 个 rail button："状态"（data-view="status"）。</li>
+<li><code>Nanobot.Web/wwwroot/app.js</code> — 新增 StatusView 模块：调用 /api/nong/capabilities、/api/nong/version、/api/toolkit/status、/api/skills/catalog 并渲染面板。</li>
+<li><code>Nanobot.Web/wwwroot/styles.css</code> — 新增状态面板样式。</li>
+<li><code>Nanobot.Web/Program.cs</code> — 注册新的 API 端点。</li>
+<li><code>Nanobot.Web/WebContracts.cs</code> — 新增状态相关的 DTO。</li>
+</ul>
+<p><strong>面板应展示的内容：</strong></p>
+<ul>
+<li>Nong.Cli.Net：是否安装、版本号、命令模块数、已启用 root 数。</li>
+<li>Nong.Toolkit.Net：是否安装、版本号、skill 数量、已加载 skill 数。</li>
+<li>OCR runtime：是否安装、runtime 包版本、模型状态。</li>
+<li>Skill catalog：每个 skill 的名字、状态（已加载/未加载/有更新）、CLI 命令映射。</li>
+<li>命令能力矩阵：每个命令模块是否在 allowlist 中、是否通过 capability discovery 验证。</li>
+</ul>
+<p><strong>不改什么：</strong>不改已有的 chat/files/tools/memory/settings 面板功能和样式。</p>
+<p><strong>风险：</strong>低。新增面板不影响已有功能的 HTML/CSS/JS。API 端点是纯查询，没有副作用。</p>
+</div>
+
+<h2>5. 施工依赖关系</h2>
+
+<div class="arch-diagram">
+<pre>
+第 1 步（allowlist 补全）
+  │
+  ├── 无依赖，独立可做
+  │
+  ▼
+第 2 步（capability discovery）
+  │
+  ├── 依赖：第 1 步的 allowlist 补全（commands root 已在 allowlist 中，但最好先补全再测）
+  │
+  ▼
+第 3 步（Skill 安装/加载）
+  │
+  ├── 依赖：无硬依赖，但建议在第 2 步之后做（capability discovery 能给 skill 安装提供 nong 版本检测）
+  │
+  ▼
+第 4 步（WebUI 状态面板）
+  │
+  └── 依赖：第 2 步 + 第 3 步（状态面板展示的数据来自 capability discovery 和 skill catalog）
+</pre>
+</div>
+
+<h2>6. 每个步骤的改动量估算</h2>
+
+<table>
+<thead><tr><th>步骤</th><th>改动文件数</th><th>新增代码行（估）</th><th>测试用例（估）</th><th>风险</th></tr></thead>
+<tbody>
+<tr>
+<td>1. allowlist 补全</td>
+<td>5</td>
+<td>~30 行</td>
+<td>2-3 个</td>
+<td><span class="tag ok">极低</span></td>
+</tr>
+<tr>
+<td>2. capability discovery</td>
+<td>5</td>
+<td>~200 行</td>
+<td>4-5 个</td>
+<td><span class="tag ok">低</span></td>
+</tr>
+<tr>
+<td>3. Skill 安装/加载</td>
+<td>7</td>
+<td>~600 行</td>
+<td>8-10 个</td>
+<td><span class="tag watch">中</span></td>
+</tr>
+<tr>
+<td>4. WebUI 状态面板</td>
+<td>5</td>
+<td>~400 行</td>
+<td>3-4 个</td>
+<td><span class="tag ok">低</span></td>
+</tr>
+</tbody>
+</table>
+
+<h2>7. 和现有 Toolkit / CLI 审计结果的对照</h2>
+
+<div class="note good">
+<p><strong>这个方案不是凭空想的，是对齐了 Nong.Cli.Net 和 Nong.Toolkit.Net 已有审计结论的。</strong></p>
+<p>对照点：</p>
+<ul>
+<li><strong>Nong.Cli.Net toolkit-vs-cli-full-map.html</strong> 已确认：96 个命令、15 个命令模块、100% 技能覆盖率。NanoBot 的 allowlist 应该反映这 15 个模块（除 __render-worker 内部命令外）。</li>
+<li><strong>Nong.Toolkit.Net toolkit-skill-cli-package-map.html</strong> 已确认：skill↔CLI 对应关系、OCR 链的四层映射。NanoBot 的 WebUI 状态面板应该能展示这张映射表。</li>
+<li><strong>Nong.Cli.Net log/reports/pages/plans-2026-06-10-official-command-surface-alignment.html</strong> 已确认：公文命令面已对齐。NanoBot 的 allowlist 不需要额外动作（word/inspect/genre 已在白名单中）。</li>
+</ul>
+</div>
+
+<h2>8. 不在本期范围内的东西（显式排除）</h2>
+
+<div class="note info">
+<ul>
+<li><strong>不改 Nong 4.0.0 本身</strong>：命令面、输出格式、包结构都已经稳定，不需要动。</li>
+<li><strong>不改 Toolkit 的 SKILL.md 文件</strong>：skill 内容、reference 结构、plugin.json 格式已规范。</li>
+<li><strong>不做 skill-manager 的 CLI 镜像</strong>：skill-manager 是治理层 skill，不做成 CLI 命令。保持 Toolkit 现有边界。</li>
+<li><strong>不做跨仓库的自动化发布管线</strong>：三个仓库各自独立发版。NanoBot 的 plugin install 只做本地安装，不做 NuGet 自动拉取。</li>
+<li><strong>不做 OCR runtime 的自动下载</strong>：OCR runtime 安装仍由 nong ocr install-model 负责，NanoBot 只展示状态。</li>
+</ul>
+</div>
+
+<h2>附录 A：当前 run_nong 桥完整调用链</h2>
+
+<div class="arch-diagram">
+<pre>
+AI 模型
+  │  调用 tool: run_nong
+  │  args: ["word", "read", "paper.docx"]
+  ▼
+NongTool.ExecuteAsync()
+  │  1. ReadArguments() → ["word", "read", "paper.docx"]
+  │  2. ResolveRootArgument() → "word"
+  │  3. IsAllowedRoot("word") → true（在白名单中）
+  │  4. AppendJson → ["word", "read", "paper.docx", "--json"]
+  │  5. ResolveWorkingDirectory() → ~/.nanobot/workspace（不能逃逸）
+  │  6. ProcessNongCommandRunner.RunAsync()
+  │     ├─ Process.Start("nong", "word", "read", "paper.docx", "--json")
+  │     ├─ 等待（最多 timeoutMs）
+  │     ├─ 超时 → Kill(entireProcessTree: true)
+  │     └─ 返回 stdout + stderr
+  │  7. Truncate() → 截断过长输出
+  │  8. 返回结构化 JSON
+  ▼
+AI 模型收到 {"tool":"run_nong","exitCode":0,"stdout":"{...}"}
+</pre>
+</div>
+
+<h2>附录 B：当前 onboard 默认 config 的关键段</h2>
+
+<pre>
+{
+  "tools": {
+    "nong": {
+      "enabled": true,
+      "command": "nong",
+      "appendJson": true,
+      "timeoutMs": 120000,
+      "maxOutputChars": 20000,
+      "allowedRoots": [
+        "commands", "word", "inspect", "chart", "excel",
+        "diagram", "genre", "icons", "skill", "pptx", "ocr", "pdf"
+        // ← 缺 "lit", "slice", "progress"
+      ]
+    }
+  }
+}
+</pre>
+
+<h2>附录 C：完整 allowlist 对照（当前 vs 目标）</h2>
+
+<table>
+<thead><tr><th>Nong 4.0.0 命令模块</th><th>当前 allowlist</th><th>目标 allowlist</th><th>Toolkit skill</th></tr></thead>
+<tbody>
+<tr><td><code>word</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>word</td></tr>
+<tr><td><code>chart</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>chart</td></tr>
+<tr><td><code>excel</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>excel</td></tr>
+<tr><td><code>diagram</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>diagram</td></tr>
+<tr><td><code>pdf</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>pdf</td></tr>
+<tr><td><code>pptx</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>pptx</td></tr>
+<tr><td><code>ocr</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>multimodal</td></tr>
+<tr><td><code>inspect</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>inspect</td></tr>
+<tr><td><code>genre</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>genre</td></tr>
+<tr><td><code>icons</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>icons</td></tr>
+<tr><td><code>skill</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>skill / skill-manager</td></tr>
+<tr><td><code>commands</code></td><td><span class="tag ok">有</span></td><td><span class="tag ok">有</span></td><td>（内部命令）</td></tr>
+<tr style="background:#fff7f7;"><td><code>lit</code></td><td><span class="tag gap">缺</span></td><td><span class="tag ok">加</span></td><td>literature</td></tr>
+<tr style="background:#fff7f7;"><td><code>slice</code></td><td><span class="tag gap">缺</span></td><td><span class="tag ok">加</span></td><td>slice</td></tr>
+<tr style="background:#fff7f7;"><td><code>progress</code></td><td><span class="tag gap">缺</span></td><td><span class="tag ok">加</span></td><td>progress-report</td></tr>
+<tr><td><code>__render-worker</code></td><td><span class="tag info">N/A</span></td><td><span class="tag info">N/A</span></td><td>（内部命令，不开放）</td></tr>
+</tbody>
+</table>
+
+<footer>
+<p>来源：Nong.NanoBot.Net 的 NongTool.cs、SkillLoader.cs、Program.cs onboard config、ToolTests.cs、README.zh-CN.md；Nong.Cli.Net 的 toolkit-vs-cli-full-map.html；Nong.Toolkit.Net 的 toolkit-skill-cli-package-map.html。</p>
+<p>生成时间：2026-06-10 | 下一步：按第 1 步开始施工。</p>
+</footer>
+
+</div>
+</body>
+</html>

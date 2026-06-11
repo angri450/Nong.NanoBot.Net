@@ -220,10 +220,10 @@ public class AgentLoop
             systemPrompt += $"\n\nMemory Context:\n{memoryContext}";
         }
 
-        var skillContext = _skillLoader.LoadContext(executionContext);
+        var skillContext = _skillLoader.GetCatalogContext(executionContext.Workspace);
         if (!string.IsNullOrWhiteSpace(skillContext))
         {
-            systemPrompt += $"\n\nSkill Context:\n{skillContext}";
+            systemPrompt += $"\n\n{skillContext}";
         }
 
         return systemPrompt;

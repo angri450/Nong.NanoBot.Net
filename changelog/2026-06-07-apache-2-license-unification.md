@@ -2,7 +2,7 @@
 
 ## Goal
 
-Unify NanoBot.net with the Nong CLI and GroundPA licensing baseline.
+Unify Nong.NanoBot.Net with the Nong CLI and Nong.Toolkit.Net licensing baseline.
 
 ## Changes
 

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make NanoBot.net the current GroundPA agent-runtime main line by adding a controlled bridge from the agent tool layer to the deterministic Nong CLI.
+Make Nong.NanoBot.Net the current Nong.Toolkit.Net agent-runtime main line by adding a controlled bridge from the agent tool layer to the deterministic Nong CLI.
 
 ## Changes
 
@@ -57,9 +57,9 @@ Result: no matches
 
 ## Runtime Direction
 
-NanoBot.net is the current main line for GroundPA agent-runtime development because it already has the strongest local baseline: agent loop, providers, streaming, tools, memory, Dream, MCP, gateway, channels, heartbeat, and tests.
+Nong.NanoBot.Net is the current main line for Nong.Toolkit.Net agent-runtime development because it already has the strongest local baseline: agent loop, providers, streaming, tools, memory, Dream, MCP, gateway, channels, heartbeat, and tests.
 
-soloncode.net, GenericAgent.net, PilotDeck.net, and other runtime candidates remain comparison lines. They should be audited against the same matrix before being promoted over NanoBot.net.
+soloncode.net, GenericAgent.net, PilotDeck.net, and other runtime candidates remain comparison lines. They should be audited against the same matrix before being promoted over Nong.NanoBot.Net.
 
 ## Remaining Risks
 
@@ -69,5 +69,5 @@ soloncode.net, GenericAgent.net, PilotDeck.net, and other runtime candidates rem
 
 ## Next Steps
 
-- Add an agent-runtime comparison matrix for NanoBot.net, soloncode.net, GenericAgent.net, and PilotDeck.net.
+- Add an agent-runtime comparison matrix for Nong.NanoBot.Net, soloncode.net, GenericAgent.net, and PilotDeck.net.
 - Add real `nong commands --json` integration smoke once Nong working tree is clean or a published binary is available.

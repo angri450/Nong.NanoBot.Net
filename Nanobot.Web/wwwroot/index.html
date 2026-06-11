@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#1f1f22">
-  <title>NanoBot.net Workbench</title>
+  <title>Nong.NanoBot.Net Workbench</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -26,12 +26,15 @@
       <button class="rail-button" data-view="settings" title="设置" type="button">
         <span data-i18n="railSettings">设置</span>
       </button>
+      <button class="rail-button" data-view="status" title="状态" type="button">
+        <span data-i18n="railStatus">状态</span>
+      </button>
     </aside>
 
     <aside class="sidebar">
       <header class="sidebar-header">
         <div>
-          <div class="eyebrow" data-i18n="product">NanoBot.net</div>
+          <div class="eyebrow" data-i18n="product">Nong.NanoBot.Net</div>
           <h1 data-i18n="workbench">Agent 工作台</h1>
         </div>
         <div class="header-actions">
@@ -168,6 +171,35 @@
       </header>
 
       <section id="messages" class="messages"></section>
+
+      <section id="statusPanel" class="status-panel" style="display:none">
+        <div class="status-grid">
+          <div class="status-card">
+            <h3>Nong.Cli.Net</h3>
+            <dl>
+              <dt>状态</dt><dd id="statusNongState">检测中...</dd>
+              <dt>版本</dt><dd id="statusNongVersion">-</dd>
+              <dt>命令数</dt><dd id="statusNongCommands">-</dd>
+            </dl>
+          </div>
+          <div class="status-card">
+            <h3>Nong.Toolkit.Net</h3>
+            <dl>
+              <dt>状态</dt><dd id="statusToolkitState">检测中...</dd>
+              <dt>技能数</dt><dd id="statusToolkitSkills">-</dd>
+            </dl>
+          </div>
+          <div class="status-card">
+            <h3>NanoBot 运行时</h3>
+            <dl>
+              <dt>状态</dt><dd id="statusNanoState">检测中...</dd>
+              <dt>模型</dt><dd id="statusNanoModel">-</dd>
+              <dt>工作区</dt><dd id="statusNanoWorkspace">-</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="status-detail" id="statusDetail"></div>
+      </section>
 
       <form id="composer" class="composer">
         <div class="composer-card">

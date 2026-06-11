@@ -2,15 +2,15 @@
 
 ## P1 Current Facts And Goal
 
-- NanoBot.net is the clean .NET agent runtime candidate for GroundPA.
-- Nong CLI is the deterministic GroundPA tool layer.
+- Nong.NanoBot.Net is the clean .NET agent runtime candidate for Nong.Toolkit.Net.
+- Nong CLI is the deterministic Nong.Toolkit.Net tool layer.
 - Goal: expose Nong to the agent loop as a controlled tool, without making the model compose arbitrary shell commands.
-- Non-goal: implement Office, PDF, OCR, or literature logic in NanoBot.net.
-- Angri450.Nong currently has unrelated dirty state; this phase does not edit it.
+- Non-goal: implement Office, PDF, OCR, or literature logic in Nong.NanoBot.Net.
+- Nong.Cli.Net currently has unrelated dirty state; this phase does not edit it.
 
 ## P2 Design And Boundaries
 
-- Add a `run_nong` built-in tool in NanoBot.net.
+- Add a `run_nong` built-in tool in Nong.NanoBot.Net.
 - The tool executes a configured Nong command with `ProcessStartInfo.ArgumentList`.
 - Tool inputs are argument arrays, not shell command strings.
 - Working directories are resolved inside the NanoBot workspace.
@@ -36,4 +36,4 @@
 
 - This phase verifies the adapter boundary, not real Nong command semantics.
 - A later integration gate should run with a clean, published `nong` executable.
-- More granular per-command allowlists can be added when GroundPA agent policies are formalized.
+- More granular per-command allowlists can be added when Nong.Toolkit.Net agent policies are formalized.

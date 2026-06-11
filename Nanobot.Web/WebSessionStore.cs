@@ -175,7 +175,7 @@ public sealed class WebSessionStore
     {
         return session.Messages.Count <= 1
             || session.Title.Equals(DefaultSessionTitle, StringComparison.OrdinalIgnoreCase)
-            || session.Title.Equals("GroundPA Session", StringComparison.OrdinalIgnoreCase)
+            || session.Title.Equals("Nong Session", StringComparison.OrdinalIgnoreCase)
             || session.Title.StartsWith("Session ", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -220,7 +220,7 @@ public sealed class WebSessionStore
 
     private static string NormalizeTitle(string title)
     {
-        return title.Equals("GroundPA Session", StringComparison.OrdinalIgnoreCase)
+        return title.Equals("Nong Session", StringComparison.OrdinalIgnoreCase)
             ? DefaultSessionTitle
             : title;
     }

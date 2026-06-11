@@ -2,7 +2,7 @@
 
 ## Added
 
-- Added a Chinese design note for absorbing AtomCode's GitCode OAuth and CodingPlan model-sync flow into NanoBot.net.
+- Added a Chinese design note for absorbing AtomCode's GitCode OAuth and CodingPlan model-sync flow into Nong.NanoBot.Net.
 - Captured DeepSeek-TUI's DeepSeek V4 Flash/Pro model strategy as a separate model-routing reference.
 
 ## Decisions

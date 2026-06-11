@@ -2,7 +2,7 @@
 
 ## 背景
 
-P6 已完成外部智能体项目调研，并固定 NanoBot.net 不换主线。P7 开始把调研结论转成 NanoBot 自身 runtime 的施工计划。
+P6 已完成外部智能体项目调研，并固定 Nong.NanoBot.Net 不换主线。P7 开始把调研结论转成 NanoBot 自身 runtime 的施工计划。
 
 ## 决策
 
@@ -37,5 +37,5 @@ docs/p7-runtime-engineering-plan.zh-CN.md
 - 不引入 Electron/WebView。
 - 不复制 AGPL 代码。
 - 不做无人值守 always-on 自动改 workspace。
-- 不把 GroundPA-Toolkit/Nong 打包进主安装包。
+- 不把 Nong.Toolkit.Net/Nong 打包进主安装包。
 

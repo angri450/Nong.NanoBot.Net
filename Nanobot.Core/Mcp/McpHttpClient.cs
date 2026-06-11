@@ -103,7 +103,7 @@ public class McpHttpClient : IMcpClient
                 ["capabilities"] = new JsonObject(),
                 ["clientInfo"] = new JsonObject
                 {
-                    ["name"] = "NanoBot.net",
+                    ["name"] = "Nong.NanoBot.Net",
                     ["version"] = "0.1.0"
                 }
             },
