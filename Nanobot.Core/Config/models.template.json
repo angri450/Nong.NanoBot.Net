@@ -1,11 +1,9 @@
-# NanoBot  模型库
-# 每个 provider 可以挂多个模型。Agent 运行时通过 provider/name 引用。
-
 {
   "providers": {
     "dmx": {
       "name": "DMX API",
       "apiBase": "https://www.dmxapi.cn/v1/",
+      "defaultModel": "deepseek-v4-pro-guan",
       "models": [
         {
           "id": "deepseek-v4-pro-guan",
@@ -18,6 +16,114 @@
           "supportsReasoning": true,
           "supportsInterleavedThinking": true,
           "reasoningEffort": "high"
+        }
+      ]
+    },
+    "siliconflow": {
+      "name": "硅基流动 SiliconFlow",
+      "apiBase": "https://api.siliconflow.cn/v1/",
+      "defaultModel": "deepseek-ai/DeepSeek-V3.2",
+      "models": [
+        {
+          "id": "deepseek-ai/DeepSeek-V3.2",
+          "apiModelId": "deepseek-ai/DeepSeek-V3.2",
+          "displayName": "DeepSeek V3.2",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "Pro/deepseek-ai/DeepSeek-V3.2",
+          "apiModelId": "Pro/deepseek-ai/DeepSeek-V3.2",
+          "displayName": "DeepSeek V3.2 (Pro)",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "deepseek-ai/DeepSeek-V3.1-Terminus",
+          "apiModelId": "deepseek-ai/DeepSeek-V3.1-Terminus",
+          "displayName": "DeepSeek V3.1 Terminus",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "deepseek-ai/DeepSeek-V4-Flash",
+          "apiModelId": "deepseek-ai/DeepSeek-V4-Flash",
+          "displayName": "DeepSeek V4 Flash",
+          "contextWindow": 131072,
+          "maxOutputTokens": 16384,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true,
+          "reasoningEffort": "high"
+        },
+        {
+          "id": "Pro/zai-org/GLM-5",
+          "apiModelId": "Pro/zai-org/GLM-5",
+          "displayName": "GLM-5",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "Pro/zai-org/GLM-4.7",
+          "apiModelId": "Pro/zai-org/GLM-4.7",
+          "displayName": "GLM-4.7",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "Qwen/Qwen3.5-397B-A17B",
+          "apiModelId": "Qwen/Qwen3.5-397B-A17B",
+          "displayName": "Qwen3.5 397B MoE",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "Qwen/Qwen3.5-35B-A3B",
+          "apiModelId": "Qwen/Qwen3.5-35B-A3B",
+          "displayName": "Qwen3.5 35B MoE",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "Qwen/Qwen3-32B",
+          "apiModelId": "Qwen/Qwen3-32B",
+          "displayName": "Qwen3 32B",
+          "contextWindow": 32768,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
+        },
+        {
+          "id": "tencent/Hunyuan-A13B-Instruct",
+          "apiModelId": "tencent/Hunyuan-A13B-Instruct",
+          "displayName": "混元 A13B",
+          "contextWindow": 131072,
+          "maxOutputTokens": 8192,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true
         }
       ]
     }
