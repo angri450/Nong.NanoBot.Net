@@ -272,6 +272,7 @@ const elements = {
   providerId: document.getElementById("providerId"),
   apiBase: document.getElementById("apiBase"),
   modelId: document.getElementById("modelId"),
+  modelSelect: document.getElementById("modelSelect"),
   apiKey: document.getElementById("apiKey"),
   apiKeyHint: document.getElementById("apiKeyHint"),
   keyStatus: document.getElementById("keyStatus"),
@@ -492,9 +493,24 @@ function renderModelSettings() {
   }
 
   const settings = state.modelSettings;
-  elements.providerId.value = settings.providerId || settings.ProviderId || "dmx";
-  elements.apiBase.value = settings.apiBase || settings.ApiBase || "https://www.dmxapi.cn/v1/";
-  elements.modelId.value = settings.model || settings.Model || "deepseek-v4-pro-guan";
+  elements.providerId.value = settings.providerId || settings.ProviderId || "siliconflow";
+  elements.apiBase.value = settings.apiBase || settings.ApiBase || "https://api.siliconflow.cn/v1/";
+  elements.modelId.value = settings.model || settings.Model || "nex-agi/Nex-N2-Pro";
+  if (elements.modelSelect) {
+    // Sync dropdown with model value
+    var v = settings.model || settings.Model || "";
+    var option = elements.modelSelect.querySelector('option[value="' + v + '"]');
+    if (option) {
+      elements.modelSelect.value = v;
+    } else {
+      // Custom model: add it as an option
+      var opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      elements.modelSelect.appendChild(opt);
+      elements.modelSelect.value = v;
+    }
+  }
   elements.apiKey.value = "";
 
   const thinkingMode = settings.thinkingMode || settings.ThinkingMode || "auto";
@@ -843,6 +859,28 @@ elements.reloadStatus.addEventListener("click", async () => {
     addMessage("system", `${t("statusError")}: ${error.message}`);
   }
 });
+
+// Model select dropdown → sync to hidden modelId input
+if (elements.modelSelect) {
+  elements.modelSelect.addEventListener("change", () => {
+    elements.modelId.value = elements.modelSelect.value;
+  });
+}
+
+// Provider switch → change API base
+if (elements.providerId) {
+  elements.providerId.addEventListener("change", () => {
+    var v = elements.providerId.value;
+    if (v === "siliconflow") {
+      elements.apiBase.value = "https://api.siliconflow.cn/v1/";
+      elements.modelId.value = "nex-agi/Nex-N2-Pro";
+      if (elements.modelSelect) elements.modelSelect.value = "nex-agi/Nex-N2-Pro";
+    } else if (v === "dmx") {
+      elements.apiBase.value = "https://www.dmxapi.cn/v1/";
+      elements.modelId.value = "deepseek-v4-pro-guan";
+    }
+  });
+}
 
 elements.refreshFiles.addEventListener("click", () => {
   loadFiles().catch(error => {

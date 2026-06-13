@@ -63,16 +63,26 @@
           <label>
             <span data-i18n="provider">Provider</span>
             <select id="providerId">
-              <option value="dmx">DMX 中转</option>
+              <option value="siliconflow">SiliconFlow</option>
+              <option value="dmx">DMX</option>
             </select>
           </label>
           <label>
             <span data-i18n="apiBase">API 地址</span>
-            <input id="apiBase" type="url" autocomplete="off" spellcheck="false" value="https://www.dmxapi.cn/v1/">
+            <input id="apiBase" type="url" autocomplete="off" spellcheck="false" value="https://api.siliconflow.cn/v1/">
           </label>
           <label>
             <span data-i18n="modelId">模型 ID</span>
-            <input id="modelId" type="text" autocomplete="off" spellcheck="false" value="deepseek-v4-pro-guan">
+            <select id="modelSelect">
+              <option value="nex-agi/Nex-N2-Pro">Nex-N2 Pro</option>
+              <option value="deepseek-ai/DeepSeek-V3.2">DeepSeek V3.2</option>
+              <option value="Pro/deepseek-ai/DeepSeek-V3.2">DeepSeek V3.2 Pro</option>
+              <option value="Pro/zai-org/GLM-5">GLM-5</option>
+              <option value="Qwen/Qwen3.5-397B-A17B">Qwen3.5 397B</option>
+              <option value="Qwen/Qwen3.5-35B-A3B">Qwen3.5 35B</option>
+              <option value="tencent/Hunyuan-A13B-Instruct">Hunyuan A13B</option>
+            </select>
+            <input id="modelId" type="text" autocomplete="off" spellcheck="false" value="nex-agi/Nex-N2-Pro" hidden>
           </label>
           <label>
             <span data-i18n="thinkingMode">思考模式</span>
