@@ -48,26 +48,30 @@ class Program
             {
                 var nongTool = new NongTool(workspace, config.Tools.Nong);
                 registry.Register(nongTool);
-                // Phase 2+3: auto-discover 125 individual Nong commands as tools (4.1.0+)
-                _ = Task.Run(async () =>
+                // Only register individual command tools if explicitly enabled (--detailed-tools)
+                // Otherwise, run_nong handles everything via its args array.
+                if (config.Tools.Nong.DetailedTools)
                 {
-                    try
+                    _ = Task.Run(async () =>
                     {
-                        var tools = await NongTool.DiscoverOpenAiToolsAsync(
-                            config.Tools.Nong.Command,
-                            workspace: workspace);
-                        foreach (var t in tools)
+                        try
                         {
-                            registry.Register(new NongDiscoveredToolWrapper(
-                                nongTool, t.Name, t.Args.ToArray(), t.Description, t.Parameters));
+                            var tools = await NongTool.DiscoverOpenAiToolsAsync(
+                                config.Tools.Nong.Command,
+                                workspace: workspace);
+                            foreach (var t in tools)
+                            {
+                                registry.Register(new NongDiscoveredToolWrapper(
+                                    nongTool, t.Name, t.Args.ToArray(), t.Description, t.Parameters));
+                            }
+                            Console.Error.WriteLine($"[nong] Discovered {tools.Count} command tools");
                         }
-                        Console.Error.WriteLine($"[nong] Discovered {tools.Count} command tools");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.Error.WriteLine($"[nong] Command discovery skipped: {ex.Message}");
-                    }
-                });
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine($"[nong] Command discovery skipped: {ex.Message}");
+                        }
+                    });
+                }
             }
 
             // Skill tools (2-phase progressive disclosure)

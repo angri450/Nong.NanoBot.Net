@@ -137,4 +137,10 @@ public class NongToolSettings
     public int TimeoutMs { get; set; } = 120000;
     public int MaxOutputChars { get; set; } = 20000;
     public List<string>? AllowedRoots { get; set; }
+    /// <summary>
+    /// Register each nong command as an individual OpenAI tool (126 tools).
+    /// Default: false. When false, only the unified run_nong tool is registered.
+    /// Set to true for models with large tool capacity.
+    /// </summary>
+    public bool DetailedTools { get; set; }
 }

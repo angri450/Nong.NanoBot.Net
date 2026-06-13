@@ -49,7 +49,20 @@ public class NongTool : ITool
     public string Name => "run_nong";
 
     public string Description =>
-        "Run the Nong CLI deterministic tool layer. Pass Nong arguments as an array, for example [\"pdf\", \"check\", \"paper.pdf\"].";
+        "Run any Nong CLI command. Pass args as an array. " +
+        "Available command groups: " +
+        "word (39 commands: check/convert/create/read/preview/fill/rebuild/extract/dissect/stats/fonts/styles/validate/merge/outline/compare/images/crop/fit-images/compact-tables/regroup-images/estimate/page-setup/indent/paragraph-control/image-wrap/cell-format/run-format/comments/revisions/infer-format/academic-format/format-gongwen/format-audit/repair-plan/table-reflow/protect/embed-font/fix-order + 11 add subcommands), " +
+        "inspect (12: diagnose/classify/structure/refs/evidence/data-req/gap/varplan/semantics/write-paper/write-official/official-check), " +
+        "chart (11: bar/line/scatter/pie/boxplot/histogram/heatmap/radar/analyze/anova/duncan), " +
+        "excel (8: sheets/read/to-groups/create/dissect/style/formula/pivot), " +
+        "pdf (8: check/dissect/render/images/merge/split/ocr/compress), " +
+        "ocr (11: local/cloud/to-word/models/install-model/check-env/analyze-image/batch/video/screen/camera), " +
+        "diagram (3: flowchart/network/tree), " +
+        "pptx (4: read/slides/dissect/create), " +
+        "lit (5: parse/validate/plan/search/export), " +
+        "slice (4: inspect/blocks/block/assets), " +
+        "genre/icons/skill/progress/commands. " +
+        "All commands support --json. The first arg is the command group (word/pdf/chart etc). Use the --help flag on any command for details.";
 
     public JsonNode Parameters => JsonNode.Parse("""
     {
