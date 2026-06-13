@@ -11,24 +11,8 @@
   <div class="app-shell">
     <aside class="rail">
       <div class="brand-mark" aria-label="NanoBot">N</div>
-      <button class="rail-button active" data-view="chat" title="对话" type="button">
-        <span data-i18n="railChat">对话</span>
-      </button>
-      <button class="rail-button" data-view="files" title="文件" type="button">
-        <span data-i18n="railFiles">文件</span>
-      </button>
-      <button class="rail-button" data-view="tools" title="工具" type="button">
-        <span data-i18n="railTools">工具</span>
-      </button>
-      <button class="rail-button" data-view="memory" title="记忆" type="button">
-        <span data-i18n="railMemory">记忆</span>
-      </button>
-      <button class="rail-button" data-view="settings" title="设置" type="button">
-        <span data-i18n="railSettings">设置</span>
-      </button>
-      <button class="rail-button" data-view="status" title="状态" type="button">
-        <span data-i18n="railStatus">状态</span>
-      </button>
+      <button class="rail-button active" data-view="chat" title="对话" type="button">对话</button>
+      <button class="rail-button" data-view="status" title="状态" type="button">状态</button>
     </aside>
 
     <aside class="sidebar">
@@ -44,13 +28,8 @@
       </header>
 
       <section class="panel-block mode-block">
-        <div class="mode-tabs">
-          <button class="mode-tab active" type="button" data-i18n="modeAgent">Agent</button>
-          <button class="mode-tab" type="button" data-i18n="modeWrite">写作</button>
-        </div>
         <div class="quick-actions">
-          <button id="newSession" class="quick-action" type="button"><span>+</span><span data-i18n="newSession">新建</span></button>
-          <button id="refreshFiles" class="quick-action" type="button"><span>↻</span><span data-i18n="refresh">刷新</span></button>
+          <button id="newSession" class="quick-action" type="button"><span>+</span>新建</button>
         </div>
       </section>
 
@@ -134,28 +113,19 @@
 
       <section class="panel-block">
         <div class="section-head">
-          <div class="section-title" data-i18n="sessions">会话</div>
+          <div class="section-title">会话</div>
           <span class="section-count" id="sessionCount">0</span>
         </div>
         <div id="sessions" class="session-list"></div>
       </section>
 
       <section class="panel-block">
-        <div class="section-head">
-          <div class="section-title" data-i18n="workspaceFiles">工作区文件</div>
-          <span class="section-count" data-i18n="localFiles">本地</span>
-        </div>
-        <div id="filePath" class="path-chip"></div>
-        <div id="fileList" class="file-list"></div>
-      </section>
-
-      <section class="panel-block">
-        <div class="section-title" data-i18n="runtime">运行时</div>
-        <dl class="runtime-list">
-          <div><dt data-i18n="status">状态</dt><dd id="runtimeStatus">Loading</dd></div>
-          <div><dt data-i18n="model">模型</dt><dd id="runtimeModel">Loading</dd></div>
-          <div><dt data-i18n="workspace">工作区</dt><dd id="runtimeWorkspace">Loading</dd></div>
-          <div><dt>Nong</dt><dd id="runtimeNong">Loading</dd></div>
+        <div class="section-title">运行时</div>
+        <dl class="runtime-list" style="font-size:12px">
+          <div style="display:flex;justify-content:space-between;gap:8px"><dt>状态</dt><dd id="runtimeStatus" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">Loading</dd></div>
+          <div style="display:flex;justify-content:space-between;gap:8px"><dt>模型</dt><dd id="runtimeModel" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">Loading</dd></div>
+          <div style="display:flex;justify-content:space-between;gap:8px"><dt>工作区</dt><dd id="runtimeWorkspace" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px" title="">Loading</dd></div>
+          <div style="display:flex;justify-content:space-between;gap:8px"><dt>Nong</dt><dd id="runtimeNong" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">Loading</dd></div>
         </dl>
         <div id="runtimeNotice" class="runtime-notice" hidden></div>
       </section>
@@ -164,19 +134,16 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <div class="eyebrow" data-i18n="localRuntime">本地 Agent 运行时</div>
+          <div class="eyebrow">本地 Agent 运行时</div>
           <h2 id="sessionTitle">NanoBot 会话</h2>
         </div>
         <div class="status-strip">
           <span id="runtimeReadyPill" class="status-pill">Loading</span>
           <span id="runtimeModelPill" class="status-pill muted">Model</span>
-          <span id="runtimeCachePill" class="status-pill muted" hidden>缓存 --</span>
-          <span id="runtimeUsagePill" class="status-pill muted" hidden>Token --</span>
           <span id="runtimeNongPill" class="status-pill muted">Nong</span>
         </div>
         <div class="topbar-actions">
-          <button id="reloadStatus" class="secondary-button" type="button" data-i18n="reload">重载</button>
-          <a class="secondary-button" href="/api/runtime/status" target="_blank" data-i18n="statusJson">状态 JSON</a>
+          <button id="stopButton" class="secondary-button" type="button" hidden>停止</button>
         </div>
       </header>
 

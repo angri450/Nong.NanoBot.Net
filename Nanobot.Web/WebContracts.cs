@@ -13,6 +13,8 @@ public sealed record AgentStreamEvent(
     string? Reasoning = null,
     string? ToolName = null,
     string? ToolCallId = null,
+    string? ToolArgs = null,
+    string? ToolResult = null,
     double? CacheHitRate = null,
     int? InputTokens = null,
     int? OutputTokens = null,

@@ -243,6 +243,7 @@ const state = {
   toolEvents: [],
   selectedEventKey: "",
   isRunning: false,
+  abortController: null,
   modelSettings: null
 };
 
@@ -285,9 +286,8 @@ const elements = {
   composer: document.getElementById("composer"),
   composerModel: document.getElementById("composerModel"),
   sendButton: document.getElementById("sendButton"),
+  stopButton: document.getElementById("stopButton"),
   newSession: document.getElementById("newSession"),
-  reloadStatus: document.getElementById("reloadStatus"),
-  refreshFiles: document.getElementById("refreshFiles"),
   themeToggle: document.getElementById("themeToggle"),
   languageToggle: document.getElementById("languageToggle"),
   cacheHitRate: document.getElementById("cacheHitRate"),
@@ -544,8 +544,8 @@ function updateSendState() {
   elements.sendButton.textContent = state.isRunning ? t("running") : t("send");
 }
 
-async function streamMessage(message, assistantNode) {
-  const response = await fetch("/api/agent/stream", {
+async function streamMessage(message, assistantNode, abortSignal) {
+  const response = await fetch("/api/agent/stream", { signal: abortSignal, signal: abortSignal,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -697,6 +697,16 @@ function addEventItem(event) {
   state.selectedEventKey ||= normalized.key;
   renderEvents();
   renderToolDetail();
+
+  // Also render tool events inline in chat
+  if (normalized.type === "ToolStarted" || normalized.type === "ToolCompleted" || normalized.type === "ToolFailed") {
+    const toolName = normalized.toolName || "Unknown";
+    if (normalized.type === "ToolStarted") {
+      addMessage("system", `[TOOL] ${toolName} ...`);
+    } else if (normalized.type === "ToolFailed") {
+      addMessage("system", `[TOOL] ${toolName} FAILED: ${normalized.error || ""}`);
+    }
+  }
 }
 
 function normalizeRuntimeEvent(event) {
@@ -821,22 +831,36 @@ elements.composer.addEventListener("submit", async event => {
 
   elements.prompt.value = "";
   state.isRunning = true;
-  updateSendState();
-  addMessage("user", message);
+      state.abortController = new AbortController();
+      elements.stopButton.hidden = false;
+      updateSendState();
+      addMessage("user", message);
   const assistantNode = addMessage("assistant", "");
 
   try {
-    await streamMessage(message, assistantNode);
+    await streamMessage(message, assistantNode, state.abortController.signal);
     await loadSessions();
     await loadStatus();
   } catch (error) {
     assistantNode.classList.add("error");
     assistantNode.textContent = `${t("requestError")}: ${error.message}`;
   } finally {
-    state.isRunning = false;
-    updateSendState();
+    state.isRunning = false;`n        state.abortController = null;`n        elements.stopButton.hidden = true;`n        updateSendState();
     elements.prompt.focus();
   }
+});
+
+elements.stopButton.addEventListener("click", () => {
+  if (state.abortController) {
+    state.abortController.abort();
+    state.isRunning = false;
+    elements.stopButton.hidden = true;
+    updateSendState();
+  }
+});
+
+elements.stopButton.addEventListener("click", () => {
+  if (state.abortController) { state.abortController.abort(); state.isRunning = false; elements.stopButton.hidden = true; updateSendState(); }
 });
 
 elements.newSession.addEventListener("click", async () => {
