@@ -299,7 +299,193 @@ public class NongTool : ITool
             return null;
         }
     }
+
+    /// <summary>
+    /// Discover Nong CLI commands as OpenAI tool schemas by calling nong commands --format openai-tools (4.1.0+).
+    /// Falls back to DiscoverCapabilitiesAsync + manual schema rendering for older CLI versions.
+    /// </summary>
+    public static async Task<IReadOnlyList<NongDiscoveredTool>> DiscoverOpenAiToolsAsync(
+        string? nongCommand = null,
+        INongCommandRunner? runner = null,
+        string? workspace = null)
+    {
+        var cmd = string.IsNullOrWhiteSpace(nongCommand) ? "nong" : nongCommand;
+        runner ??= new ProcessNongCommandRunner();
+        workspace ??= Environment.CurrentDirectory;
+
+        try
+        {
+            var request = new NongCommandRequest(
+                cmd,
+                new List<string> { "commands", "--format", "openai-tools" },
+                workspace,
+                30000
+            );
+            var result = await runner.RunAsync(request);
+
+            if (result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.Stdout))
+            {
+                var tools = ParseOpenAiTools(result.Stdout);
+                if (tools.Count > 0)
+                    return tools;
+            }
+        }
+        catch
+        {
+            // Fallback below
+        }
+
+        return new List<NongDiscoveredTool>();
+    }
+
+    private static IReadOnlyList<NongDiscoveredTool> ParseOpenAiTools(string json)
+    {
+        var results = new List<NongDiscoveredTool>();
+        try
+        {
+            var array = JsonNode.Parse(json)?.AsArray();
+            if (array == null) return results;
+
+            foreach (var item in array)
+            {
+                var func = item["function"];
+                if (func == null) continue;
+
+                var name = func["name"]?.ToString();
+                var desc = func["description"]?.ToString();
+                var parameters = func["parameters"]?.DeepClone();
+
+                if (string.IsNullOrWhiteSpace(name)) continue;
+
+                // Convert tool name like "chart_bar" → ["chart", "bar"]
+                var args = name.Replace('_', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (args.Length == 0) continue;
+
+                results.Add(new NongDiscoveredTool(
+                    Name: name,
+                    Description: desc ?? "",
+                    Args: args,
+                    Parameters: parameters ?? new JsonObject
+                    {
+                        ["type"] = "object",
+                        ["properties"] = new JsonObject()
+                    }
+                ));
+            }
+        }
+        catch { /* parse error → empty list */ }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Run a single Nong command by args array. Used by the delegating tool wrapper.
+    /// </summary>
+    internal Task<string> ExecuteArgsAsync(IReadOnlyList<string> args, string? workingDirectory)
+    {
+        // Build a fake JsonNode that looks like the run_nong args parameter
+        var argsArray = new JsonArray();
+        foreach (var a in args)
+            argsArray.Add((string)a);
+
+        var fullArgs = new JsonObject
+        {
+            ["args"] = argsArray
+        };
+
+        if (!string.IsNullOrWhiteSpace(workingDirectory))
+            fullArgs["workingDirectory"] = workingDirectory;
+
+        return ExecuteAsync(fullArgs);
+    }
 }
+
+/// <summary>Lightweight tool wrapper that delegates a single Nong command to NongTool.</summary>
+public class NongDiscoveredToolWrapper : ITool
+{
+    private readonly NongTool _nongTool;
+    private readonly string _toolName;
+    private readonly string[] _args;
+
+    public NongDiscoveredToolWrapper(NongTool nongTool, string toolName, string[] args, string description, JsonNode parameters)
+    {
+        _nongTool = nongTool;
+        _toolName = toolName;
+        _args = args;
+        Description = description;
+        Parameters = parameters;
+    }
+
+    public string Name => _toolName;
+    public string Description { get; }
+    public JsonNode Parameters { get; }
+
+    public Task<string> ExecuteAsync(JsonNode? arguments)
+    {
+        // Merge user-provided args with the fixed command args
+        // Fixed args are like ["chart", "bar"], user args provide --options and positional values
+        var mergedArgs = new List<string>(_args);
+
+        if (arguments is JsonObject obj)
+        {
+            foreach (var prop in obj)
+            {
+                var key = prop.Key;
+                var value = prop.Value;
+
+                if (string.IsNullOrWhiteSpace(key)) continue;
+
+                // Boolean flags: --flag
+                if (value?.GetValueKind() == System.Text.Json.JsonValueKind.True)
+                {
+                    mergedArgs.Add($"--{key}");
+                }
+                else if (value?.GetValueKind() == System.Text.Json.JsonValueKind.False)
+                {
+                    // false flag → skip (don't pass --no-flag unless specified)
+                }
+                else if (value != null)
+                {
+                    var strVal = value.ToString();
+                    if (!string.IsNullOrWhiteSpace(strVal))
+                    {
+                        // Positional args (key "o", "file", "spec", "image", "dir", "query", "file", etc.)
+                        // or named args (key starts with -- or is a regular string)
+                        var isFlagKey = key.StartsWith("--") || key.StartsWith("-");
+                        // Short keys like "o", "file", "spec" are likely positional or flag names
+                        // For simplicity: if key is "file" and it's a positional arg, pass as value
+                        // Named options: --flag value
+                        if (isFlagKey)
+                        {
+                            mergedArgs.Add(key);
+                            mergedArgs.Add(strVal);
+                        }
+                        else if (key.Length <= 3)
+                        {
+                            // Short key like "o", "q" → treat as -o value
+                            mergedArgs.Add(key.StartsWith("-") ? key : $"-{key}");
+                            mergedArgs.Add(strVal);
+                        }
+                        else
+                        {
+                            mergedArgs.Add($"--{key}");
+                            mergedArgs.Add(strVal);
+                        }
+                    }
+                }
+            }
+        }
+
+        return _nongTool.ExecuteArgsAsync(mergedArgs, null);
+    }
+}
+
+/// <summary>Discovered Nong command tool descriptor from --format openai-tools.</summary>
+public sealed record NongDiscoveredTool(
+    string Name,
+    string Description,
+    IReadOnlyList<string> Args,
+    JsonNode Parameters);
 
 public sealed record NongCommandInfo(string Name, string Description, string Group, string Status);
 

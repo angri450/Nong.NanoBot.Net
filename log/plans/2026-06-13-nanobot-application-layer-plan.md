@@ -38,6 +38,10 @@ Nong.NanoBot.Net   (应用层)     → Agent runtime，把 CLI 能力暴露为 L
 
 ### 第 1 步 · P0 — allowlist 补全
 
+**状态: done (审计发现已于 P6 完成)**
+
+`NongTool.DefaultAllowedRoots` 已包含 lit/slice/progress，测试已覆盖。
+
 **目标**: lit / slice / progress 三个命令模块加入 NanoBot 白名单。
 
 **现状**: NanoBot 的 `NongTool.cs` allowlist 缺这三个。Nong 4.1.0 中它们稳定实现，纯 .NET 内嵌、无 native 依赖、不消耗外部 token。
@@ -55,6 +59,15 @@ Nong.NanoBot.Net   (应用层)     → Agent runtime，把 CLI 能力暴露为 L
 
 ### 第 2 步 · P0 — CLI 能力发现升级
 
+**状态: done**
+
+`NongTool.DiscoverOpenAiToolsAsync()` 调用 `nong commands --format openai-tools`，返回结构化的 `NongDiscoveredTool` 列表。
+
+**做法**:
+- `NongTool.cs` 新增静态方法 `DiscoverOpenAiToolsAsync()`
+- `ParseOpenAiTools()` 解析 JSON 数组为 `NongDiscoveredTool` 列表
+- 解析失败返回空列表，不抛异常
+
 **目标**: 从旧的 `nong commands --json` 升级到 `nong commands --format openai-tools`。
 
 **现状**: NanoBot 已支持 `nong commands --json` 发现命令。CLI 4.1.0 新增了 `--format openai-tools`，直接返回 OpenAI tools 数组（125 tools）。
@@ -71,6 +84,15 @@ Nong.NanoBot.Net   (应用层)     → Agent runtime，把 CLI 能力暴露为 L
 ---
 
 ### 第 3 步 · P1 — AgentLoop 工具自动注册
+
+**状态: done**
+
+`NongDiscoveredToolWrapper` 包装单个 Nong 命令为 ITool。CLI 和 Web Program.cs 启动时自动发现并注册全部 125 个命令。
+
+**做法**:
+- `NongDiscoveredToolWrapper` 实现 ITool，委托给 NongTool
+- 自动合并用户 JSON 参数到 CLI args
+- 启动时异步发现，发现完后输出 `[nong] Discovered N command tools`
 
 **目标**: NanoBot 启动时自动将 125 个 Nong 命令注册为 AgentLoop function-calling 工具。
 

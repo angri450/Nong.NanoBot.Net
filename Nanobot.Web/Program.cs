@@ -820,7 +820,28 @@ public sealed class NanobotWebRuntime
 
         if (_config.Tools.Nong.Enabled)
         {
-            registry.Register(new NongTool(_workspace, _config.Tools.Nong));
+            var nongTool = new NongTool(_workspace, _config.Tools.Nong);
+            registry.Register(nongTool);
+            // Phase 2+3: auto-discover 125 individual Nong commands as tools (4.1.0+)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var tools = await NongTool.DiscoverOpenAiToolsAsync(
+                        _config.Tools.Nong.Command,
+                        workspace: _workspace);
+                    foreach (var t in tools)
+                    {
+                        registry.Register(new NongDiscoveredToolWrapper(
+                            nongTool, t.Name, t.Args.ToArray(), t.Description, t.Parameters));
+                    }
+                    Console.WriteLine($"[nong] Discovered {tools.Count} command tools");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[nong] Command discovery skipped: {ex.Message}");
+                }
+            });
         }
 
         // Skill tools (2-phase progressive disclosure)
