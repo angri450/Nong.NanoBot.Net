@@ -75,6 +75,11 @@ class Program
             registry.Register(new GetSkillCatalogTool(skillLoader, workspace));
             registry.Register(new LoadSkillTool(skillLoader, workspace));
             registry.Register(new LoadSkillReferenceTool(skillLoader, workspace));
+
+            // Plugin manager (install skills from Nong.Toolkit.Net releases)
+            var pluginManager = new PluginManager(workspace);
+            registry.Register(new PluginInstallTool(pluginManager));
+            registry.Register(new PluginListTool(pluginManager));
             
             string? githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? (config.Providers.TryGetValue("github", out var gh) ? gh.ApiKey : null);
             registry.Register(new GitHubTool(githubToken));

@@ -189,6 +189,10 @@ NongConfirmationHook 拦截 install/token/write 危险命令。install/camera/to
 
 ### 第 7 步 · P2 — Plugin 安装体系
 
+**状态: done**
+
+PluginManager + PluginInstallTool + PluginListTool。LLM 可调用 plugin_install 自动下载安装 Toolkit skills。
+
 **目标**: NanoBot 能自动安装/更新 Nong.Toolkit.Net 的 skill，替代手动丢 workspace/skills。
 
 **现状**: 完全未实现。用户需要手动下载 Toolkit repo 并把 skill 目录复制到 workspace。

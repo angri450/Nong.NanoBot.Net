@@ -851,6 +851,11 @@ public sealed class NanobotWebRuntime
         registry.Register(new LoadSkillTool(skillLoader, _workspace));
         registry.Register(new LoadSkillReferenceTool(skillLoader, _workspace));
 
+        // Plugin manager
+        var pluginManager = new PluginManager(_workspace);
+        registry.Register(new PluginInstallTool(pluginManager));
+        registry.Register(new PluginListTool(pluginManager));
+
         var githubToken = Environment.GetEnvironmentVariable("GITHUB_TOKEN")
             ?? (_config.Providers.TryGetValue("github", out var gh) ? gh.ApiKey : null);
         registry.Register(new GitHubTool(githubToken));
