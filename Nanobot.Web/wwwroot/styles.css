@@ -1052,6 +1052,12 @@ h2 {
 
 .status-ready { color: var(--green); }
 .status-error { color: var(--red); }
+.status-warn { color: var(--warn, #d29922); }
+
+.ext-tools { display: flex; flex-wrap: wrap; gap: 4px; font-size: 12px; }
+.ext-tool { padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.ext-tool-ok { background: #1a331e; color: var(--green); }
+.ext-tool-missing { background: #332b18; color: var(--warn, #d29922); }
 
 .status-detail {
   background: var(--panel);

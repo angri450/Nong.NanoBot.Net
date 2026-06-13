@@ -386,8 +386,129 @@ public sealed class NanobotWebRuntime
             if (doc?["status"]?.ToString() != "ok") return null;
             var version = doc["meta"]?["version"]?.ToString();
             var data = doc["data"]?.AsArray();
-            var roots = data?.Select(c => c["group"]?.ToString() ?? "").Distinct().OrderBy(r => r).ToList() ?? new List<string>();
-            return new NongStatusResponse(true, version, data?.Count ?? 0, roots!);
+            var roots = data?.Select(c => c["group"]?.ToString() ?? "").Distinct().Where(r => r.Length > 0).OrderBy(r => r).ToList() ?? new List<string>();
+
+            // Probe external dotnet tools
+            var externalTools = ProbeExternalTools();
+
+            // Probe OCR models
+            var ocrModels = ProbeOcrModels();
+
+            return new NongStatusResponse(true, version, data?.Count ?? 0, roots!, externalTools, ocrModels);
+        }
+        catch { return null; }
+    }
+
+    static List<ExternalToolStatus> ProbeExternalTools()
+    {
+        var tools = new List<ExternalToolStatus>();
+        var toolDefs = new[]
+        {
+            ("nong-chart", "Angri450.Nong.Tool.Chart"),
+            ("nong-diagram", "Angri450.Nong.Tool.Diagram"),
+            ("nong-pdf", "Angri450.Nong.Tool.Pdf"),
+            ("nong-pptx", "Angri450.Nong.Tool.Pptx"),
+            ("nong-ocr", "Angri450.Nong.Tool.Ocr"),
+            ("nong-imaging", "Angri450.Nong.Tool.Imaging"),
+        };
+
+        foreach (var (name, packageId) in toolDefs)
+        {
+            try
+            {
+                using var proc = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "dotnet",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                proc.StartInfo.ArgumentList.Add("tool");
+                proc.StartInfo.ArgumentList.Add("list");
+                proc.StartInfo.ArgumentList.Add("--global");
+                proc.Start();
+                proc.WaitForExit(3000);
+                var output = proc.StandardOutput.ReadToEnd();
+                var installed = output.Contains(packageId, StringComparison.OrdinalIgnoreCase);
+
+                // Try to get version
+                string? version = null;
+                if (installed)
+                {
+                    var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var line in lines)
+                    {
+                        if (line.Contains(packageId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            if (parts.Length >= 2) version = parts[^1];
+                            break;
+                        }
+                    }
+                }
+
+                tools.Add(new ExternalToolStatus(name, packageId, installed, version));
+            }
+            catch
+            {
+                tools.Add(new ExternalToolStatus(name, packageId, false, null));
+            }
+        }
+
+        return tools;
+    }
+
+    static OcrModelStatus? ProbeOcrModels()
+    {
+        try
+        {
+            using var proc = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "nong",
+                    Arguments = "ocr models --json",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            proc.Start();
+            proc.WaitForExit(5000);
+            if (proc.ExitCode != 0) return null;
+            var json = proc.StandardOutput.ReadToEnd();
+            var doc = JsonNode.Parse(json);
+            if (doc?["status"]?.ToString() != "ok") return null;
+
+            // Parse v6 availability from data.models array
+            var models = doc["data"]?["models"]?.AsArray();
+            bool v6Available = false;
+            string? v6Size = null;
+            string? v6Path = null;
+            bool v5Available = false;
+
+            if (models != null)
+            {
+                foreach (var m in models)
+                {
+                    var id = m["id"]?.ToString() ?? "";
+                    if (id.StartsWith("pp-ocrv6-") && m["available"]?.GetValue<bool>() == true)
+                    {
+                        v6Available = true;
+                        v6Size = m["modelSize"]?.ToString();
+                        v6Path = m["modelCachePath"]?.ToString();
+                    }
+                    if (id == "pp-ocrv5-mobile" && m["available"]?.GetValue<bool>() == true)
+                        v5Available = true;
+                }
+            }
+
+            return new OcrModelStatus(v6Available, v6Size, v6Path, v5Available);
         }
         catch { return null; }
     }

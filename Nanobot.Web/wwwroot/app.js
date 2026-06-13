@@ -1104,6 +1104,38 @@ async function refreshStatusPanel() {
       document.getElementById("statusNongState").className = "status-ready";
       document.getElementById("statusNongVersion").textContent = nong.version || nong.Version || "-";
       document.getElementById("statusNongCommands").textContent = nong.commandCount || nong.CommandCount || "-";
+
+      // External tools
+      var extTools = nong.externalTools || nong.ExternalTools;
+      var extDiv = document.getElementById("statusExternalTools");
+      if (extTools && extTools.length > 0) {
+        var html = '<div class="ext-tools">';
+        for (var i = 0; i < extTools.length; i++) {
+          var et = extTools[i];
+          var cls = (et.installed || et.Installed) ? "ext-tool-ok" : "ext-tool-missing";
+          var label = (et.installed || et.Installed) ? "OK" : "MISS";
+          html += '<span class="ext-tool ' + cls + '" title="' + (et.packageId || et.PackageId || "") + '">'
+            + escapeHtml(et.name || et.Name || "") + ': ' + label + '</span> ';
+        }
+        html += '</div>';
+        extDiv.innerHTML = html;
+      } else {
+        extDiv.innerHTML = "<em>—</em>";
+      }
+
+      // OCR models
+      var ocr = nong.ocrModels || nong.OcrModels;
+      var ocrDiv = document.getElementById("statusOcrModels");
+      if (ocr) {
+        var v6ok = ocr.v6Available || ocr.V6Available;
+        var v6sz = ocr.v6Size || ocr.V6Size || "?";
+        var v5ok = ocr.v5Available || ocr.V5Available;
+        ocrDiv.innerHTML = "v6: <span class='" + (v6ok ? "status-ready" : "status-warn") + "'>"
+          + (v6ok ? v6sz + " OK" : "NONE") + "</span> | v5: "
+          + (v5ok ? "OK" : "NONE");
+      } else {
+        ocrDiv.innerHTML = "<em>—</em>";
+      }
     } else {
       document.getElementById("statusNongState").textContent = "未安装";
       document.getElementById("statusNongState").className = "status-error";

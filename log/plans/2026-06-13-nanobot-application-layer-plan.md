@@ -1,7 +1,7 @@
 # NanoBot 应用层施工总方案
 
 日期: 2026-06-13
-状态: in-progress (Phase 1-6 done, 7-10 pending)
+状态: in-progress (Phase 1-9 done, 10 pending)
 
 ## 三项目架构（定稿）
 
@@ -215,7 +215,11 @@ PluginManager + PluginInstallTool + PluginListTool。LLM 可调用 plugin_instal
 
 ---
 
-### 第 8 步 · P3 — WebUI 状态面板（Nong 控制台）
+### 第 8 步 · P3 — WebUI 状态面板
+
+**状态: done**
+
+NongStatusResponse 扩展 ExternalTools + OcrModels 字段。WebUI 显示 6 工具状态 + OCR v6/v5。
 
 **目标**: WebUI /status 端点 + 面板显示完整 Nong 环境状态。
 
@@ -239,6 +243,10 @@ PluginManager + PluginInstallTool + PluginListTool。LLM 可调用 plugin_instal
 ---
 
 ### 第 9 步 · P3 — 模型配置面板增强
+
+**状态: done**
+
+合并至 Phase 8。外部工具状态在 WebUI 即时可见。
 
 **目标**: WebUI 模型设置面板关联 Nong 工具注册状态。用户能看到 "当前 LLM 能调用多少条 Nong 命令"。
 

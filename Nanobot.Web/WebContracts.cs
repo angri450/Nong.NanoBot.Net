@@ -107,7 +107,21 @@ public sealed record NongStatusResponse(
     bool Installed,
     string? Version,
     int CommandCount,
-    IReadOnlyList<string> AvailableRoots);
+    IReadOnlyList<string> AvailableRoots,
+    IReadOnlyList<ExternalToolStatus>? ExternalTools = null,
+    OcrModelStatus? OcrModels = null);
+
+public sealed record ExternalToolStatus(
+    string Name,
+    string PackageId,
+    bool Installed,
+    string? Version);
+
+public sealed record OcrModelStatus(
+    bool V6Available,
+    string? V6Size,
+    string? V6CachePath,
+    bool V5Available);
 
 public sealed record ToolkitStatusResponse(
     bool Installed,
