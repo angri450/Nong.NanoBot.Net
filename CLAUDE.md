@@ -11,6 +11,16 @@ This repository is **Nong.NanoBot.Net**, the .NET 8 / C# 12 implementation of th
   - `dotnet build`: 0 warnings, 0 errors
   - Source audit: 0 TODO, 0 stub, 0 `NotImplementedException`
 
+## Application Layer Plans (2026-06-13)
+
+See `log/plans/2026-06-13-nanobot-application-layer-plan.md` for the full construction roadmap.
+
+Upstream dependencies are now ready:
+- **Nong.Cli.Net 4.1.0**: modular (7 packages), `nong commands --format openai-tools` (125 tools)
+- **Nong.Toolkit.Net 4.1.0**: 16 skills synced, modular architecture docs updated
+
+Next: Phase 2 — AgentLoop tool auto-registration + Skill route matching.
+
 ## P6 Scope Completed
 
 - Memory write path, `remember` tool, `history.jsonl`, and Dream consolidation
