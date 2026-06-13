@@ -119,6 +119,13 @@ public class ContextRenderer
             return "";
         }
 
+        // If we have many tools (>25), the LLM already gets them via the function-calling
+        // `tools` parameter. Don't duplicate in system prompt to save context.
+        if (definitions.Count > 25)
+        {
+            return $"[{definitions.Count} tools available via function calling]";
+        }
+
         // Sort by name for stability
         var sorted = definitions
             .Select(def => new

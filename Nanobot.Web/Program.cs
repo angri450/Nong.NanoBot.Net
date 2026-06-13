@@ -549,7 +549,8 @@ public sealed class NanobotWebRuntime
                 _startupWarning = string.Join(Environment.NewLine, mcpWarnings);
             }
 
-            _agent = new Agent(_provider, registry, _memory, _eventBus);
+            var nongHook = new NongConfirmationHook();
+            _agent = new Agent(_provider, registry, _memory, _eventBus, hooks: new IAgentHook[] { nongHook });
         }
         catch (Exception ex)
         {

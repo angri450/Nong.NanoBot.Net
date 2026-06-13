@@ -83,7 +83,8 @@ class Program
             registry.Register(new MemoryTool(memory));
             await RegisterMcpToolsAsync(registry, config);
             var eventBus = new RuntimeEventBus();
-            return (new Agent(provider, registry, memory, eventBus), eventBus, config, providerSetup.StreamingEnabled, memory, provider);
+            var nongConfirmHook = new NongConfirmationHook();
+            return (new Agent(provider, registry, memory, eventBus, hooks: new IAgentHook[] { nongConfirmHook }), eventBus, config, providerSetup.StreamingEnabled, memory, provider);
         }
 
         // --- Default Command Handler (Root) ---

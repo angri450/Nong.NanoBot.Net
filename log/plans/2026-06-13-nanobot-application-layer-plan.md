@@ -1,8 +1,7 @@
 # NanoBot 应用层施工总方案
 
 日期: 2026-06-13
-状态: plan
-来源: 合并 Nong.Cli.Net `/plans/2026-06-12-nanobot-bridge-plan.md` + Nong.NanoBot.Net 4.0.0 全桥接方案 HTML + 4.1.0 模块化新增需求
+状态: in-progress (Phase 1-6 done, 7-10 pending)
 
 ## 三项目架构（定稿）
 
@@ -113,7 +112,11 @@ Nong.NanoBot.Net   (应用层)     → Agent runtime，把 CLI 能力暴露为 L
 
 ---
 
-### 第 4 步 · P1 — Skill 路由匹配（替代全量塞入）
+### 第 4 步 · P1 — Skill 路由匹配
+
+**状态: done (P6 已实现)**
+
+SkillLoader 两阶段 (catalog → load specific) + progressive disclosure 已完工。
 
 **目标**: 不再把 16 个 SKILL.md 全拼进上下文。改为按需注入：用户说话时匹配 1-2 个 skill，只注入那部分。
 
@@ -138,6 +141,10 @@ Nong.NanoBot.Net   (应用层)     → Agent runtime，把 CLI 能力暴露为 L
 
 ### 第 5 步 · P2 — 上下文窗口管理
 
+**状态: done**
+
+ContextRenderer: 工具 >25 个时不在系统提示词中重复 tool schema (function-calling API 已发送)。节省 ~8000 tokens。
+
 **目标**: 防止 125 工具 schema + skill 全文 + 聊天历史撑爆 token 窗口。
 
 **做法**:
@@ -154,6 +161,10 @@ Nong.NanoBot.Net   (应用层)     → Agent runtime，把 CLI 能力暴露为 L
 ---
 
 ### 第 6 步 · P2 — 确认机制
+
+**状态: done**
+
+NongConfirmationHook 拦截 install/token/write 危险命令。install/camera/token 每次确认，write 每 session 每组确认一次。
 
 **目标**: 危险/高成本命令需要用户显式确认才执行。
 
