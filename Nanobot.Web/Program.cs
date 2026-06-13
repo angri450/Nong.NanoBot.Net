@@ -304,6 +304,8 @@ public sealed class NanobotWebRuntime
     private readonly object _reloadLock = new();
     private readonly string _nanoDir;
     private readonly string _configFile;
+    private readonly string _modelsFile;
+    private readonly string _secretsFile;
     private readonly string _workspace;
     private readonly RuntimeEventBus _eventBus = new();
     private readonly FileMemoryStore _memory;
@@ -325,6 +327,8 @@ public sealed class NanobotWebRuntime
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         _nanoDir = Path.Combine(home, ".nanobot");
         _configFile = Path.Combine(_nanoDir, "config.json");
+        _modelsFile = Path.Combine(_nanoDir, "models.json");
+        _secretsFile = Path.Combine(_nanoDir, "secrets.json");
         _workspace = Path.Combine(_nanoDir, "workspace");
         Directory.CreateDirectory(_nanoDir);
         Directory.CreateDirectory(_workspace);
@@ -576,18 +580,21 @@ public sealed class NanobotWebRuntime
         }
 
         Directory.CreateDirectory(_nanoDir);
-        var configJson = LoadConfigJson();
-        var providers = EnsureObject(configJson, "providers");
-        var provider = EnsureObject(providers, providerId);
-        provider["kind"] = "openai-compatible";
-        provider["apiBase"] = apiBase;
-        provider["defaultModel"] = model;
-        provider["models"] = new JsonArray
+
+        // 1. Write models.json — provider and model definitions only, no keys
+        var modelsJson = LoadOrCreateJson(_modelsFile);
+        var mp = EnsureObject(modelsJson, "providers");
+        var mpEntry = EnsureObject(mp, providerId);
+        mpEntry["name"] = "DMX API";
+        mpEntry["apiBase"] = apiBase;
+        mpEntry["defaultModel"] = model;
+        mpEntry["models"] = new JsonArray
         {
             new JsonObject
             {
                 ["id"] = model,
                 ["apiModelId"] = model,
+                ["displayName"] = model,
                 ["supportsStreaming"] = true,
                 ["supportsTools"] = true,
                 ["providerModelFamily"] = DeepSeekV4Models.IsDeepSeekV4(model) ? "deepseek-v4" : null,
@@ -597,23 +604,20 @@ public sealed class NanobotWebRuntime
                 ["maxOutputTokens"] = DeepSeekV4Models.IsDeepSeekV4(model) ? 384_000 : null
             }
         };
+        File.WriteAllText(_modelsFile, modelsJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
-        if (request.ClearApiKey)
-        {
-            provider["apiKey"] = "";
-        }
-        else if (!string.IsNullOrWhiteSpace(request.ApiKey))
-        {
-            provider["apiKey"] = request.ApiKey.Trim();
-        }
-        else if (!provider.ContainsKey("apiKey"))
-        {
-            provider["apiKey"] = "";
-        }
+        // 2. Write secrets.json — API key only
+        var secretsJson = LoadOrCreateJson(_secretsFile);
+        if (!secretsJson.ContainsKey(providerId))
+            secretsJson[providerId] = new JsonObject();
+        var sp = secretsJson[providerId]!.AsObject();
+        sp["apiKey"] = request.ClearApiKey ? "" : (string.IsNullOrWhiteSpace(request.ApiKey) ? (sp.ContainsKey("apiKey") ? sp["apiKey"]?.ToString() ?? "" : "") : request.ApiKey.Trim());
+        File.WriteAllText(_secretsFile, secretsJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
+        // 3. Write config.json — runtime settings only, no provider/model details
+        var configJson = LoadOrCreateJson(_configFile);
         var agents = EnsureObject(configJson, "agents");
         var defaults = EnsureObject(agents, "defaults");
-        defaults["provider"] = providerId;
         defaults["model"] = $"{providerId}::{model}";
         defaults["fallbackModels"] = new JsonArray($"{providerId}::{model}");
 
@@ -1087,21 +1091,21 @@ public sealed class NanobotWebRuntime
         return $"{value[..6]}...{value[^4..]}";
     }
 
-    private JsonObject LoadConfigJson()
+    private static JsonObject LoadOrCreateJson(string path)
     {
-        if (!File.Exists(_configFile))
+        if (!File.Exists(path))
         {
             return new JsonObject();
         }
 
-        var text = File.ReadAllText(_configFile);
+        var text = File.ReadAllText(path);
         if (string.IsNullOrWhiteSpace(text))
         {
             return new JsonObject();
         }
 
         return JsonNode.Parse(text) as JsonObject
-            ?? throw new InvalidOperationException("config.json 根节点必须是 JSON object。");
+            ?? throw new InvalidOperationException($"{Path.GetFileName(path)} root must be a JSON object.");
     }
 
     private static JsonObject EnsureObject(JsonObject parent, string propertyName)

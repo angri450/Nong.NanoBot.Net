@@ -18,6 +18,7 @@ publish/
 
 # Config files with secrets
 config.json
+secrets.json
 cron.json
 /memory/
 /pdf/

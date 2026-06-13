@@ -103,28 +103,59 @@ class Program
         });
 
         // --- Command: Onboard ---
-        var onboardCommand = new Command("onboard", "Initialize configuration and workspace");
+        var onboardCommand = new Command("onboard", "Initialize configuration, models, secrets, and workspace");
         onboardCommand.SetHandler(() => {
             if (!Directory.Exists(nanoDir)) Directory.CreateDirectory(nanoDir);
-            if (!File.Exists(configFile)) {
-                File.WriteAllText(configFile, """
+
+            var modelsFile = Path.Combine(nanoDir, "models.json");
+            if (!File.Exists(modelsFile))
+            {
+                File.WriteAllText(modelsFile, """
                 {
                   "providers": {
                     "dmx": {
-                      "kind": "openai-compatible",
-                      "apiKey": "",
+                      "name": "DMX API",
                       "apiBase": "https://www.dmxapi.cn/v1/",
                       "defaultModel": "deepseek-v4-pro-guan",
                       "models": [
                         {
                           "id": "deepseek-v4-pro-guan",
                           "apiModelId": "deepseek-v4-pro-guan",
+                          "displayName": "DeepSeek V4 Pro",
+                          "contextWindow": 1000000,
+                          "maxOutputTokens": 32000,
                           "supportsStreaming": true,
-                          "supportsTools": true
+                          "supportsTools": true,
+                          "supportsReasoning": true,
+                          "supportsInterleavedThinking": true,
+                          "reasoningEffort": "high"
                         }
                       ]
                     }
-                  },
+                  }
+                }
+                """);
+                Console.WriteLine($"Created models catalog at {modelsFile}");
+            }
+
+            var secretsFile = Path.Combine(nanoDir, "secrets.json");
+            if (!File.Exists(secretsFile))
+            {
+                File.WriteAllText(secretsFile, """
+                {
+                  "dmx": {
+                    "apiKey": ""
+                  }
+                }
+                """);
+                Console.WriteLine($"Created secrets file at {secretsFile}");
+                Console.WriteLine("  Fill in your API key: edit ~/.nanobot/secrets.json");
+            }
+
+            if (!File.Exists(configFile))
+            {
+                File.WriteAllText(configFile, """
+                {
                   "agents": {
                     "defaults": {
                       "model": "dmx::deepseek-v4-pro-guan",
@@ -141,9 +172,6 @@ class Program
                       "prefix": "http://localhost:8765/ws/",
                       "token": ""
                     }
-                  },
-                  "webSearch": {
-                    "apiKey": ""
                   },
                   "tools": {
                     "nong": {
@@ -173,7 +201,7 @@ class Program
                   }
                 }
                 """);
-                Console.WriteLine($"Created default config at {configFile}");
+                Console.WriteLine($"Created runtime config at {configFile}");
             }
             if (!Directory.Exists(workspace)) Directory.CreateDirectory(workspace);
             Console.WriteLine("Onboarding complete.");

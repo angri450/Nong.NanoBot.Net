@@ -1,0 +1,25 @@
+# NanoBot  模型库
+# 每个 provider 可以挂多个模型。Agent 运行时通过 provider/name 引用。
+
+{
+  "providers": {
+    "dmx": {
+      "name": "DMX API",
+      "apiBase": "https://www.dmxapi.cn/v1/",
+      "models": [
+        {
+          "id": "deepseek-v4-pro-guan",
+          "apiModelId": "deepseek-v4-pro-guan",
+          "displayName": "DeepSeek V4 Pro",
+          "contextWindow": 1000000,
+          "maxOutputTokens": 32000,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true,
+          "supportsInterleavedThinking": true,
+          "reasoningEffort": "high"
+        }
+      ]
+    }
+  }
+}
