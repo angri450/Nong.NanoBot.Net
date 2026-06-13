@@ -545,7 +545,8 @@ function updateSendState() {
 }
 
 async function streamMessage(message, assistantNode, abortSignal) {
-  const response = await fetch("/api/agent/stream", { signal: abortSignal, signal: abortSignal,
+  const response = await fetch("/api/agent/stream", {
+    signal: abortSignal,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -831,10 +832,10 @@ elements.composer.addEventListener("submit", async event => {
 
   elements.prompt.value = "";
   state.isRunning = true;
-      state.abortController = new AbortController();
-      elements.stopButton.hidden = false;
-      updateSendState();
-      addMessage("user", message);
+  state.abortController = new AbortController();
+  elements.stopButton.hidden = false;
+  updateSendState();
+  addMessage("user", message);
   const assistantNode = addMessage("assistant", "");
 
   try {
@@ -842,27 +843,26 @@ elements.composer.addEventListener("submit", async event => {
     await loadSessions();
     await loadStatus();
   } catch (error) {
-    assistantNode.classList.add("error");
-    assistantNode.textContent = `${t("requestError")}: ${error.message}`;
+    if (error.name !== 'AbortError') {
+      assistantNode.classList.add('error');
+      assistantNode.textContent = `${t("requestError")}: ${error.message}`;
+    } else {
+      assistantNode.textContent += '\n[已停止]';
+    }
   } finally {
-    state.isRunning = false;`n        state.abortController = null;`n        elements.stopButton.hidden = true;`n        updateSendState();
+    state.isRunning = false;
+    state.abortController = null;
+    elements.stopButton.hidden = true;
+    updateSendState();
     elements.prompt.focus();
   }
 });
 
-elements.stopButton.addEventListener("click", () => {
+elements.stopButton.addEventListener('click', () => {
   if (state.abortController) {
     state.abortController.abort();
-    state.isRunning = false;
-    elements.stopButton.hidden = true;
-    updateSendState();
   }
 });
-
-elements.stopButton.addEventListener("click", () => {
-  if (state.abortController) { state.abortController.abort(); state.isRunning = false; elements.stopButton.hidden = true; updateSendState(); }
-});
-
 elements.newSession.addEventListener("click", async () => {
   const session = await apiJson("/api/sessions", {
     method: "POST",
