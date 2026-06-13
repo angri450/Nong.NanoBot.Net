@@ -5,9 +5,11 @@
 ## 施工顺序
 
 1. 先看指导文件
+   - `PROJECT_STATE.md`
    - `AGENTS.md`
-   - `DEVELOPMENT_PLAN.zh-CN.md`
-   - 当前任务相关的 `docs/` 或 `changelog/`
+   - `CLAUDE.md`
+   - `PROJECT_STATE.md` 指向的 active plan/handoff
+   - 当前任务相关的 `docs/` 或 `log/`
 
 2. 明确本次目标
    - 判断这次改的是 NanoBot 主线，还是外部参考项目调研。
@@ -27,6 +29,7 @@
 5. 写记录
    - 重要阶段、架构决策、模型接入、安装分发、WebUI 变化，都写 dated changelog。
    - README 只在用户可见行为变化时更新。
+   - 计划写在 `log/plans/`；只有 `PROJECT_STATE.md` 指向的计划才是当前施工计划。
 
 6. 收尾
    - 检查 `git status`。

@@ -2,24 +2,31 @@
 
 This repository is **Nong.NanoBot.Net**, the .NET 8 / C# 12 implementation of the personal-agent runtime for local automation, tools, memory, MCP, chat gateways, and multi-provider LLM routing. The upstream Python `nanobot` repository is a reference, not the code being edited here.
 
+## Start Here
+
+Read `PROJECT_STATE.md` before this file. It is the current truth source for active plans, current baseline, and known drift.
+
+Do not bulk-read `log/` to decide current work. `log/` is historical archive. Only the plan linked from `PROJECT_STATE.md` is active for a builder window.
+
 ## Current Baseline
 
-- Latest local commit: `a4fd99e Complete P6 parity features`
-- Core status: mature local personal-agent runtime and internal integration baseline
-- Verification:
-  - `dotnet test`: 71 passed, 0 failed, 0 skipped
-  - `dotnet build`: 0 warnings, 0 errors
-  - Source audit: 0 TODO, 0 stub, 0 `NotImplementedException`
+- Latest observed local commit: `787a7cb feat: Phase 10 — end-to-end verification spec, 10/10 phases complete, application layer done`
+- Core status: mature local personal-agent runtime with Nong application layer complete through Phase 10
+- Last recorded verification:
+  - `dotnet build Nanobot.slnx`: 0 errors
+  - `dotnet test`: 102 passed
 
-## Application Layer Plans (2026-06-13)
+## Application Layer Status (2026-06-13)
 
-See `log/plans/2026-06-13-nanobot-application-layer-plan.md` for the full construction roadmap.
+The plan in `log/plans/2026-06-13-nanobot-application-layer-plan.md` is historical/completed unless `PROJECT_STATE.md` links it again.
 
-Upstream dependencies are now ready:
-- **Nong.Cli.Net 4.1.0**: modular (7 packages), `nong commands --format openai-tools` (125 tools)
-- **Nong.Toolkit.Net 4.1.0**: 16 skills synced, modular architecture docs updated
+Current completed line:
 
-Next: Phase 2 — AgentLoop tool auto-registration + Skill route matching.
+- Phase 1-3: Nong command auto-discovery and AgentLoop tool registration
+- Phase 4-6: skill routing, context management, confirmation hook
+- Phase 7: PluginManager and plugin install/list tools
+- Phase 8-9: WebUI Nong status panel and external tool/OCR status rendering
+- Phase 10: end-to-end verification spec
 
 ## P6 Scope Completed
 
@@ -39,5 +46,5 @@ Next: Phase 2 — AgentLoop tool auto-registration + Skill route matching.
 
 - Prefer repo-native .NET patterns and focused tests.
 - Keep README and `README.zh-CN.md` synchronized when user-facing status changes.
-- Keep changelog entries under `changelog/` for phase-level work.
+- Keep current process records under `log/changelog/` for phase-level work.
 - Do not edit or depend on the upstream Python `nanobot` repo unless explicitly asked.

@@ -2,10 +2,17 @@
 
 This file defines the working direction for development inside this repository.
 
+## Required Entry
+
+- Read `PROJECT_STATE.md` first. It is the current truth source.
+- Then read this file and `CLAUDE.md`.
+- Read only the active plan linked from `PROJECT_STATE.md`, unless the user asks for historical research.
+- Treat `log/` as historical archive.
+
 ## Product Direction
 
 - Nong.NanoBot.Net is the current main line for the Nong.Toolkit.Net / Nong.Cli.Net agent-runtime layer.
-- Treat `DEVELOPMENT_PLAN.zh-CN.md` as the active construction plan for this repository. External GUI/runtime repositories are references unless the user explicitly changes the main implementation target.
+- Treat `DEVELOPMENT_PLAN.zh-CN.md` as historical roadmap/reference unless `PROJECT_STATE.md` links to it as the active plan. External GUI/runtime repositories are references unless the user explicitly changes the main implementation target.
 - Treat it as an independent .NET runtime, not as a fork/port positioning project.
 - Keep the baseline aligned with Nong CLI and Nong.Toolkit.Net: .NET 8, Apache-2.0, local-first operation, deterministic tool bridges, and practical safety boundaries.
 - NanoBot should not ship with full external skill payloads bundled by default. It should ship with a plugin/skill-pack bootstrap system that can install, update, detect, and run repositories with `plugin.json`; Nong.Toolkit.Net and Nong.Cli.Net.Cli.Net are first-class plugins on top of that system, including background deployment while the runtime is already usable.
@@ -36,7 +43,7 @@ This file defines the working direction for development inside this repository.
 - Keep `README.md` as the English public entry.
 - Keep `README.zh-CN.md` as the detailed Chinese entry.
 - When changing meaningful runtime behavior, update both READMEs if the behavior affects users.
-- Add dated changelog notes for milestones, especially runtime architecture, WebUI phases, license changes, and integration decisions.
+- Add dated changelog notes under `log/changelog/` for milestones, especially runtime architecture, WebUI phases, license changes, and integration decisions.
 - Avoid describing Nong.NanoBot.Net as a line-by-line rebuild or fork. Use independent-runtime wording.
 
 ## Testing And Verification

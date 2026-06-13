@@ -20,10 +20,21 @@
       ]
     },
     "siliconflow": {
-      "name": "硅基流动 SiliconFlow",
+      "name": "SiliconFlow",
       "apiBase": "https://api.siliconflow.cn/v1/",
-      "defaultModel": "deepseek-ai/DeepSeek-V3.2",
+      "defaultModel": "nex-agi/Nex-N2-Pro",
       "models": [
+        {
+          "id": "nex-agi/Nex-N2-Pro",
+          "apiModelId": "nex-agi/Nex-N2-Pro",
+          "displayName": "Nex-N2 Pro",
+          "contextWindow": 131072,
+          "maxOutputTokens": 32768,
+          "supportsStreaming": true,
+          "supportsTools": true,
+          "supportsReasoning": true,
+          "reasoningEffort": "high"
+        },
         {
           "id": "deepseek-ai/DeepSeek-V3.2",
           "apiModelId": "deepseek-ai/DeepSeek-V3.2",
