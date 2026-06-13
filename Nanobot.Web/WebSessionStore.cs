@@ -73,6 +73,18 @@ public sealed class WebSessionStore
         return Create();
     }
 
+    public bool Delete(string sessionId)
+    {
+        lock (_lock)
+        {
+            var session = _sessions.FirstOrDefault(item => item.Id.Equals(sessionId, StringComparison.Ordinal));
+            if (session is null) return false;
+            _sessions.Remove(session);
+            SaveLocked();
+            return true;
+        }
+    }
+
     public WebSessionDto? Get(string sessionId)
     {
         lock (_lock)

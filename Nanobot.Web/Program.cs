@@ -65,6 +65,14 @@ app.MapGet("/api/sessions/{sessionId}", (string sessionId, NanobotWebRuntime run
         : Results.Ok(session);
 });
 
+app.MapDelete("/api/sessions/{sessionId}", (string sessionId, NanobotWebRuntime runtime) =>
+{
+    var deleted = runtime.DeleteSession(sessionId);
+    return deleted
+        ? Results.Ok(new { sessionId, deleted = true })
+        : Results.NotFound(new ApiErrorResponse("Session not found."));
+});
+
 app.MapGet("/api/workspace/files", (string? path, NanobotWebRuntime runtime) =>
 {
     try
@@ -704,6 +712,11 @@ public sealed class NanobotWebRuntime
     public WebSessionDto? GetSession(string sessionId)
     {
         return _sessions.Get(sessionId);
+    }
+
+    public bool DeleteSession(string sessionId)
+    {
+        return _sessions.Delete(sessionId);
     }
 
     public WorkspaceFileListResponse ListFiles(string? path)

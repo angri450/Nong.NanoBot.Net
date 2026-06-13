@@ -742,6 +742,35 @@ button { border: 0; cursor: pointer; }
   color: var(--text-secondary);
 }
 
+/* NongMark rendering in messages */
+.nongmark-block {
+  background: var(--panel2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 8px 0;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* Session item with delete */
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.session-item:hover { background: var(--panel2); }
+.session-item.active { border-color: var(--accent); background: var(--accent-glow); }
+
 /* ===== Responsive ===== */
 @media (max-width: 1280px) {
   .app-shell { grid-template-columns: 68px 280px 1fr; }

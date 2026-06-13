@@ -401,30 +401,59 @@ async function loadSession(sessionId) {
 function renderSessions() {
   elements.sessions.innerHTML = "";
   state.sessions.forEach(session => {
-    const button = document.createElement("button");
-    button.className = `session-item${session.id === state.sessionId ? " active" : ""}`;
-    button.innerHTML = `
-      <span>${escapeHtml(session.title || t("unnamedSession"))}</span>
-      <small>${session.messageCount || 0} ${t("messagesUnit")}</small>
-    `;
-    button.addEventListener("click", async () => {
+    const row = document.createElement("div");
+    row.className = `session-item${session.id === state.sessionId ? " active" : ""}`;
+    row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems = 'center';
+
+    const btn = document.createElement("button");
+    btn.style.flex = '1'; btn.style.textAlign = 'left'; btn.style.background = 'none'; btn.style.border = 'none'; btn.style.color = 'inherit'; btn.style.padding = '4px 0'; btn.style.cursor = 'pointer'; btn.style.overflow = 'hidden';
+    btn.innerHTML = `<span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(session.title || t("unnamedSession"))}</span><small>${session.messageCount || 0} msgs</small>`;
+    btn.addEventListener("click", async () => {
       await loadSession(session.id);
       addMessage("system", `${t("switched")} ${session.title || t("unnamedSession")}`);
     });
-    elements.sessions.appendChild(button);
+
+    const del = document.createElement("button");
+    del.textContent = '×';
+    del.title = '删除会话';
+    del.style.cssText = 'background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 6px;line-height:1';
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm('删除会话？')) return;
+      try {
+        await apiJson(`/api/sessions/${session.id}`, { method: 'DELETE' });
+        if (state.sessionId === session.id) { state.sessionId = ''; persistSessionId(); }
+        await loadSessions();
+      } catch (err) { addMessage('system', '删除失败: ' + err.message); }
+    });
+
+    row.appendChild(btn);
+    row.appendChild(del);
+    elements.sessions.appendChild(row);
   });
+}
+
+function renderNongMark(text) {
+  // Simple nongmark highlighting: ```nongmark blocks
+  return text.replace(/```nongmark\n([\s\S]*?)```/g, '<pre class="nongmark-block">$1</pre>');
 }
 
 function addMessage(role, text) {
   const node = document.createElement("div");
   node.className = `message ${role}`;
-  node.textContent = text;
+  // Apply nongmark rendering for assistant messages
+  if (role === 'assistant' || role === 'agent') {
+    node.innerHTML = renderNongMark(escapeHtml(text));
+  } else {
+    node.textContent = text;
+  }
   elements.messages.appendChild(node);
   elements.messages.scrollTop = elements.messages.scrollHeight;
   return node;
 }
 
 function appendMessage(node, text) {
+  // For streaming, just append plain text (nongmark blocks form at the end via complete event)
   node.textContent += text;
   elements.messages.scrollTop = elements.messages.scrollHeight;
 }
@@ -621,7 +650,7 @@ function handleStreamEvent(event, assistantNode) {
 
   if (type === "complete") {
     const answer = event.answer || event.Answer || assistantNode.textContent;
-    assistantNode.textContent = answer || assistantNode.textContent;
+    assistantNode.innerHTML = renderNongMark(escapeHtml(answer || assistantNode.textContent));
     return;
   }
 
