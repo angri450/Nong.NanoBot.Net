@@ -1,6 +1,6 @@
 # Nong.NanoBot.Net Project State
 
-Last updated: 2026-06-13
+Last updated: 2026-06-14
 
 This file is the current truth source for agents. Read it before `AGENTS.md`, `CLAUDE.md`, `agent.md`, `README.md`, `DEVELOPMENT_PLAN.zh-CN.md`, or any file under `log/`.
 
@@ -8,9 +8,9 @@ This file is the current truth source for agents. Read it before `AGENTS.md`, `C
 
 Active plan/handoff:
 
-- `log/plans/2026-06-13-nanobot-stabilization-hardening-plan.md`
+- `log/plans/2026-06-14-siliconflow-distribution-readiness-plan.md`
 
-The 2026-06-13 NanoBot application-layer plan is complete through Phase 10. Current construction has moved to stabilization and usability hardening.
+The 2026-06-13 NanoBot application-layer plan is complete through Phase 10. The 2026-06-13 stabilization baseline has been committed and pushed to GitHub/Gitee/GitCode. Current construction is focused on making the SiliconFlow model path distribution-ready before polishing other provider/model flows.
 
 Do not treat `DEVELOPMENT_PLAN.zh-CN.md` or old `log/plans/*` files as active unless this file links to them.
 
@@ -26,7 +26,7 @@ External GUI/runtime repositories are references unless the user explicitly chan
 
 Latest observed local commit:
 
-- `787a7cb feat: Phase 10 — end-to-end verification spec, 10/10 phases complete, application layer done`
+- `7880f17 feat: harden NanoBot runtime and WebUI`
 
 Current application-layer status:
 
@@ -36,22 +36,21 @@ Current application-layer status:
 - Phase 8-9: WebUI Nong status panel and model/status improvements complete.
 - Phase 10: end-to-end verification spec complete.
 
-Last recorded code-side gate from `log/changelog/2026-06-13-stabilization-hardening.md`:
+Last recorded code-side gate from `log/changelog/2026-06-14-siliconflow-distribution-readiness.md`:
 
 - `dotnet build Nanobot.slnx`: 0 warnings, 0 errors
-- `dotnet test`: 130 passed
+- `dotnet test`: 136 passed
 - `dotnet run --project Nanobot.Web --urls http://127.0.0.1:8800` smoke:
   - `/api/runtime/status`: 200
   - `/api/system/status`: 200
   - `/api/settings/model`: 200
+  - `/api/settings/model` available providers: 1 (`siliconflow`)
   - `/api/sessions`: 200
+  - `/api/gitcode/auth/status`: 404
   - `nong.commandCount`: 126
   - active provider: `siliconflow`
   - active model: `nex-agi/Nex-N2-Pro`
-  - desktop and narrow browser smoke: runtime pill `就绪`, provider/model selects populated, send enabled, no console/runtime exceptions
-  - normal `/api/agent/stream`: `session -> delta* -> complete`, persisted assistant content saved to WebUI session
-  - aborted `/api/agent/stream` (`curl --max-time 1`): no orphan empty session, assistant-side `[已停止]` marker persisted
-  - `/api/events` replay with `Last-Event-ID: 2`: returns `id: 3`, `id: 4`; sequence continues across restart and replay uses monotonically increasing SSE ids
+  - desktop and narrow browser smoke: runtime pill `就绪`, `providerOptions = 1`, send enabled, no console/runtime exceptions
 
 Real provider-backed end-to-end LLM verification remains environment-dependent and should be run only when credentials and model access are available.
 
@@ -60,11 +59,17 @@ Latest stabilization additions also cover:
 - Nong.Toolkit.Net marketplace plugin install shape (`nong-toolkit` full bundle + single-skill installs);
 - shared skill-reference loading such as `../references/shared/nong-cli-preflight.md`;
 - first-run workspace scaffold creation via onboarding and memory bootstrap.
-- WebUI model settings and onboarding defaults now align on SiliconFlow-first local setup, while keeping DMX preset support.
+- WebUI model settings and onboarding defaults now align on the SiliconFlow-first local setup path.
 - WebUI streaming turns now persist assistant reasoning/content across reloads and keep durable assistant-side stop/error messages when a run is interrupted or fails.
 - WebUI runtime-event replay now persists enough metadata to restore tool/runtime timeline by sequence, and SSE replay ids stay aligned with `Last-Event-ID` semantics across restarts.
 - WebUI timeline rendering now de-duplicates runtime events by sequence, scopes the visible event list to the active session, and avoids foreign-session tool notices leaking into the current chat pane.
 - Frontend startup contract tests now guard `elements.*` wiring, `getElementById(...)` coverage, duplicate HTML ids, and definitions that appear after `/app.js` loads, so missing or late DOM bindings can fail CI instead of leaving the page stuck half-booted.
+
+Current narrowed direction:
+
+- Focus SiliconFlow first (`siliconflow::nex-agi/Nex-N2-Pro`) for onboarding, WebUI model settings, and distribution docs.
+- Move GitCode login/model-sync polish out of the main workbench path for now.
+- Do not spend this pass making DMX/GitCode/other provider UX distribution-ready.
 
 ## Nong Integration Contract
 

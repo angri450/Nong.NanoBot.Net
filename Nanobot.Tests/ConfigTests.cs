@@ -337,6 +337,23 @@ public class ConfigTests
         Assert.Equal(new[] { "siliconflow::nex-agi/Nex-N2-Pro" }, config.Agents.Defaults.FallbackModels);
     }
 
+    [Fact]
+    public void DefaultProviderCatalog_DistributionTemplatesSeedOnlySiliconFlow()
+    {
+        var catalog = DefaultProviderCatalog.CreateModelCatalog();
+        var secrets = DefaultProviderCatalog.CreateSecretsTemplate();
+
+        var provider = Assert.Single(catalog.Providers);
+        Assert.Equal("siliconflow", provider.Key);
+        Assert.Contains(provider.Value.Models, model => model.Id == "nex-agi/Nex-N2-Pro");
+        Assert.Contains(provider.Value.Models, model => model.Id == "deepseek-ai/DeepSeek-V3.1-Terminus");
+        Assert.Contains(provider.Value.Models, model => model.Id == "Pro/zai-org/GLM-4.7");
+        Assert.Contains(provider.Value.Models, model => model.Id == "Qwen/Qwen3-32B");
+
+        var secret = Assert.Single(secrets);
+        Assert.Equal("siliconflow", secret.Key);
+    }
+
     private static IReadOnlyDictionary<string, string?> Env(params (string Key, string? Value)[] values)
     {
         return values.ToDictionary(

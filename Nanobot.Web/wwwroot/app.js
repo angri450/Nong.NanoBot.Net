@@ -69,8 +69,8 @@ const i18n = {
     todoRuntime: "确认运行时就绪",
     todoFiles: "选择工作区上下文",
     todoSend: "发送下一步任务",
-    modelSettings: "模型设置",
-    provider: "Provider",
+    modelSettings: "硅基流动模型",
+    provider: "服务商",
     apiBase: "API 地址",
     modelId: "模型 ID",
     apiKey: "调用密钥",
@@ -81,7 +81,7 @@ const i18n = {
     keySourceConfig: "当前 Key 来自本机配置。",
     keySourceEnvironment: "当前 Key 来自环境变量",
     keySourceEnvironmentNote: "表单不会覆盖它的运行时优先级。",
-    keySourceNone: "请输入中转站调用密钥，保存后写入本机配置。",
+    keySourceNone: "请输入硅基流动 API Key，保存后写入本机配置。",
     keepExistingKey: "留空表示保留现有 Key。",
     settingsSaved: "模型配置已保存。",
     settingsError: "设置保存失败",
@@ -99,22 +99,7 @@ const i18n = {
     totalTokens: "总计 Token",
     cacheHit: "命中",
     cacheMiss: "未命中",
-    reasoning: "思考过程",
-    gitCodeAccount: "GitCode 账号",
-    gitCodeNotLoggedIn: "未登录",
-    gitCodeLoggedIn: "已登录",
-    gitCodeLogin: "登录 GitCode",
-    gitCodeLogout: "退出登录",
-    gitCodeSync: "同步免费模型",
-    gitCodeSyncing: "同步中...",
-    gitCodeOpenBrowser: "请在新打开的浏览器窗口中完成授权",
-    gitCodeTokenExpiring: "Token 即将过期，请重新登录",
-    gitCodeTokenValid: "Token 有效",
-    gitCodeCatalogOnly: "仅同步模型目录，暂不能直连免费网关",
-    gitCodeModelsSynced: "个模型已同步",
-    gitCodeSetupSuccess: "CodingPlan 设置完成",
-    gitCodeSetupFailed: "设置失败",
-    gitCodeClaimPlanClaimed: "计划已领取"
+    reasoning: "思考过程"
   },
   en: {
     product: "Nong.NanoBot.Net",
@@ -186,7 +171,7 @@ const i18n = {
     todoRuntime: "Confirm runtime readiness",
     todoFiles: "Choose workspace context",
     todoSend: "Send the next task",
-    modelSettings: "Model Settings",
+    modelSettings: "SiliconFlow Model",
     provider: "Provider",
     apiBase: "API Base",
     modelId: "Model ID",
@@ -198,7 +183,7 @@ const i18n = {
     keySourceConfig: "Current key is loaded from local config.",
     keySourceEnvironment: "Current key is loaded from environment variable",
     keySourceEnvironmentNote: "Form changes do not override its runtime priority.",
-    keySourceNone: "Enter the relay API key; it will be saved to local config.",
+    keySourceNone: "Enter the SiliconFlow API key; it will be saved to local config.",
     keepExistingKey: "Leave blank to keep the existing key.",
     settingsSaved: "Model settings saved.",
     settingsError: "Settings save failed",
@@ -216,22 +201,7 @@ const i18n = {
     totalTokens: "Total Tokens",
     cacheHit: "Hit",
     cacheMiss: "Miss",
-    reasoning: "Reasoning",
-    gitCodeAccount: "GitCode Account",
-    gitCodeNotLoggedIn: "Not logged in",
-    gitCodeLoggedIn: "Logged in",
-    gitCodeLogin: "Login GitCode",
-    gitCodeLogout: "Logout",
-    gitCodeSync: "Sync Free Models",
-    gitCodeSyncing: "Syncing...",
-    gitCodeOpenBrowser: "Complete authorization in the opened browser window",
-    gitCodeTokenExpiring: "Token expiring, please login again",
-    gitCodeTokenValid: "Token valid",
-    gitCodeCatalogOnly: "Models synced only, gateway not callable yet",
-    gitCodeModelsSynced: "models synced",
-    gitCodeSetupSuccess: "CodingPlan setup complete",
-    gitCodeSetupFailed: "Setup failed",
-    gitCodeClaimPlanClaimed: "Plan claimed"
+    reasoning: "Reasoning"
   }
 };
 
@@ -301,18 +271,6 @@ const elements = {
   outputTokens: document.getElementById("outputTokens"),
   reasoningTokens: document.getElementById("reasoningTokens"),
   totalTokens: document.getElementById("totalTokens"),
-  gitCodeAuthStatus: document.getElementById("gitCodeAuthStatus"),
-  gitCodeUserInfo: document.getElementById("gitCodeUserInfo"),
-  gitCodeUserName: document.getElementById("gitCodeUserName"),
-  gitCodeTokenStatus: document.getElementById("gitCodeTokenStatus"),
-  gitCodeLoginBtn: document.getElementById("gitCodeLoginBtn"),
-  gitCodeLogoutBtn: document.getElementById("gitCodeLogoutBtn"),
-  gitCodeSyncBtn: document.getElementById("gitCodeSyncBtn"),
-  gitCodeLoginStatus: document.getElementById("gitCodeLoginStatus"),
-  gitCodeLoginHint: document.getElementById("gitCodeLoginHint"),
-  gitCodeSyncActions: document.getElementById("gitCodeSyncActions"),
-  gitCodeSetupResult: document.getElementById("gitCodeSetupResult"),
-  gitCodeModelList: document.getElementById("gitCodeModelList"),
   reloadStatus: document.getElementById("reloadStatus"),
   refreshFiles: document.getElementById("refreshFiles")
 };
@@ -1201,154 +1159,9 @@ async function boot() {
     loadSessions().catch(error => addMessage("system", `${t("requestError")}: ${error.message}`)),
     loadFiles("").catch(error => {
       elements.fileList.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
-    }),
-    loadGitCodeAuthStatus().catch(() => {})
+    })
   ]);
   connectEvents();
-}
-
-// GitCode auth functions
-async function loadGitCodeAuthStatus() {
-  const status = await apiJson("/api/gitcode/auth/status");
-  renderGitCodeAuthStatus(status);
-}
-
-function renderGitCodeAuthStatus(status) {
-  const loggedIn = status.loggedIn ?? false;
-  elements.gitCodeAuthStatus.textContent = loggedIn ? t("gitCodeLoggedIn") : t("gitCodeNotLoggedIn");
-  elements.gitCodeAuthStatus.className = `section-count ${loggedIn ? "status-ready" : ""}`;
-
-  if (loggedIn) {
-    elements.gitCodeLoginBtn.hidden = true;
-    elements.gitCodeLogoutBtn.hidden = false;
-    elements.gitCodeSyncActions.hidden = false;
-    elements.gitCodeUserInfo.hidden = false;
-    elements.gitCodeUserName.textContent = status.login || status.name || "User";
-
-    const tokenValid = status.tokenValid ?? false;
-    elements.gitCodeTokenStatus.textContent = tokenValid ? t("gitCodeTokenValid") : t("gitCodeTokenExpiring");
-    elements.gitCodeTokenStatus.className = tokenValid ? "" : "danger";
-  } else {
-    elements.gitCodeLoginBtn.hidden = false;
-    elements.gitCodeLogoutBtn.hidden = true;
-    elements.gitCodeSyncActions.hidden = true;
-    elements.gitCodeUserInfo.hidden = true;
-  }
-}
-
-elements.gitCodeLoginBtn.addEventListener("click", async () => {
-  try {
-    elements.gitCodeLoginBtn.disabled = true;
-    elements.gitCodeLoginBtn.textContent = t("running");
-    const login = await apiJson("/api/gitcode/auth/login/start", { method: "POST" });
-    elements.gitCodeLoginStatus.hidden = false;
-    elements.gitCodeLoginHint.textContent = login.loginUrl || "";
-    window.open(login.loginUrl, "_blank");
-    state.gitCodeLoginId = login.loginId;
-    await pollGitCodeLogin();
-  } catch (error) {
-    elements.gitCodeLoginHint.textContent = `${t("requestError")}: ${error.message}`;
-  } finally {
-    elements.gitCodeLoginBtn.disabled = false;
-    elements.gitCodeLoginBtn.textContent = t("gitCodeLogin");
-  }
-});
-
-async function pollGitCodeLogin() {
-  const loginId = state.gitCodeLoginId;
-  if (!loginId) return;
-
-  let attempts = 0;
-  const maxAttempts = 60;
-  const poll = async () => {
-    if (attempts >= maxAttempts) {
-      elements.gitCodeLoginHint.textContent = "Login timed out.";
-      elements.gitCodeLoginStatus.hidden = true;
-      return;
-    }
-    attempts++;
-
-    try {
-      const result = await apiJson(`/api/gitcode/auth/login/${encodeURIComponent(loginId)}/poll`, { method: "POST" });
-      if (result.status === "authorized") {
-        elements.gitCodeLoginStatus.hidden = true;
-        await loadGitCodeAuthStatus();
-        addMessage("system", t("gitCodeLoggedIn"));
-      } else if (result.status === "expired" || result.status === "failed") {
-        elements.gitCodeLoginStatus.hidden = true;
-        elements.gitCodeLoginHint.textContent = `Login ${result.status}`;
-      } else {
-        setTimeout(poll, 2000);
-      }
-    } catch (error) {
-      elements.gitCodeLoginHint.textContent = `Poll error: ${error.message}`;
-      setTimeout(poll, 2000);
-    }
-  };
-  poll();
-}
-
-elements.gitCodeLogoutBtn.addEventListener("click", async () => {
-  try {
-    await apiJson("/api/gitcode/auth/logout", { method: "POST" });
-    await loadGitCodeAuthStatus();
-    elements.gitCodeModelList.innerHTML = "";
-    elements.gitCodeSetupResult.hidden = true;
-  } catch (error) {
-    addMessage("system", `${t("requestError")}: ${error.message}`);
-  }
-});
-
-elements.gitCodeSyncBtn.addEventListener("click", async () => {
-  try {
-    elements.gitCodeSyncBtn.disabled = true;
-    elements.gitCodeSyncBtn.textContent = t("gitCodeSyncing");
-    const result = await apiJson("/api/gitcode/codingplan/setup", { method: "POST" });
-    elements.gitCodeSetupResult.hidden = false;
-    elements.gitCodeSetupResult.innerHTML = result.success
-      ? `<div class="settings-notice success">${t("gitCodeSetupSuccess")}: ${result.steps?.claim?.message || ""}, ${result.steps?.models?.message || ""}</div>`
-      : `<div class="settings-notice error">${t("gitCodeSetupFailed")}: ${result.steps?.claim?.message || ""}</div>`;
-
-    // Render synced models
-    const models = result.models || [];
-    renderGitCodeModels(models);
-    await loadStatus();
-    await loadGitCodeAuthStatus();
-  } catch (error) {
-    elements.gitCodeSetupResult.hidden = false;
-    elements.gitCodeSetupResult.innerHTML = `<div class="settings-notice error">${t("gitCodeSetupFailed")}: ${error.message}</div>`;
-  } finally {
-    elements.gitCodeSyncBtn.disabled = false;
-    elements.gitCodeSyncBtn.textContent = t("gitCodeSync");
-  }
-});
-
-function renderGitCodeModels(models) {
-  elements.gitCodeModelList.innerHTML = "";
-  if (models.length === 0) return;
-
-  const heading = document.createElement("div");
-  heading.className = "section-title";
-  heading.textContent = `${models.length} ${t("gitCodeModelsSynced")}`;
-  elements.gitCodeModelList.appendChild(heading);
-
-  models.forEach(model => {
-    const row = document.createElement("div");
-    row.className = `gitcode-model-item${!model.planAvailable ? " locked" : ""}`;
-    row.innerHTML = `
-      <span>${escapeHtml(model.displayModelName || model.DisplayModelName || "")}</span>
-      <small>${(model.contextWindow || model.ContextWindow || 0) >= 1000000 ? "1M" : formatNumber(model.contextWindow || model.ContextWindow || 0)} ctx</small>
-    `;
-    if (!model.planAvailable) {
-      row.innerHTML += `<small class="danger">locked</small>`;
-    }
-    elements.gitCodeModelList.appendChild(row);
-  });
-
-  const note = document.createElement("div");
-  note.className = "settings-hint";
-  note.textContent = t("gitCodeCatalogOnly");
-  elements.gitCodeModelList.appendChild(note);
 }
 
 // ===== Status Panel =====

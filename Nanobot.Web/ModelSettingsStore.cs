@@ -61,11 +61,20 @@ public sealed class ModelSettingsStore
         var providerId = string.IsNullOrWhiteSpace(request.ProviderId)
             ? fallbackProviderId
             : request.ProviderId.Trim();
-        var provider = providers.FirstOrDefault(item => item.ProviderId.Equals(providerId, StringComparison.OrdinalIgnoreCase))
-                       ?? CreateAdHocProvider(providerId, request.ApiBase, request.Model);
+        if (!providerId.Equals(DefaultProviderCatalog.SiliconFlowProviderId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("当前分发版模型设置只支持 SiliconFlow。");
+        }
 
-        if (string.IsNullOrWhiteSpace(provider.ApiBase)
-            || !Uri.TryCreate(provider.ApiBase, UriKind.Absolute, out var apiBaseUri)
+        var provider = providers.FirstOrDefault(item => item.ProviderId.Equals(providerId, StringComparison.OrdinalIgnoreCase))
+                       ?? throw new InvalidOperationException("SiliconFlow provider catalog is not available.");
+
+        var apiBase = string.IsNullOrWhiteSpace(request.ApiBase)
+            ? provider.ApiBase
+            : request.ApiBase.Trim();
+
+        if (string.IsNullOrWhiteSpace(apiBase)
+            || !Uri.TryCreate(apiBase, UriKind.Absolute, out var apiBaseUri)
             || (apiBaseUri.Scheme != Uri.UriSchemeHttp && apiBaseUri.Scheme != Uri.UriSchemeHttps))
         {
             throw new InvalidOperationException("API 地址必须是 http 或 https URL。");
@@ -74,9 +83,6 @@ public sealed class ModelSettingsStore
         var model = string.IsNullOrWhiteSpace(request.Model)
             ? provider.Models.FirstOrDefault()?.Id ?? DefaultProviderCatalog.GetDefaultModel(provider.ProviderId)
             : request.Model.Trim();
-        var apiBase = string.IsNullOrWhiteSpace(request.ApiBase)
-            ? provider.ApiBase
-            : request.ApiBase.Trim();
 
         Directory.CreateDirectory(Path.GetDirectoryName(_configFile)!);
 
@@ -114,11 +120,10 @@ public sealed class ModelSettingsStore
     public IReadOnlyList<ModelSettingsProviderOption> BuildAvailableProviders(AppConfig config)
     {
         var catalog = DefaultProviderCatalog.CreateModelCatalog();
-        var providerIds = new HashSet<string>(catalog.Providers.Keys, StringComparer.OrdinalIgnoreCase);
-        foreach (var providerId in config.Providers.Keys)
+        var providerIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            providerIds.Add(providerId);
-        }
+            DefaultProviderCatalog.SiliconFlowProviderId
+        };
 
         return providerIds
             .Select(providerId => BuildProviderOption(providerId, config, catalog))
@@ -203,23 +208,7 @@ public sealed class ModelSettingsStore
     private static JsonArray BuildFallbackModels(JsonNode? existingNode, string providerId, string model)
     {
         var selected = $"{providerId}::{model}";
-        var result = new JsonArray(selected);
-        if (existingNode is JsonArray array)
-        {
-            foreach (var item in array)
-            {
-                var value = item?.ToString();
-                if (string.IsNullOrWhiteSpace(value)
-                    || value.Equals(selected, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                result.Add(value);
-            }
-        }
-
-        return result;
+        return new JsonArray(selected);
     }
 
     private static string ResolveSelectedProviderId(AppConfig config, IReadOnlyList<ModelSettingsProviderOption> providers)
@@ -281,15 +270,9 @@ public sealed class ModelSettingsStore
 
     public static string? ResolveApiKeyEnvironmentVariable(string providerId)
     {
-        return providerId.ToLowerInvariant() switch
-        {
-            DefaultProviderCatalog.DmxProviderId => "DMX_API_KEY",
-            DefaultProviderCatalog.SiliconFlowProviderId => "SILICONFLOW_API_KEY",
-            "openai" => "OPENAI_API_KEY",
-            "anthropic" => "ANTHROPIC_API_KEY",
-            "azure-openai" or "azure" => "AZURE_OPENAI_API_KEY",
-            _ => null
-        };
+        return providerId.Equals(DefaultProviderCatalog.SiliconFlowProviderId, StringComparison.OrdinalIgnoreCase)
+            ? "SILICONFLOW_API_KEY"
+            : null;
     }
 
     private static string? GetEnvironmentValue(IReadOnlyDictionary<string, string?> environment, string key)

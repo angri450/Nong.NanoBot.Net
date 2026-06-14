@@ -2,6 +2,9 @@
 
 > Agent 添加变更记录后同步更新此文件。格式：`- YYYY-MM-DD | 文件名 | 一句话摘要`
 
+## 2026-06-14
+- 2026-06-14 | 2026-06-14-siliconflow-distribution-readiness.md | SiliconFlow 分发就绪：首装模板、WebUI 设置和文档收敛到单 provider 路径
+
 ## 2026-06-13
 - 2026-06-13 | 2026-06-13-stabilization-hardening.md | 稳定化与可用性硬化：修复状态探针、清理验证漂移并补足 105 测试门禁
 - 2026-06-13 | 2026-06-13-context-map.md | Added PROJECT_STATE, wiki, log plan rules, and planner/builder prompts

@@ -8,7 +8,7 @@
 
 ![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-130%20passed-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-136%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
@@ -54,8 +54,8 @@ cd Nong.NanoBot.Net
 # 2. Create ~/.nanobot/config.json and ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. Add a SiliconFlow or DMX API key to ~/.nanobot/secrets.json
-#    or export SILICONFLOW_API_KEY / DMX_API_KEY
+# 3. Add a SiliconFlow API key to ~/.nanobot/secrets.json
+#    or export SILICONFLOW_API_KEY
 
 # 4. Start interactive chat
 dotnet run --project Nanobot.CLI
@@ -121,7 +121,7 @@ Current WebUI behavior:
 
 - Chinese is the default UI language, with an optional English toggle.
 - Dark and light themes are both supported from the header toggle.
-- The left sidebar includes a model settings panel for the current OpenAI-compatible provider. It reads the active provider from local config, keeps SiliconFlow and DMX presets available, saves API keys to local `~/.nanobot/secrets.json`, and reloads the runtime without committing secrets to the repository.
+- The left sidebar includes a SiliconFlow model settings panel. It saves API keys to local `~/.nanobot/secrets.json`, reloads the runtime, and keeps secrets out of the repository.
 - Chat uses the runtime streaming path, renders partial assistant output as it arrives, and persists the latest assistant content/reasoning so reload keeps the same result.
 - WebUI sessions are persisted under `~/.nanobot/workspace/.webui/sessions.json`.
 - Interrupted or failed streamed turns now leave a durable assistant-side stop/error message in the persisted session instead of a user-only dangling turn.
@@ -159,7 +159,7 @@ nanobot serve --urls http://127.0.0.1:8788
 
 Default onboarded profile:
 
-`nanobot onboard` now seeds SiliconFlow as the default local profile, plus a DMX preset in `models.json` / `secrets.json`.
+`nanobot onboard` now seeds SiliconFlow as the default local profile. The distributable first-run path does not seed alternate provider presets.
 
 Minimal SiliconFlow config:
 
@@ -186,80 +186,6 @@ You can either fill this from the WebUI model settings panel or edit `~/.nanobot
 {
   "siliconflow": {
     "apiKey": "sk-..."
-  }
-}
-```
-
-DMX alternative:
-
-You can either fill this from the WebUI model settings panel or edit `~/.nanobot/config.json` manually.
-
-```json
-{
-  "providers": {
-    "dmx": {
-      "kind": "openai-compatible",
-      "apiKey": "sk-...",
-      "apiBase": "https://www.dmxapi.cn/v1/",
-      "defaultModel": "deepseek-v4-pro-guan",
-      "models": [
-        {
-          "id": "deepseek-v4-pro-guan",
-          "apiModelId": "deepseek-v4-pro-guan",
-          "supportsStreaming": true,
-          "supportsTools": true
-        }
-      ]
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": "dmx::deepseek-v4-pro-guan",
-      "fallbackModels": ["dmx::deepseek-v4-pro-guan"],
-      "dream": {
-        "enabled": true,
-        "intervalHours": 6
-      }
-    }
-  },
-  "streaming": {
-    "enabled": true
-  }
-}
-```
-
-Fallback across providers:
-
-```json
-{
-  "providers": {
-    "dmx": {
-      "kind": "openai-compatible",
-      "apiKey": "sk-...",
-      "apiBase": "https://www.dmxapi.cn/v1/",
-      "defaultModel": "deepseek-v4-pro-guan"
-    },
-    "anthropic": {
-      "kind": "anthropic",
-      "apiKey": "sk-ant-...",
-      "defaultModel": "claude-sonnet-4-5"
-    },
-    "azure-openai": {
-      "kind": "azure-openai",
-      "apiKey": "...",
-      "endpoint": "https://example.openai.azure.com",
-      "deployment": "my-azure-deployment",
-      "apiVersion": "2024-10-21"
-    }
-  },
-  "agents": {
-    "defaults": {
-      "fallbackModels": [
-        "dmx::deepseek-v4-pro-guan",
-        "anthropic::claude-sonnet-4-5",
-        "azure-openai::my-azure-deployment"
-      ]
-    }
   }
 }
 ```
@@ -393,19 +319,6 @@ Important implementation points:
 | `SILICONFLOW_API_KEY` | SiliconFlow OpenAI-compatible provider API key |
 | `SILICONFLOW_API_BASE` | Override SiliconFlow base URL, default `https://api.siliconflow.cn/v1/` |
 | `SILICONFLOW_MODEL` | Override SiliconFlow default model, default `nex-agi/Nex-N2-Pro` |
-| `DMX_API_KEY` | DMX OpenAI-compatible relay API key |
-| `DMX_API_BASE` | Override DMX base URL, default `https://www.dmxapi.cn/v1/` |
-| `DMX_MODEL` | Override DMX model, default `deepseek-v4-pro-guan` |
-| `OPENAI_API_KEY` | OpenAI-compatible provider API key |
-| `OPENAI_API_BASE` | Override OpenAI-compatible base URL |
-| `OPENAI_MODEL` | Override default model, supports `provider::model` |
-| `ANTHROPIC_API_KEY` | Enable Anthropic provider |
-| `ANTHROPIC_API_BASE` | Override Anthropic base URL |
-| `ANTHROPIC_MODEL` | Override Anthropic default model |
-| `AZURE_OPENAI_API_KEY` | Enable Azure OpenAI provider |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint |
-| `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI deployment |
-| `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version |
 | `NANOBOT_STREAMING` | `1`, `true`, or `yes` enables streaming |
 | `BRAVE_API_KEY` | Web search API key |
 | `GITHUB_TOKEN` | GitHub tool token |
@@ -426,11 +339,11 @@ Current local verification:
 
 | Check | Result |
 | --- | --- |
-| `dotnet test` | 130 passed, 0 failed, 0 skipped |
-| WebUI model settings smoke (2026-06-13) | `/api/settings/model` 200, active provider `siliconflow`, active model `nex-agi/Nex-N2-Pro` |
+| `dotnet test` | 136 passed, 0 failed, 0 skipped |
+| WebUI SiliconFlow settings smoke (2026-06-14) | `/api/settings/model` 200, active provider `siliconflow`, active model `nex-agi/Nex-N2-Pro`, available providers `1` |
 | `dotnet build` | 0 warnings, 0 errors |
-| WebUI API smoke (2026-06-13) | `/api/runtime/status` 200, `/api/system/status` 200, `/api/sessions` 200, live `nong.commandCount = 126` |
-| WebUI browser smoke (2026-06-13) | Desktop and narrow layouts load with runtime `就绪`, provider/model selects populated, send enabled, and no console/runtime exceptions |
+| WebUI API smoke (2026-06-14) | `/api/runtime/status` 200, `/api/system/status` 200, `/api/sessions` 200, `/api/gitcode/auth/status` 404, live `nong.commandCount = 126` |
+| WebUI browser smoke (2026-06-14) | Desktop and narrow layouts load with runtime `就绪`, `providerOptions = 1`, send enabled, and no console/runtime exceptions |
 | Source audit | 0 TODO, 0 stub, 0 `NotImplementedException` |
 
 ## Safety Boundary

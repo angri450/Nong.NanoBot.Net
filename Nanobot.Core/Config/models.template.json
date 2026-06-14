@@ -1,24 +1,5 @@
 {
   "providers": {
-    "dmx": {
-      "name": "DMX API",
-      "apiBase": "https://www.dmxapi.cn/v1/",
-      "defaultModel": "deepseek-v4-pro-guan",
-      "models": [
-        {
-          "id": "deepseek-v4-pro-guan",
-          "apiModelId": "deepseek-v4-pro-guan",
-          "displayName": "DeepSeek V4 Pro",
-          "contextWindow": 1000000,
-          "maxOutputTokens": 32000,
-          "supportsStreaming": true,
-          "supportsTools": true,
-          "supportsReasoning": true,
-          "supportsInterleavedThinking": true,
-          "reasoningEffort": "high"
-        }
-      ]
-    },
     "siliconflow": {
       "name": "SiliconFlow",
       "apiBase": "https://api.siliconflow.cn/v1/",

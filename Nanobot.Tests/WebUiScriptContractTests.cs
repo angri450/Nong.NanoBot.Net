@@ -94,6 +94,25 @@ public class WebUiScriptContractTests
             $"index.html contains duplicate ids: {string.Join(", ", duplicates)}");
     }
 
+    [Fact]
+    public void WebUi_DefaultWorkbench_DoesNotExposeGitCodeControls()
+    {
+        var appJs = File.ReadAllText(GetRepoFile("Nanobot.Web", "wwwroot", "app.js"));
+        var indexHtml = File.ReadAllText(GetRepoFile("Nanobot.Web", "wwwroot", "index.html"));
+
+        Assert.DoesNotContain("gitCode", appJs, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("GitCode", indexHtml, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("CodingPlan", indexHtml, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void WebUi_DefaultApi_DoesNotMapGitCodeEndpoints()
+    {
+        var program = File.ReadAllText(GetRepoFile("Nanobot.Web", "Program.cs"));
+
+        Assert.DoesNotContain("/api/gitcode", program, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static HashSet<string> GetRequestedElementIds(string appJs)
     {
         return Regex.Matches(appJs, "document\\.getElementById\\(\"([^\"]+)\"\\)")

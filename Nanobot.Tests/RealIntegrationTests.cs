@@ -4,6 +4,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json.Nodes;
 using Nanobot.Core.Agent;
+using Nanobot.Core.Config;
 using Nanobot.Core.Events;
 using Nanobot.Core.Gateway;
 using Nanobot.Core.Memory;
@@ -24,7 +25,7 @@ public class RealIntegrationTests
         }
 
         var apiKey = ResolveApiKey();
-        Assert.False(string.IsNullOrWhiteSpace(apiKey), "DMX_API_KEY or OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
+        Assert.False(string.IsNullOrWhiteSpace(apiKey), "SILICONFLOW_API_KEY or OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
 
         var provider = new OpenAICompatibleProvider(
             apiKey!,
@@ -51,7 +52,7 @@ public class RealIntegrationTests
         }
 
         var apiKey = ResolveApiKey();
-        Assert.False(string.IsNullOrWhiteSpace(apiKey), "DMX_API_KEY or OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
+        Assert.False(string.IsNullOrWhiteSpace(apiKey), "SILICONFLOW_API_KEY or OPENAI_API_KEY is required when NANOBOT_RUN_INTEGRATION_TESTS=1.");
 
         var provider = new OpenAICompatibleProvider(
             apiKey!,
@@ -136,27 +137,38 @@ public class RealIntegrationTests
 
     private static string? ResolveApiKey()
     {
-        return Environment.GetEnvironmentVariable("DMX_API_KEY")
+        return Environment.GetEnvironmentVariable("SILICONFLOW_API_KEY")
             ?? Environment.GetEnvironmentVariable("OPENAI_API_KEY");
     }
 
     private static string? ResolveApiBase()
     {
-        return Environment.GetEnvironmentVariable("DMX_API_BASE")
-            ?? Environment.GetEnvironmentVariable("OPENAI_API_BASE");
+        if (HasSiliconFlowKey())
+        {
+            return Environment.GetEnvironmentVariable("SILICONFLOW_API_BASE")
+                ?? DefaultProviderCatalog.SiliconFlowDefaultApiBase;
+        }
+
+        return Environment.GetEnvironmentVariable("OPENAI_API_BASE");
     }
 
     private static string ResolveModel()
     {
-        var raw = Environment.GetEnvironmentVariable("DMX_MODEL")
-            ?? Environment.GetEnvironmentVariable("OPENAI_MODEL");
+        var raw = HasSiliconFlowKey()
+            ? Environment.GetEnvironmentVariable("SILICONFLOW_MODEL") ?? DefaultProviderCatalog.SiliconFlowDefaultModel
+            : Environment.GetEnvironmentVariable("OPENAI_MODEL") ?? "gpt-4o";
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return "deepseek-v4-pro-guan";
+            return "nex-agi/Nex-N2-Pro";
         }
 
         var separator = raw.IndexOf("::", StringComparison.Ordinal);
         return separator < 0 ? raw : raw[(separator + 2)..];
+    }
+
+    private static bool HasSiliconFlowKey()
+    {
+        return !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("SILICONFLOW_API_KEY"));
     }
 
     private static int GetFreePort()

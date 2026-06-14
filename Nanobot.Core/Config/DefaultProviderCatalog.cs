@@ -18,28 +18,6 @@ public static class DefaultProviderCatalog
         {
             Providers = new Dictionary<string, ProviderModelDef>(StringComparer.OrdinalIgnoreCase)
             {
-                [DmxProviderId] = new ProviderModelDef
-                {
-                    Name = DmxDisplayName,
-                    ApiBase = DmxDefaultApiBase,
-                    DefaultModel = DmxDefaultModel,
-                    Models = new List<ModelDef>
-                    {
-                        new()
-                        {
-                            Id = DmxDefaultModel,
-                            ApiModelId = DmxDefaultModel,
-                            DisplayName = "DeepSeek V4 Pro",
-                            ContextWindow = 1_000_000,
-                            MaxOutputTokens = 32000,
-                            SupportsStreaming = true,
-                            SupportsTools = true,
-                            SupportsReasoning = true,
-                            SupportsInterleavedThinking = true,
-                            ReasoningEffort = "high"
-                        }
-                    }
-                },
                 [SiliconFlowProviderId] = new ProviderModelDef
                 {
                     Name = SiliconFlowDisplayName,
@@ -83,6 +61,17 @@ public static class DefaultProviderCatalog
                         },
                         new()
                         {
+                            Id = "deepseek-ai/DeepSeek-V3.1-Terminus",
+                            ApiModelId = "deepseek-ai/DeepSeek-V3.1-Terminus",
+                            DisplayName = "DeepSeek V3.1 Terminus",
+                            ContextWindow = 131072,
+                            MaxOutputTokens = 8192,
+                            SupportsStreaming = true,
+                            SupportsTools = true,
+                            SupportsReasoning = true
+                        },
+                        new()
+                        {
                             Id = "deepseek-ai/DeepSeek-V4-Flash",
                             ApiModelId = "deepseek-ai/DeepSeek-V4-Flash",
                             DisplayName = "DeepSeek V4 Flash",
@@ -98,6 +87,17 @@ public static class DefaultProviderCatalog
                             Id = "Pro/zai-org/GLM-5",
                             ApiModelId = "Pro/zai-org/GLM-5",
                             DisplayName = "GLM-5",
+                            ContextWindow = 131072,
+                            MaxOutputTokens = 8192,
+                            SupportsStreaming = true,
+                            SupportsTools = true,
+                            SupportsReasoning = true
+                        },
+                        new()
+                        {
+                            Id = "Pro/zai-org/GLM-4.7",
+                            ApiModelId = "Pro/zai-org/GLM-4.7",
+                            DisplayName = "GLM-4.7",
                             ContextWindow = 131072,
                             MaxOutputTokens = 8192,
                             SupportsStreaming = true,
@@ -128,6 +128,17 @@ public static class DefaultProviderCatalog
                         },
                         new()
                         {
+                            Id = "Qwen/Qwen3-32B",
+                            ApiModelId = "Qwen/Qwen3-32B",
+                            DisplayName = "Qwen3 32B",
+                            ContextWindow = 32768,
+                            MaxOutputTokens = 8192,
+                            SupportsStreaming = true,
+                            SupportsTools = true,
+                            SupportsReasoning = true
+                        },
+                        new()
+                        {
                             Id = "tencent/Hunyuan-A13B-Instruct",
                             ApiModelId = "tencent/Hunyuan-A13B-Instruct",
                             DisplayName = "Hunyuan A13B",
@@ -147,7 +158,6 @@ public static class DefaultProviderCatalog
     {
         return new Dictionary<string, SecretEntry>(StringComparer.OrdinalIgnoreCase)
         {
-            [DmxProviderId] = new SecretEntry { ApiKey = string.Empty },
             [SiliconFlowProviderId] = new SecretEntry { ApiKey = string.Empty }
         };
     }

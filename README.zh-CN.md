@@ -8,7 +8,7 @@
 
 ![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-130%20passed-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-136%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
@@ -54,8 +54,8 @@ cd Nong.NanoBot.Net
 # 2. 创建 ~/.nanobot/config.json 和 ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. 在 ~/.nanobot/secrets.json 中填写 SiliconFlow 或 DMX API key
-#    或设置 SILICONFLOW_API_KEY / DMX_API_KEY
+# 3. 在 ~/.nanobot/secrets.json 中填写 SiliconFlow API key
+#    或设置 SILICONFLOW_API_KEY
 
 # 4. 开始聊天
 dotnet run --project Nanobot.CLI
@@ -121,7 +121,7 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
 
 - 默认语言是中文，并提供英文切换。
 - Header 里提供深色 / 浅色主题切换。
-- 左侧栏提供当前 OpenAI 兼容 provider 的模型设置面板。它会从本机配置读取当前 active provider，保留 SiliconFlow 和 DMX 预设，把 API key 保存到本机 `~/.nanobot/secrets.json`，并在不把密钥写入仓库的前提下自动重载 runtime。
+- 左侧栏提供硅基流动模型设置面板。它会把 API key 保存到本机 `~/.nanobot/secrets.json`，自动重载 runtime，并且不会把密钥写入仓库。
 - 聊天走 runtime streaming path，助手输出会边生成边显示，并把最新 assistant content / reasoning 持久化下来，页面 reload 后仍能看到相同结果。
 - WebUI 会话持久化在 `~/.nanobot/workspace/.webui/sessions.json`。
 - 中断或失败的流式 turn 现在也会留下持久化的助手侧停止/错误消息，不会再只剩一条 user 消息挂在那里。
@@ -159,7 +159,7 @@ nanobot serve --urls http://127.0.0.1:8788
 
 默认初始化配置：
 
-`nanobot onboard` 现在会默认写入 SiliconFlow 配置，同时在 `models.json` / `secrets.json` 里预置 DMX。
+`nanobot onboard` 现在会默认写入 SiliconFlow 配置。当前可分发首装路径不再预置其它 provider。
 
 最小 SiliconFlow 配置：
 
@@ -186,80 +186,6 @@ nanobot serve --urls http://127.0.0.1:8788
 {
   "siliconflow": {
     "apiKey": "sk-..."
-  }
-}
-```
-
-DMX 备选配置：
-
-可以在 WebUI 左侧的模型设置面板填写，也可以手动编辑 `~/.nanobot/config.json`。
-
-```json
-{
-  "providers": {
-    "dmx": {
-      "kind": "openai-compatible",
-      "apiKey": "sk-...",
-      "apiBase": "https://www.dmxapi.cn/v1/",
-      "defaultModel": "deepseek-v4-pro-guan",
-      "models": [
-        {
-          "id": "deepseek-v4-pro-guan",
-          "apiModelId": "deepseek-v4-pro-guan",
-          "supportsStreaming": true,
-          "supportsTools": true
-        }
-      ]
-    }
-  },
-  "agents": {
-    "defaults": {
-      "model": "dmx::deepseek-v4-pro-guan",
-      "fallbackModels": ["dmx::deepseek-v4-pro-guan"],
-      "dream": {
-        "enabled": true,
-        "intervalHours": 6
-      }
-    }
-  },
-  "streaming": {
-    "enabled": true
-  }
-}
-```
-
-多 Provider fallback：
-
-```json
-{
-  "providers": {
-    "dmx": {
-      "kind": "openai-compatible",
-      "apiKey": "sk-...",
-      "apiBase": "https://www.dmxapi.cn/v1/",
-      "defaultModel": "deepseek-v4-pro-guan"
-    },
-    "anthropic": {
-      "kind": "anthropic",
-      "apiKey": "sk-ant-...",
-      "defaultModel": "claude-sonnet-4-5"
-    },
-    "azure-openai": {
-      "kind": "azure-openai",
-      "apiKey": "...",
-      "endpoint": "https://example.openai.azure.com",
-      "deployment": "my-azure-deployment",
-      "apiVersion": "2024-10-21"
-    }
-  },
-  "agents": {
-    "defaults": {
-      "fallbackModels": [
-        "dmx::deepseek-v4-pro-guan",
-        "anthropic::claude-sonnet-4-5",
-        "azure-openai::my-azure-deployment"
-      ]
-    }
   }
 }
 ```
@@ -393,19 +319,6 @@ CLI / Chat Gateway / WebSocket Gateway
 | `SILICONFLOW_API_KEY` | SiliconFlow OpenAI 兼容 provider API key |
 | `SILICONFLOW_API_BASE` | 覆盖 SiliconFlow base URL，默认 `https://api.siliconflow.cn/v1/` |
 | `SILICONFLOW_MODEL` | 覆盖 SiliconFlow 默认模型，默认 `nex-agi/Nex-N2-Pro` |
-| `DMX_API_KEY` | DMX OpenAI 兼容中转 API key |
-| `DMX_API_BASE` | 覆盖 DMX base URL，默认 `https://www.dmxapi.cn/v1/` |
-| `DMX_MODEL` | 覆盖 DMX 模型，默认 `deepseek-v4-pro-guan` |
-| `OPENAI_API_KEY` | OpenAI 兼容 provider API key |
-| `OPENAI_API_BASE` | 覆盖 OpenAI 兼容 base URL |
-| `OPENAI_MODEL` | 覆盖默认模型，支持 `provider::model` |
-| `ANTHROPIC_API_KEY` | 启用 Anthropic provider |
-| `ANTHROPIC_API_BASE` | 覆盖 Anthropic base URL |
-| `ANTHROPIC_MODEL` | 覆盖 Anthropic 默认模型 |
-| `AZURE_OPENAI_API_KEY` | 启用 Azure OpenAI provider |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI endpoint |
-| `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI deployment |
-| `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version |
 | `NANOBOT_STREAMING` | `1`、`true` 或 `yes` 启用流式 |
 | `BRAVE_API_KEY` | Web 搜索 API key |
 | `GITHUB_TOKEN` | GitHub 工具 token |
@@ -426,11 +339,11 @@ NANOBOT_RUN_INTEGRATION_TESTS=1 SILICONFLOW_API_KEY=... dotnet test --filter Rea
 
 | 检查 | 结果 |
 | --- | --- |
-| `dotnet test` | 130 passed，0 failed，0 skipped |
-| WebUI 模型设置 smoke（2026-06-13） | `/api/settings/model` 200，active provider 为 `siliconflow`，active model 为 `nex-agi/Nex-N2-Pro` |
+| `dotnet test` | 136 passed，0 failed，0 skipped |
+| WebUI 硅基流动设置 smoke（2026-06-14） | `/api/settings/model` 200，active provider 为 `siliconflow`，active model 为 `nex-agi/Nex-N2-Pro`，available providers 为 `1` |
 | `dotnet build` | 0 warnings，0 errors |
-| WebUI API smoke（2026-06-13） | `/api/runtime/status` 200，`/api/system/status` 200，`/api/sessions` 200，实时 `nong.commandCount = 126` |
-| WebUI 浏览器 smoke（2026-06-13） | 桌面和窄屏布局均加载为 runtime `就绪`，provider/model 下拉已填充，发送按钮可用，控制台和运行时异常为空 |
+| WebUI API smoke（2026-06-14） | `/api/runtime/status` 200，`/api/system/status` 200，`/api/sessions` 200，`/api/gitcode/auth/status` 404，实时 `nong.commandCount = 126` |
+| WebUI 浏览器 smoke（2026-06-14） | 桌面和窄屏布局均加载为 runtime `就绪`，`providerOptions = 1`，发送按钮可用，控制台和运行时异常为空 |
 | 源码审计 | 0 TODO，0 stub，0 `NotImplementedException` |
 
 ## 安全边界
