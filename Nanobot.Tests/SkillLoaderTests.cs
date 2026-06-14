@@ -168,6 +168,31 @@ public class SkillLoaderTests
         Assert.Equal(2, result.References.Count);
     }
 
+    [Fact]
+    public void LoadSkill_IncludesLinkedSharedReferencesWhenPresent()
+    {
+        var workspace = CreateWorkspace();
+        var skillDir = Path.Combine(workspace, "skills", "word");
+        Directory.CreateDirectory(skillDir);
+        Directory.CreateDirectory(Path.Combine(workspace, "skills", "references", "shared"));
+        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), """
+            ---
+            name: word
+            description: Word
+            ---
+            # Word
+            Read [../references/shared/nong-cli-preflight.md](../references/shared/nong-cli-preflight.md).
+            """);
+        File.WriteAllText(
+            Path.Combine(workspace, "skills", "references", "shared", "nong-cli-preflight.md"),
+            "shared preflight");
+
+        var loader = new SkillLoader();
+        var result = loader.LoadSkill(workspace, "word");
+
+        Assert.Contains("../references/shared/nong-cli-preflight.md", result.References);
+    }
+
     // ===== Phase 3: load reference =====
 
     [Fact]
@@ -198,6 +223,30 @@ public class SkillLoaderTests
         var content = loader.LoadReference(workspace, "test", "missing.md");
 
         Assert.Equal(string.Empty, content);
+    }
+
+    [Fact]
+    public void LoadReference_ReturnsSharedReferenceRelativeToSkillRoot()
+    {
+        var workspace = CreateWorkspace();
+        var skillDir = Path.Combine(workspace, "skills", "word");
+        Directory.CreateDirectory(skillDir);
+        Directory.CreateDirectory(Path.Combine(workspace, "skills", "references", "shared"));
+        File.WriteAllText(Path.Combine(skillDir, "SKILL.md"), """
+            ---
+            name: word
+            description: Word
+            ---
+            # Word
+            """);
+        File.WriteAllText(
+            Path.Combine(workspace, "skills", "references", "shared", "nong-cli-preflight.md"),
+            "shared preflight");
+
+        var loader = new SkillLoader();
+        var content = loader.LoadReference(workspace, "word", "../references/shared/nong-cli-preflight.md");
+
+        Assert.Contains("shared preflight", content);
     }
 
     [Fact]

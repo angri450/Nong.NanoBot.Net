@@ -5,9 +5,12 @@ namespace Nanobot.Core.Config;
 public static class ProviderConfigurationFactory
 {
     private const string OpenAIProviderId = "openai";
-    private const string DmxProviderId = "dmx";
-    private const string DmxDefaultApiBase = "https://www.dmxapi.cn/v1/";
-    private const string DmxDefaultModel = "deepseek-v4-pro-guan";
+    private const string DmxProviderId = DefaultProviderCatalog.DmxProviderId;
+    private const string DmxDefaultApiBase = DefaultProviderCatalog.DmxDefaultApiBase;
+    private const string DmxDefaultModel = DefaultProviderCatalog.DmxDefaultModel;
+    private const string SiliconFlowProviderId = DefaultProviderCatalog.SiliconFlowProviderId;
+    private const string SiliconFlowDefaultApiBase = DefaultProviderCatalog.SiliconFlowDefaultApiBase;
+    private const string SiliconFlowDefaultModel = DefaultProviderCatalog.SiliconFlowDefaultModel;
 
     public static ProviderConfigurationResult Create(
         AppConfig config,
@@ -119,12 +122,16 @@ public static class ProviderConfigurationFactory
         var hasDmxApiBase = TryGetEnvironmentValue(environment, "DMX_API_BASE", out _);
         var hasDmxModelOverride = TryGetEnvironmentValue(environment, "DMX_MODEL", out var dmxModelOverride);
         var hasDmxEnvironment = hasDmxApiKey || hasDmxApiBase || hasDmxModelOverride;
+        var hasSiliconFlowApiKey = TryGetEnvironmentValue(environment, "SILICONFLOW_API_KEY", out _);
+        var hasSiliconFlowApiBase = TryGetEnvironmentValue(environment, "SILICONFLOW_API_BASE", out _);
+        var hasSiliconFlowModelOverride = TryGetEnvironmentValue(environment, "SILICONFLOW_MODEL", out var siliconFlowModelOverride);
+        var hasSiliconFlowEnvironment = hasSiliconFlowApiKey || hasSiliconFlowApiBase || hasSiliconFlowModelOverride;
 
         var hasOpenAiModelOverride = TryGetEnvironmentValue(environment, "OPENAI_MODEL", out var openAiModelOverride);
         var shouldCreateOpenAi = providers.ContainsKey(OpenAIProviderId)
             || TryGetEnvironmentValue(environment, "OPENAI_API_KEY", out _)
             || TryGetEnvironmentValue(environment, "OPENAI_API_BASE", out _)
-            || (!hasDmxEnvironment && RequiresOpenAIDefault(config, openAiModelOverride));
+            || (!hasDmxEnvironment && !hasSiliconFlowEnvironment && RequiresOpenAIDefault(config, openAiModelOverride));
 
         ProviderSettings? openAi = null;
         if (shouldCreateOpenAi)
@@ -186,6 +193,42 @@ public static class ProviderConfigurationFactory
             config.Agents.Defaults.Model = new ModelReference(DmxProviderId, dmx.DefaultModel ?? DmxDefaultModel).UniqueId;
         }
 
+        var shouldCreateSiliconFlow = providers.ContainsKey(SiliconFlowProviderId)
+            || hasSiliconFlowApiKey
+            || hasSiliconFlowApiBase
+            || RequiresSpecificDefault(config, SiliconFlowProviderId, siliconFlowModelOverride);
+
+        ProviderSettings? siliconFlow = null;
+        if (shouldCreateSiliconFlow)
+        {
+            siliconFlow = GetOrCreateProvider(providers, SiliconFlowProviderId);
+            siliconFlow.Kind ??= "openai-compatible";
+            siliconFlow.ApiBase ??= SiliconFlowDefaultApiBase;
+            siliconFlow.DefaultModel ??= SiliconFlowDefaultModel;
+
+            ApplyIfPresent(environment, "SILICONFLOW_API_KEY", value => siliconFlow.ApiKey = value);
+            ApplyIfPresent(environment, "SILICONFLOW_API_BASE", value => siliconFlow.ApiBase = value);
+        }
+
+        if (hasSiliconFlowModelOverride)
+        {
+            if (ModelReference.TryParse(siliconFlowModelOverride, SiliconFlowProviderId, out var reference, out _))
+            {
+                config.Agents.Defaults.Provider = reference.ProviderId;
+                config.Agents.Defaults.Model = reference.UniqueId;
+            }
+            else if (siliconFlow is not null)
+            {
+                siliconFlow.DefaultModel = siliconFlowModelOverride;
+                config.Agents.Defaults.Model = siliconFlowModelOverride;
+            }
+        }
+        else if (hasSiliconFlowEnvironment && siliconFlow is not null)
+        {
+            config.Agents.Defaults.Provider = SiliconFlowProviderId;
+            config.Agents.Defaults.Model = new ModelReference(SiliconFlowProviderId, siliconFlow.DefaultModel ?? SiliconFlowDefaultModel).UniqueId;
+        }
+
         if (TryGetEnvironmentValue(environment, "ANTHROPIC_API_KEY", out var anthropicKey))
         {
             var anthropic = GetOrCreateProvider(providers, "anthropic");
@@ -241,27 +284,32 @@ public static class ProviderConfigurationFactory
 
     private static bool RequiresDmxDefault(AppConfig config, string? dmxModelOverride)
     {
-        if (!string.IsNullOrWhiteSpace(dmxModelOverride)
-            && ModelReference.TryParse(dmxModelOverride, DmxProviderId, out var envModel, out _)
-            && envModel.ProviderId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase))
+        return RequiresSpecificDefault(config, DmxProviderId, dmxModelOverride);
+    }
+
+    private static bool RequiresSpecificDefault(AppConfig config, string providerId, string? modelOverride)
+    {
+        if (!string.IsNullOrWhiteSpace(modelOverride)
+            && ModelReference.TryParse(modelOverride, providerId, out var envModel, out _)
+            && envModel.ProviderId.Equals(providerId, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
         if (!string.IsNullOrWhiteSpace(config.Agents.Defaults.Provider)
-            && config.Agents.Defaults.Provider.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase))
+            && config.Agents.Defaults.Provider.Equals(providerId, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
 
         if (string.IsNullOrWhiteSpace(config.Agents.Defaults.Model))
         {
-            return config.Providers.ContainsKey(DmxProviderId);
+            return config.Providers.ContainsKey(providerId);
         }
 
-        if (ModelReference.TryParse(config.Agents.Defaults.Model, DmxProviderId, out var configuredModel, out _))
+        if (ModelReference.TryParse(config.Agents.Defaults.Model, providerId, out var configuredModel, out _))
         {
-            return configuredModel.ProviderId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase);
+            return configuredModel.ProviderId.Equals(providerId, StringComparison.OrdinalIgnoreCase);
         }
 
         return false;

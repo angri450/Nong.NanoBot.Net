@@ -8,7 +8,7 @@
 
 ![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-79%20passed-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-130%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
@@ -37,6 +37,7 @@ It is not a hardened public multi-tenant service yet. Treat it as a strong perso
 | Channels | Complete baseline | Telegram plus Slack, Discord, Feishu HTTP callback / REST adapters |
 | Gateway | Complete | CLI, WebSocket gateway with token auth, chat gateway with cron |
 | WebUI | P2 usable | Chinese-first browser workbench, streaming chat, persisted sessions, workspace file tree, tool-call details, dark/light themes |
+| Plugins | Hardened | Nong.Toolkit.Net marketplace install now maps full bundle or single-skill plugins into `workspace/skills` and keeps shared references available |
 | Windows MSI | P5 baseline | Per-user MSI, self-contained CLI/WebUI payload, Start Menu shortcuts, user PATH entry |
 | Heartbeat | Complete | `HEARTBEAT.md` active task detection and gateway startup wiring |
 | Tools | Complete | Files, shell, Nong CLI bridge, web, weather, stocks via CSV API, GitHub, summarize, memory |
@@ -53,8 +54,8 @@ cd Nong.NanoBot.Net
 # 2. Create ~/.nanobot/config.json and ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. Add a DMX API key to ~/.nanobot/config.json
-#    or export DMX_API_KEY
+# 3. Add a SiliconFlow or DMX API key to ~/.nanobot/secrets.json
+#    or export SILICONFLOW_API_KEY / DMX_API_KEY
 
 # 4. Start interactive chat
 dotnet run --project Nanobot.CLI
@@ -91,7 +92,7 @@ Workspace layout:
 | `dotnet run --project Nanobot.CLI -- web` | Start the local WebUI and open the default browser |
 | `dotnet run --project Nanobot.CLI -- serve` | Start the local WebUI server without opening a browser |
 | `dotnet run --project Nanobot.Web` | Start the local browser workbench |
-| `dotnet run --project Nanobot.CLI -- onboard` | Create default config and workspace |
+| `dotnet run --project Nanobot.CLI -- onboard` | Create default config, model catalog, secrets, and workspace scaffold |
 
 ## WebUI
 
@@ -108,7 +109,7 @@ dotnet run --project Nanobot.CLI -- web
 dotnet run --project Nanobot.CLI -- serve --urls http://127.0.0.1:8788
 ```
 
-The normal command requires the .NET 8 SDK and ASP.NET Core Runtime 8. On a machine without the ASP.NET Core 8 runtime, run it self-contained:
+The normal command requires the .NET 8 SDK and a compatible ASP.NET Core runtime. On a machine without a compatible runtime, run it self-contained:
 
 ```bash
 dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0.0.1:8788
@@ -120,15 +121,19 @@ Current WebUI behavior:
 
 - Chinese is the default UI language, with an optional English toggle.
 - Dark and light themes are both supported from the header toggle.
-- The left sidebar includes a model settings panel for DMX DeepSeek V4 Pro. It saves the API key to the local `~/.nanobot/config.json` file and reloads the runtime without committing secrets to the repository.
-- Chat uses the runtime streaming path and renders partial assistant output as it arrives.
+- The left sidebar includes a model settings panel for the current OpenAI-compatible provider. It reads the active provider from local config, keeps SiliconFlow and DMX presets available, saves API keys to local `~/.nanobot/secrets.json`, and reloads the runtime without committing secrets to the repository.
+- Chat uses the runtime streaming path, renders partial assistant output as it arrives, and persists the latest assistant content/reasoning so reload keeps the same result.
 - WebUI sessions are persisted under `~/.nanobot/workspace/.webui/sessions.json`.
+- Interrupted or failed streamed turns now leave a durable assistant-side stop/error message in the persisted session instead of a user-only dangling turn.
+- Runtime-event replay for the tool timeline now uses durable sequence-based SSE ids, so browser reconnects can resume from `Last-Event-ID` without replay/live id mismatch.
+- The tool timeline is now scoped to the active session and deduplicated by runtime sequence, so reconnects and multi-session activity do not mix foreign events into the current chat view.
 - Workspace file browsing is restricted to `~/.nanobot/workspace`; internal `.webui` files are hidden.
 - Tool calls are shown in a live event timeline with a detail panel for run/session/tool/error/content fields.
+- The system status panel degrades gracefully when `nong` is missing or returns unexpected output; the workbench still loads and reports unavailable status instead of failing the page.
 
 ## Windows MSI
 
-Nong.NanoBot.Net can be packaged as a Windows x64 MSI without WebView2, Electron, or a resident browser shell. The MSI installs the self-contained CLI and WebUI runtime, creates Start Menu shortcuts, and adds `nanobot.exe` to the current user's PATH. Nong.Toolkit.Net and Nong.Cli.Net are still installed later through the plugin/bootstrap path; they are not bundled into the MSI payload.
+Nong.NanoBot.Net can be packaged as a Windows x64 MSI without WebView2, Electron, or a resident browser shell. The MSI installs the self-contained CLI and WebUI runtime, creates Start Menu shortcuts, and adds `nanobot.exe` to the current user's PATH. Nong.Toolkit.Net and Nong.Cli.Net are still installed later through the plugin/bootstrap path; they are not bundled into the MSI payload. The current runtime plugin installer understands the Nong.Toolkit.Net marketplace layout, so `nong-toolkit` and individual skills such as `word` install into `~/.nanobot/workspace/skills` with shared references preserved.
 
 Build a local MSI:
 
@@ -152,7 +157,40 @@ nanobot serve --urls http://127.0.0.1:8788
 
 ## Configuration
 
-Minimal DMX DeepSeek V4 Pro config:
+Default onboarded profile:
+
+`nanobot onboard` now seeds SiliconFlow as the default local profile, plus a DMX preset in `models.json` / `secrets.json`.
+
+Minimal SiliconFlow config:
+
+You can either fill this from the WebUI model settings panel or edit `~/.nanobot/config.json` and `~/.nanobot/secrets.json` manually.
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "provider": "siliconflow",
+      "model": "siliconflow::nex-agi/Nex-N2-Pro",
+      "fallbackModels": ["siliconflow::nex-agi/Nex-N2-Pro"]
+    }
+  },
+  "streaming": {
+    "enabled": true
+  }
+}
+```
+
+`~/.nanobot/secrets.json`:
+
+```json
+{
+  "siliconflow": {
+    "apiKey": "sk-..."
+  }
+}
+```
+
+DMX alternative:
 
 You can either fill this from the WebUI model settings panel or edit `~/.nanobot/config.json` manually.
 
@@ -352,6 +390,9 @@ Important implementation points:
 
 | Variable | Purpose |
 | --- | --- |
+| `SILICONFLOW_API_KEY` | SiliconFlow OpenAI-compatible provider API key |
+| `SILICONFLOW_API_BASE` | Override SiliconFlow base URL, default `https://api.siliconflow.cn/v1/` |
+| `SILICONFLOW_MODEL` | Override SiliconFlow default model, default `nex-agi/Nex-N2-Pro` |
 | `DMX_API_KEY` | DMX OpenAI-compatible relay API key |
 | `DMX_API_BASE` | Override DMX base URL, default `https://www.dmxapi.cn/v1/` |
 | `DMX_MODEL` | Override DMX model, default `deepseek-v4-pro-guan` |
@@ -378,15 +419,18 @@ dotnet test
 dotnet build
 
 # Real integration tests need credentials.
-NANOBOT_RUN_INTEGRATION_TESTS=1 DMX_API_KEY=... dotnet test --filter RealIntegrationTests
+NANOBOT_RUN_INTEGRATION_TESTS=1 SILICONFLOW_API_KEY=... dotnet test --filter RealIntegrationTests
 ```
 
 Current local verification:
 
 | Check | Result |
 | --- | --- |
-| `dotnet test` | 77 passed, 0 failed, 0 skipped |
+| `dotnet test` | 130 passed, 0 failed, 0 skipped |
+| WebUI model settings smoke (2026-06-13) | `/api/settings/model` 200, active provider `siliconflow`, active model `nex-agi/Nex-N2-Pro` |
 | `dotnet build` | 0 warnings, 0 errors |
+| WebUI API smoke (2026-06-13) | `/api/runtime/status` 200, `/api/system/status` 200, `/api/sessions` 200, live `nong.commandCount = 126` |
+| WebUI browser smoke (2026-06-13) | Desktop and narrow layouts load with runtime `就绪`, provider/model selects populated, send enabled, and no console/runtime exceptions |
 | Source audit | 0 TODO, 0 stub, 0 `NotImplementedException` |
 
 ## Safety Boundary

@@ -41,10 +41,7 @@
         <form id="modelSettingsForm" class="settings-form">
           <label>
             <span data-i18n="provider">Provider</span>
-            <select id="providerId">
-              <option value="siliconflow">SiliconFlow</option>
-              <option value="dmx">DMX</option>
-            </select>
+            <select id="providerId"></select>
           </label>
           <label>
             <span data-i18n="apiBase">API 地址</span>
@@ -52,15 +49,7 @@
           </label>
           <label>
             <span data-i18n="modelId">模型 ID</span>
-            <select id="modelSelect">
-              <option value="nex-agi/Nex-N2-Pro">Nex-N2 Pro</option>
-              <option value="deepseek-ai/DeepSeek-V3.2">DeepSeek V3.2</option>
-              <option value="Pro/deepseek-ai/DeepSeek-V3.2">DeepSeek V3.2 Pro</option>
-              <option value="Pro/zai-org/GLM-5">GLM-5</option>
-              <option value="Qwen/Qwen3.5-397B-A17B">Qwen3.5 397B</option>
-              <option value="Qwen/Qwen3.5-35B-A3B">Qwen3.5 35B</option>
-              <option value="tencent/Hunyuan-A13B-Instruct">Hunyuan A13B</option>
-            </select>
+            <select id="modelSelect"></select>
             <input id="modelId" type="text" autocomplete="off" spellcheck="false" value="nex-agi/Nex-N2-Pro" hidden>
           </label>
           <label>
@@ -248,25 +237,16 @@
     </aside>
   </div>
 
-  <script src="/app.js"></script>
-
   <!-- Hidden anchors for JS element references (preserved for compatibility) -->
   <div hidden>
     <div id="fileList"></div>
     <div id="filePath"></div>
-    <pre id="filePreview"></pre>
-    <div id="filePreviewTitle"></div>
-    <pre id="memoryPreview"></pre>
     <button id="reloadStatus"></button>
     <button id="refreshFiles"></button>
     <span id="runtimeCachePill"></span>
     <span id="runtimeUsagePill"></span>
-    <span id="cacheHitRate">--</span>
-    <span id="cachedTokens">--</span>
-    <span id="uncachedTokens">--</span>
-    <span id="outputTokens">--</span>
-    <span id="reasoningTokens">--</span>
-    <span id="totalTokens">--</span>
   </div>
+
+  <script src="/app.js"></script>
 </body>
 </html>

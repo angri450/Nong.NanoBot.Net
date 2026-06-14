@@ -3,6 +3,7 @@
 > Agent 添加变更记录后同步更新此文件。格式：`- YYYY-MM-DD | 文件名 | 一句话摘要`
 
 ## 2026-06-13
+- 2026-06-13 | 2026-06-13-stabilization-hardening.md | 稳定化与可用性硬化：修复状态探针、清理验证漂移并补足 105 测试门禁
 - 2026-06-13 | 2026-06-13-context-map.md | Added PROJECT_STATE, wiki, log plan rules, and planner/builder prompts
 - 2026-06-13 | 2026-06-13-phase-10.md | Phase 10: end-to-end verification spec; 10/10 application-layer phases complete
 - 2026-06-13 | 2026-06-13-phases-8-9.md | Phase 8-9: WebUI Nong status panel, external tool and OCR model status

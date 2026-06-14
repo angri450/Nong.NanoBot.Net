@@ -94,48 +94,91 @@ public sealed class WebSessionStore
         }
     }
 
-    public WebSessionDto AppendMessage(string sessionId, string role, string content)
+    public WebSessionDto AppendMessage(string sessionId, string role, string content, string? reasoning = null)
     {
         lock (_lock)
         {
-            var session = _sessions.FirstOrDefault(item => item.Id.Equals(sessionId, StringComparison.Ordinal));
-            if (session is null)
-            {
-                var now = DateTimeOffset.UtcNow;
-                session = new StoredSession
-                {
-                    Id = sessionId,
-                    Title = DefaultSessionTitle,
-                    CreatedAt = now,
-                    UpdatedAt = now
-                };
-                _sessions.Insert(0, session);
-            }
-
+            var session = GetOrCreateStoredSessionLocked(sessionId);
             var timestamp = DateTimeOffset.UtcNow;
             session.Messages.Add(new StoredMessage
             {
                 Id = Guid.NewGuid().ToString("N"),
                 Role = role,
                 Content = content,
+                Reasoning = reasoning,
                 CreatedAt = timestamp
             });
-            session.UpdatedAt = timestamp;
 
             if (role.Equals("user", StringComparison.OrdinalIgnoreCase) && ShouldRetitle(session))
             {
                 session.Title = CreateTitle(content);
             }
 
-            if (session.Messages.Count > MaxMessagesPerSession)
+            TouchSessionLocked(session, timestamp);
+            return ToDto(session);
+        }
+    }
+
+    public WebChatMessageDto CreateMessage(string sessionId, string role, string content = "", string? reasoning = null)
+    {
+        lock (_lock)
+        {
+            var session = GetOrCreateStoredSessionLocked(sessionId);
+            var timestamp = DateTimeOffset.UtcNow;
+            var message = new StoredMessage
             {
-                session.Messages.RemoveRange(0, session.Messages.Count - MaxMessagesPerSession);
+                Id = Guid.NewGuid().ToString("N"),
+                Role = role,
+                Content = content,
+                Reasoning = reasoning,
+                CreatedAt = timestamp
+            };
+            session.Messages.Add(message);
+            TouchSessionLocked(session, timestamp);
+            return ToDto(message);
+        }
+    }
+
+    public WebSessionDto AppendToMessage(
+        string sessionId,
+        string messageId,
+        string? contentDelta = null,
+        string? reasoningDelta = null)
+    {
+        lock (_lock)
+        {
+            var session = GetExistingSessionLocked(sessionId);
+            var message = GetExistingMessageLocked(session, messageId);
+            if (!string.IsNullOrEmpty(contentDelta))
+            {
+                message.Content += contentDelta;
             }
 
-            _sessions.Remove(session);
-            _sessions.Insert(0, session);
-            TrimSessions();
-            SaveLocked();
+            if (!string.IsNullOrEmpty(reasoningDelta))
+            {
+                message.Reasoning = (message.Reasoning ?? string.Empty) + reasoningDelta;
+            }
+
+            TouchSessionLocked(session, DateTimeOffset.UtcNow);
+            return ToDto(session);
+        }
+    }
+
+    public WebSessionDto UpdateMessage(
+        string sessionId,
+        string messageId,
+        string role,
+        string content,
+        string? reasoning = null)
+    {
+        lock (_lock)
+        {
+            var session = GetExistingSessionLocked(sessionId);
+            var message = GetExistingMessageLocked(session, messageId);
+            message.Role = role;
+            message.Content = content;
+            message.Reasoning = reasoning;
+            TouchSessionLocked(session, DateTimeOffset.UtcNow);
             return ToDto(session);
         }
     }
@@ -183,6 +226,53 @@ public sealed class WebSessionStore
         }
     }
 
+    private StoredSession GetOrCreateStoredSessionLocked(string sessionId)
+    {
+        var session = _sessions.FirstOrDefault(item => item.Id.Equals(sessionId, StringComparison.Ordinal));
+        if (session is not null)
+        {
+            return session;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        session = new StoredSession
+        {
+            Id = sessionId,
+            Title = DefaultSessionTitle,
+            CreatedAt = now,
+            UpdatedAt = now
+        };
+        _sessions.Insert(0, session);
+        return session;
+    }
+
+    private StoredSession GetExistingSessionLocked(string sessionId)
+    {
+        return _sessions.FirstOrDefault(item => item.Id.Equals(sessionId, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException($"Session '{sessionId}' was not found.");
+    }
+
+    private static StoredMessage GetExistingMessageLocked(StoredSession session, string messageId)
+    {
+        return session.Messages.FirstOrDefault(item => item.Id.Equals(messageId, StringComparison.Ordinal))
+            ?? throw new InvalidOperationException($"Message '{messageId}' was not found.");
+    }
+
+    private void TouchSessionLocked(StoredSession session, DateTimeOffset timestamp)
+    {
+        session.UpdatedAt = timestamp;
+
+        if (session.Messages.Count > MaxMessagesPerSession)
+        {
+            session.Messages.RemoveRange(0, session.Messages.Count - MaxMessagesPerSession);
+        }
+
+        _sessions.Remove(session);
+        _sessions.Insert(0, session);
+        TrimSessions();
+        SaveLocked();
+    }
+
     private static bool ShouldRetitle(StoredSession session)
     {
         return session.Messages.Count <= 1
@@ -226,8 +316,19 @@ public sealed class WebSessionStore
                     message.Id,
                     message.Role,
                     message.Content,
-                    message.CreatedAt))
+                    message.CreatedAt,
+                    message.Reasoning))
                 .ToList());
+    }
+
+    private static WebChatMessageDto ToDto(StoredMessage message)
+    {
+        return new WebChatMessageDto(
+            message.Id,
+            message.Role,
+            message.Content,
+            message.CreatedAt,
+            message.Reasoning);
     }
 
     private static string NormalizeTitle(string title)
@@ -256,6 +357,7 @@ public sealed class WebSessionStore
         public string Id { get; set; } = "";
         public string Role { get; set; } = "system";
         public string Content { get; set; } = "";
+        public string? Reasoning { get; set; }
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 }

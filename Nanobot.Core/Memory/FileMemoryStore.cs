@@ -20,14 +20,13 @@ public class FileMemoryStore : IWritableMemory
         }
 
         Workspace = workspace;
+        WorkspaceBootstrapper.EnsureInitialized(workspace);
         MemoryDirectory = Path.Combine(workspace, "memory");
         _memoryFile = Path.Combine(MemoryDirectory, "MEMORY.md");
         _soulFile = Path.Combine(workspace, "SOUL.md");
         _userFile = Path.Combine(workspace, "USER.md");
         _historyFile = Path.Combine(MemoryDirectory, "history.jsonl");
         _dreamCursorFile = Path.Combine(MemoryDirectory, ".dream_cursor");
-
-        Directory.CreateDirectory(MemoryDirectory);
     }
 
     public string Workspace { get; }

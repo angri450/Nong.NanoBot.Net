@@ -19,7 +19,36 @@ public class MemoryTests
     }
 
     [Fact]
-    public void FileMemoryStore_GetContext_ReturnsEmptyWhenMemoryFileMissing()
+    public void FileMemoryStore_CreatesWorkspaceScaffold()
+    {
+        var workspace = CreateWorkspace();
+
+        var store = new FileMemoryStore(workspace);
+
+        Assert.True(File.Exists(Path.Combine(workspace, "SOUL.md")));
+        Assert.True(File.Exists(Path.Combine(workspace, "USER.md")));
+        Assert.True(File.Exists(Path.Combine(workspace, "HEARTBEAT.md")));
+        Assert.True(File.Exists(Path.Combine(store.MemoryDirectory, "MEMORY.md")));
+        Assert.True(File.Exists(store.HistoryFile));
+        Assert.Equal("0", File.ReadAllText(Path.Combine(store.MemoryDirectory, ".dream_cursor")));
+    }
+
+    [Fact]
+    public void FileMemoryStore_DoesNotOverwriteExistingWorkspaceFiles()
+    {
+        var workspace = CreateWorkspace();
+        Directory.CreateDirectory(Path.Combine(workspace, "memory"));
+        File.WriteAllText(Path.Combine(workspace, "SOUL.md"), "custom soul");
+        File.WriteAllText(Path.Combine(workspace, "memory", ".dream_cursor"), "12");
+
+        _ = new FileMemoryStore(workspace);
+
+        Assert.Equal("custom soul", File.ReadAllText(Path.Combine(workspace, "SOUL.md")));
+        Assert.Equal("12", File.ReadAllText(Path.Combine(workspace, "memory", ".dream_cursor")));
+    }
+
+    [Fact]
+    public void FileMemoryStore_GetContext_ReturnsEmptyForFreshScaffold()
     {
         var store = new FileMemoryStore(CreateWorkspace());
 

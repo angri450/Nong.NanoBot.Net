@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -20,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nanobot.Core\Nanobot.Core.csproj" />
+    <ProjectReference Include="..\Nanobot.Web\Nanobot.Web.csproj" />
   </ItemGroup>
 
 </Project>

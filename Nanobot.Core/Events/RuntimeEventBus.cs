@@ -6,6 +6,11 @@ public class RuntimeEventBus
     private readonly List<Func<RuntimeEvent, Task>> _subscribers = new();
     private long _sequence;
 
+    public RuntimeEventBus(long initialSequence = 0)
+    {
+        _sequence = initialSequence;
+    }
+
     public IDisposable Subscribe(Action<RuntimeEvent> handler)
     {
         return Subscribe(evt =>

@@ -294,12 +294,15 @@ public class NongTool : ITool
             var data = doc["data"]?.AsArray();
             if (data == null) return null;
 
-            var commands = data.Select(c => new NongCommandInfo(
-                c["name"]?.ToString() ?? "",
-                c["description"]?.ToString() ?? "",
-                c["group"]?.ToString() ?? "",
-                c["status"]?.ToString() ?? "unknown"
-            )).ToList();
+            var commands = data
+                .OfType<JsonObject>()
+                .Select(command => new NongCommandInfo(
+                    command["name"]?.ToString() ?? "",
+                    command["description"]?.ToString() ?? "",
+                    command["group"]?.ToString() ?? "",
+                    command["status"]?.ToString() ?? "unknown"
+                ))
+                .ToList();
 
             return new NongCapabilityInfo(
                 Version: version,
@@ -359,10 +362,9 @@ public class NongTool : ITool
             var array = JsonNode.Parse(json)?.AsArray();
             if (array == null) return results;
 
-            foreach (var item in array)
+            foreach (var item in array.OfType<JsonObject>())
             {
-                var func = item["function"];
-                if (func == null) continue;
+                if (item["function"] is not JsonObject func) continue;
 
                 var name = func["name"]?.ToString();
                 var desc = func["description"]?.ToString();

@@ -8,7 +8,7 @@
 
 ![.NET 8](https://img.shields.io/badge/.NET-8-6d28d9?style=for-the-badge)
 ![C# 12](https://img.shields.io/badge/C%23-12-2563eb?style=for-the-badge)
-![Tests](https://img.shields.io/badge/tests-79%20passed-16a34a?style=for-the-badge)
+![Tests](https://img.shields.io/badge/tests-130%20passed-16a34a?style=for-the-badge)
 ![Build](https://img.shields.io/badge/build-0%20warnings%20%2F%200%20errors-16a34a?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-Apache--2.0-374151?style=for-the-badge)
 
@@ -37,6 +37,7 @@ Nong.NanoBot.Net 是一个独立的 .NET 8 个人 Agent 运行时，面向本地
 | Channels | 基线完整 | Telegram，加 Slack、Discord、飞书 HTTP callback / REST 适配 |
 | Gateway | 完整 | CLI、带 token 认证的 WebSocket、聊天网关和 cron |
 | WebUI | P2 可用 | 中文优先浏览器工作台、流式聊天、会话持久化、工作区文件树、工具调用详情、深色/浅色主题 |
+| Plugins | 已硬化 | Nong.Toolkit.Net marketplace 安装现在会把全量包或单技能插件正确映射到 `workspace/skills`，并保留 shared references |
 | Windows MSI | P5 基线 | 当前用户安装、自包含 CLI/WebUI、开始菜单快捷方式、用户 PATH |
 | Heartbeat | 完整 | `HEARTBEAT.md` active task 检测并接入 gateway |
 | Tools | 完整 | 文件、shell、Nong CLI bridge、web、天气、CSV 股票报价、GitHub、摘要、记忆 |
@@ -53,8 +54,8 @@ cd Nong.NanoBot.Net
 # 2. 创建 ~/.nanobot/config.json 和 ~/.nanobot/workspace
 dotnet run --project Nanobot.CLI -- onboard
 
-# 3. 在 ~/.nanobot/config.json 中填 DMX API key
-#    或设置 DMX_API_KEY
+# 3. 在 ~/.nanobot/secrets.json 中填写 SiliconFlow 或 DMX API key
+#    或设置 SILICONFLOW_API_KEY / DMX_API_KEY
 
 # 4. 开始聊天
 dotnet run --project Nanobot.CLI
@@ -91,7 +92,7 @@ dotnet run --project Nanobot.CLI
 | `dotnet run --project Nanobot.CLI -- web` | 启动本地 WebUI 并打开默认浏览器 |
 | `dotnet run --project Nanobot.CLI -- serve` | 只启动本地 WebUI 服务，不打开浏览器 |
 | `dotnet run --project Nanobot.Web` | 启动本地浏览器工作台 |
-| `dotnet run --project Nanobot.CLI -- onboard` | 创建默认配置和工作区 |
+| `dotnet run --project Nanobot.CLI -- onboard` | 创建默认配置、模型目录、secrets 和工作区骨架 |
 
 ## WebUI
 
@@ -108,7 +109,7 @@ dotnet run --project Nanobot.CLI -- web
 dotnet run --project Nanobot.CLI -- serve --urls http://127.0.0.1:8788
 ```
 
-常规命令需要 .NET 8 SDK 和 ASP.NET Core Runtime 8。如果机器上没有 ASP.NET Core 8 runtime，可以用 self-contained 方式运行：
+常规命令需要 .NET 8 SDK 和兼容的 ASP.NET Core runtime。如果机器上没有兼容 runtime，可以用 self-contained 方式运行：
 
 ```bash
 dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0.0.1:8788
@@ -120,15 +121,19 @@ dotnet run --project Nanobot.Web --self-contained -r win-x64 --urls http://127.0
 
 - 默认语言是中文，并提供英文切换。
 - Header 里提供深色 / 浅色主题切换。
-- 左侧栏提供 DMX DeepSeek V4 Pro 模型设置面板，可以直接填写调用密钥并保存到本机 `~/.nanobot/config.json`，保存后自动重载 runtime；密钥不会进入仓库。
-- 聊天走 runtime streaming path，助手输出会边生成边显示。
+- 左侧栏提供当前 OpenAI 兼容 provider 的模型设置面板。它会从本机配置读取当前 active provider，保留 SiliconFlow 和 DMX 预设，把 API key 保存到本机 `~/.nanobot/secrets.json`，并在不把密钥写入仓库的前提下自动重载 runtime。
+- 聊天走 runtime streaming path，助手输出会边生成边显示，并把最新 assistant content / reasoning 持久化下来，页面 reload 后仍能看到相同结果。
 - WebUI 会话持久化在 `~/.nanobot/workspace/.webui/sessions.json`。
+- 中断或失败的流式 turn 现在也会留下持久化的助手侧停止/错误消息，不会再只剩一条 user 消息挂在那里。
+- 工具时间线的 runtime event replay 现在使用持久化的 sequence 作为 SSE `id`，浏览器重连时可以基于 `Last-Event-ID` 正常续接，而不会出现 replay/live id 语义错位。
+- 工具时间线现在只展示当前 active session 的事件，并按 runtime sequence 去重，重连或多会话并行时不会再把别的 session 事件混进当前聊天视图。
 - 文件树限制在 `~/.nanobot/workspace` 内部，内部 `.webui` 文件会隐藏。
 - 工具调用会进入实时事件时间线，并在详情面板展示 run、session、tool、error、content 等字段。
+- 当 `nong` 缺失或返回异常输出时，系统状态面板会降级为 unavailable，而不是让整个工作台加载失败。
 
 ## Windows MSI
 
-Nong.NanoBot.Net 现在可以打成 Windows x64 MSI。这个 MSI 不使用 WebView2、Electron，也不会塞一个常驻浏览器壳；它安装的是自包含 CLI 和 WebUI runtime，创建开始菜单快捷方式，并把 `nanobot.exe` 加到当前用户 PATH。Nong.Toolkit.Net 和 Nong.Cli.Net 仍然走后续 plugin/bootstrap 机制安装，不打包进 MSI 主负载。
+Nong.NanoBot.Net 现在可以打成 Windows x64 MSI。这个 MSI 不使用 WebView2、Electron，也不会塞一个常驻浏览器壳；它安装的是自包含 CLI 和 WebUI runtime，创建开始菜单快捷方式，并把 `nanobot.exe` 加到当前用户 PATH。Nong.Toolkit.Net 和 Nong.Cli.Net 仍然走后续 plugin/bootstrap 机制安装，不打包进 MSI 主负载。当前 runtime 内置的插件安装器已经能识别 Nong.Toolkit.Net marketplace 结构，因此 `nong-toolkit` 全量包和 `word` 这类单技能插件都会正确落到 `~/.nanobot/workspace/skills`，shared references 也会一并保留。
 
 本地构建 MSI：
 
@@ -152,7 +157,40 @@ nanobot serve --urls http://127.0.0.1:8788
 
 ## 配置
 
-最小 DMX DeepSeek V4 Pro 配置：
+默认初始化配置：
+
+`nanobot onboard` 现在会默认写入 SiliconFlow 配置，同时在 `models.json` / `secrets.json` 里预置 DMX。
+
+最小 SiliconFlow 配置：
+
+可以在 WebUI 左侧的模型设置面板填写，也可以手动编辑 `~/.nanobot/config.json` 和 `~/.nanobot/secrets.json`。
+
+```json
+{
+  "agents": {
+    "defaults": {
+      "provider": "siliconflow",
+      "model": "siliconflow::nex-agi/Nex-N2-Pro",
+      "fallbackModels": ["siliconflow::nex-agi/Nex-N2-Pro"]
+    }
+  },
+  "streaming": {
+    "enabled": true
+  }
+}
+```
+
+`~/.nanobot/secrets.json`：
+
+```json
+{
+  "siliconflow": {
+    "apiKey": "sk-..."
+  }
+}
+```
+
+DMX 备选配置：
 
 可以在 WebUI 左侧的模型设置面板填写，也可以手动编辑 `~/.nanobot/config.json`。
 
@@ -352,6 +390,9 @@ CLI / Chat Gateway / WebSocket Gateway
 
 | 变量 | 用途 |
 | --- | --- |
+| `SILICONFLOW_API_KEY` | SiliconFlow OpenAI 兼容 provider API key |
+| `SILICONFLOW_API_BASE` | 覆盖 SiliconFlow base URL，默认 `https://api.siliconflow.cn/v1/` |
+| `SILICONFLOW_MODEL` | 覆盖 SiliconFlow 默认模型，默认 `nex-agi/Nex-N2-Pro` |
 | `DMX_API_KEY` | DMX OpenAI 兼容中转 API key |
 | `DMX_API_BASE` | 覆盖 DMX base URL，默认 `https://www.dmxapi.cn/v1/` |
 | `DMX_MODEL` | 覆盖 DMX 模型，默认 `deepseek-v4-pro-guan` |
@@ -378,15 +419,18 @@ dotnet test
 dotnet build
 
 # 真实集成测试需要凭据
-NANOBOT_RUN_INTEGRATION_TESTS=1 DMX_API_KEY=... dotnet test --filter RealIntegrationTests
+NANOBOT_RUN_INTEGRATION_TESTS=1 SILICONFLOW_API_KEY=... dotnet test --filter RealIntegrationTests
 ```
 
 当前本地验证结果：
 
 | 检查 | 结果 |
 | --- | --- |
-| `dotnet test` | 77 passed，0 failed，0 skipped |
+| `dotnet test` | 130 passed，0 failed，0 skipped |
+| WebUI 模型设置 smoke（2026-06-13） | `/api/settings/model` 200，active provider 为 `siliconflow`，active model 为 `nex-agi/Nex-N2-Pro` |
 | `dotnet build` | 0 warnings，0 errors |
+| WebUI API smoke（2026-06-13） | `/api/runtime/status` 200，`/api/system/status` 200，`/api/sessions` 200，实时 `nong.commandCount = 126` |
+| WebUI 浏览器 smoke（2026-06-13） | 桌面和窄屏布局均加载为 runtime `就绪`，provider/model 下拉已填充，发送按钮可用，控制台和运行时异常为空 |
 | 源码审计 | 0 TODO，0 stub，0 `NotImplementedException` |
 
 ## 安全边界

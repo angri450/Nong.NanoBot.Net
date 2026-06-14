@@ -17,7 +17,7 @@ public class PluginInstallTool : ITool
     }
 
     public string Name => "plugin_install";
-    public string Description => "Install a Nong.Toolkit.Net skill plugin from GitHub release. Downloads and extracts skills to workspace/skills/.";
+    public string Description => "Install a Nong.Toolkit.Net marketplace plugin such as 'nong-toolkit' or 'word'. Extracts installable skills into workspace/skills/.";
 
     public JsonNode Parameters => JsonNode.Parse("""
     {
@@ -25,11 +25,11 @@ public class PluginInstallTool : ITool
         "properties": {
             "plugin": {
                 "type": "string",
-                "description": "Plugin name, e.g. nong-toolkit"
+                "description": "Plugin name, e.g. 'nong-toolkit' for the full bundle or 'word' for an individual skill. 'word@nong-toolkit' is also accepted."
             },
             "version": {
                 "type": "string",
-                "description": "Version tag, e.g. 4.1.0. If omitted, installs latest."
+                "description": "Toolkit version tag, e.g. 1.0.0. If omitted, installs the latest Nong.Toolkit.Net release."
             }
         },
         "required": ["plugin"]
@@ -61,7 +61,7 @@ public class PluginInstallTool : ITool
                 version = result.Version,
                 installed = true,
                 skills = result.Skills,
-                path = $"workspace/skills/{result.PluginName}"
+                path = "workspace/skills"
             });
         }
 

@@ -1,6 +1,7 @@
 using Nanobot.Core.Config;
 using Nanobot.Core.Providers;
 using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 namespace Nanobot.Tests;
 
@@ -107,6 +108,50 @@ public class ConfigTests
 
         Assert.Equal("dmx::deepseek-v4-pro-guan", result.DefaultModel.UniqueId);
         Assert.Equal("deepseek-v4-pro-guan", result.Provider.GetDefaultModel());
+    }
+
+    [Fact]
+    public void ProviderConfigurationFactory_SiliconFlowEnvironmentConfiguresDefaultModel()
+    {
+        var result = ProviderConfigurationFactory.Create(new AppConfig(), Env(
+            ("SILICONFLOW_API_KEY", "env-key")
+        ));
+
+        Assert.Equal("siliconflow::nex-agi/Nex-N2-Pro", result.DefaultModel.UniqueId);
+        Assert.Equal("nex-agi/Nex-N2-Pro", result.Provider.GetDefaultModel());
+    }
+
+    [Fact]
+    public void ProviderConfigurationFactory_SiliconFlowEnvironmentModelOverridesConfig()
+    {
+        var config = new AppConfig
+        {
+            Providers =
+            {
+                ["siliconflow"] = new ProviderSettings
+                {
+                    Kind = "openai-compatible",
+                    ApiKey = "config-key",
+                    ApiBase = "https://api.siliconflow.cn/v1/",
+                    DefaultModel = "old-model"
+                }
+            },
+            Agents =
+            {
+                Defaults =
+                {
+                    Model = "siliconflow::old-model"
+                }
+            }
+        };
+
+        var result = ProviderConfigurationFactory.Create(config, Env(
+            ("SILICONFLOW_API_KEY", "env-key"),
+            ("SILICONFLOW_MODEL", "Qwen/Qwen3.5-35B-A3B")
+        ));
+
+        Assert.Equal("siliconflow::Qwen/Qwen3.5-35B-A3B", result.DefaultModel.UniqueId);
+        Assert.Equal("Qwen/Qwen3.5-35B-A3B", result.Provider.GetDefaultModel());
     }
 
     [Fact]
@@ -280,6 +325,16 @@ public class ConfigTests
             .Bind(config);
 
         Assert.Equal(new[] { "pdf", "ocr" }, config.Tools.Nong.AllowedRoots);
+    }
+
+    [Fact]
+    public void DefaultProviderCatalog_RuntimeConfigTemplateDefaultsToSiliconFlow()
+    {
+        var config = DefaultProviderCatalog.CreateRuntimeConfigTemplate();
+
+        Assert.Equal("siliconflow", config.Agents.Defaults.Provider);
+        Assert.Equal("siliconflow::nex-agi/Nex-N2-Pro", config.Agents.Defaults.Model);
+        Assert.Equal(new[] { "siliconflow::nex-agi/Nex-N2-Pro" }, config.Agents.Defaults.FallbackModels);
     }
 
     private static IReadOnlyDictionary<string, string?> Env(params (string Key, string? Value)[] values)

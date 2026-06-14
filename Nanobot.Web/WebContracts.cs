@@ -37,13 +37,26 @@ public sealed record RuntimeStatusResponse(
 
 public sealed record ModelSettingsResponse(
     string ProviderId,
+    string ProviderName,
     string ApiBase,
     string Model,
     bool HasApiKey,
     string ApiKeyPreview,
     string KeySource,
     string ConfigPath,
+    IReadOnlyList<ModelSettingsProviderOption> AvailableProviders,
+    string? EnvironmentKeyName = null,
     string? ThinkingMode = null);
+
+public sealed record ModelSettingsProviderOption(
+    string ProviderId,
+    string DisplayName,
+    string ApiBase,
+    IReadOnlyList<ModelSettingsModelOption> Models);
+
+public sealed record ModelSettingsModelOption(
+    string Id,
+    string DisplayName);
 
 public sealed record SaveModelSettingsRequest(
     string? ProviderId,

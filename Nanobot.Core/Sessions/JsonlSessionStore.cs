@@ -21,6 +21,44 @@ public class JsonlSessionStore
         _eventBus.Subscribe(OnRuntimeEventAsync);
     }
 
+    public static long ReadMaxSequence(string basePath)
+    {
+        var sessionsPath = Path.Combine(basePath, "sessions");
+        if (!Directory.Exists(sessionsPath))
+        {
+            return 0;
+        }
+
+        long maxSequence = 0;
+        foreach (var eventsPath in Directory.EnumerateFiles(sessionsPath, "events.jsonl", SearchOption.AllDirectories))
+        {
+            foreach (var line in File.ReadLines(eventsPath))
+            {
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                SessionItem? item;
+                try
+                {
+                    item = JsonSerializer.Deserialize<SessionItem>(line, JsonOptions);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (item?.Sequence > maxSequence)
+                {
+                    maxSequence = item.Sequence;
+                }
+            }
+        }
+
+        return maxSequence;
+    }
+
     public string GetSessionPath(string sessionId)
     {
         return Path.Combine(_basePath, "sessions", Sanitize(sessionId));
@@ -48,19 +86,29 @@ public class JsonlSessionStore
 
     public async Task AppendItemAsync(SessionItem item)
     {
-        if (string.IsNullOrEmpty(item.ThreadId))
+        var sessionId = !string.IsNullOrWhiteSpace(item.SessionId)
+            ? item.SessionId
+            : item.ThreadId;
+        var threadId = !string.IsNullOrWhiteSpace(item.ThreadId)
+            ? item.ThreadId
+            : sessionId;
+
+        if (string.IsNullOrWhiteSpace(sessionId) || string.IsNullOrWhiteSpace(threadId))
         {
             return;
         }
 
-        var threadPath = GetThreadPath(item.ThreadId, item.ThreadId);
-        // TODO: derive sessionId from thread — for now use threadId as sessionId
-        var sessionPath = GetSessionPath(item.ThreadId);
-        var actualThreadPath = Path.Combine(sessionPath, "threads", Sanitize(item.ThreadId));
+        var sessionPath = GetSessionPath(sessionId);
+        var actualThreadPath = Path.Combine(sessionPath, "threads", Sanitize(threadId));
         Directory.CreateDirectory(actualThreadPath);
 
         var eventsPath = Path.Combine(actualThreadPath, "events.jsonl");
-        var line = JsonSerializer.Serialize(item, JsonOptions);
+        var normalizedItem = item with
+        {
+            SessionId = sessionId,
+            ThreadId = threadId
+        };
+        var line = JsonSerializer.Serialize(normalizedItem, JsonOptions);
         await File.AppendAllTextAsync(eventsPath, line + Environment.NewLine);
     }
 
@@ -98,6 +146,47 @@ public class JsonlSessionStore
                 continue;
             }
 
+            item = NormalizeItem(item, sessionId, threadId);
+            if (!MatchesSinceSequence(item, sinceSequence))
+            {
+                continue;
+            }
+
+            yield return item;
+        }
+    }
+
+    public async IAsyncEnumerable<SessionItem> ReadItemsSinceSequenceAsync(long sinceSequence)
+    {
+        var sessionsPath = Path.Combine(_basePath, "sessions");
+        if (!Directory.Exists(sessionsPath))
+        {
+            yield break;
+        }
+
+        var items = new List<SessionItem>();
+        foreach (var eventsPath in Directory.EnumerateFiles(sessionsPath, "events.jsonl", SearchOption.AllDirectories))
+        {
+            await foreach (var item in ReadItemsFromFileAsync(eventsPath, sinceSequence))
+            {
+                items.Add(item);
+            }
+        }
+
+        var deduplicated = items
+            .Where(item => item.Sequence > 0)
+            .GroupBy(item => item.Sequence)
+            .Select(group => group
+                .OrderBy(item => item.Timestamp)
+                .ThenBy(item => item.EventId, StringComparer.Ordinal)
+                .Last())
+            .Concat(items.Where(item => item.Sequence <= 0))
+            .OrderBy(item => item.Sequence > 0 ? item.Sequence : long.MaxValue)
+            .ThenBy(item => item.Timestamp)
+            .ThenBy(item => item.EventId, StringComparer.Ordinal);
+
+        foreach (var item in deduplicated)
+        {
             yield return item;
         }
     }
@@ -117,12 +206,59 @@ public class JsonlSessionStore
     {
         if (string.IsNullOrEmpty(evt.ThreadId))
         {
-            // For now, use SessionId as ThreadId when ThreadId is not set
-            evt = evt with { ThreadId = evt.ThreadId ?? evt.SessionId };
+            evt = evt with { ThreadId = evt.SessionId };
         }
 
         var item = SessionItem.FromRuntimeEvent(evt);
         await AppendItemAsync(item);
+    }
+
+    private static SessionItem NormalizeItem(SessionItem item, string sessionId, string threadId)
+    {
+        return item with
+        {
+            SessionId = string.IsNullOrWhiteSpace(item.SessionId) ? sessionId : item.SessionId,
+            ThreadId = string.IsNullOrWhiteSpace(item.ThreadId) ? threadId : item.ThreadId
+        };
+    }
+
+    private static bool MatchesSinceSequence(SessionItem item, long? sinceSequence)
+    {
+        if (sinceSequence is null || sinceSequence <= 0)
+        {
+            return true;
+        }
+
+        return item.Sequence > 0 && item.Sequence > sinceSequence;
+    }
+
+    private async IAsyncEnumerable<SessionItem> ReadItemsFromFileAsync(string eventsPath, long? sinceSequence)
+    {
+        using var reader = new StreamReader(eventsPath);
+        while (await reader.ReadLineAsync() is { } line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            SessionItem? item;
+            try
+            {
+                item = JsonSerializer.Deserialize<SessionItem>(line, JsonOptions);
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (item is null || !MatchesSinceSequence(item, sinceSequence))
+            {
+                continue;
+            }
+
+            yield return item;
+        }
     }
 
     private static string Sanitize(string name)

@@ -144,6 +144,14 @@ public class SkillLoader
                 .Select(f => f!)
                 .ToList();
 
+        foreach (var linkedReference in FindLinkedMarkdownReferences(body ?? content, skillDir, skillsDirectory))
+        {
+            if (!references.Contains(linkedReference, StringComparer.OrdinalIgnoreCase))
+            {
+                references.Add(linkedReference);
+            }
+        }
+
         var examples = new List<string>();
         var exDir = Path.Combine(skillDir, "examples");
         if (Directory.Exists(exDir))
@@ -168,7 +176,7 @@ public class SkillLoader
 
         if (skillDir == null) return string.Empty;
 
-        var refPath = Path.Combine(skillDir, "references", referenceFile);
+        var refPath = ResolveReferencePath(skillDir, skillsDirectory, referenceFile);
         if (!File.Exists(refPath)) return string.Empty;
 
         var content = File.ReadAllText(refPath).Trim();
@@ -189,6 +197,68 @@ public class SkillLoader
 
         var name = Path.GetFileName(skillDirectory);
         return $"## {name}\n{content}";
+    }
+
+    private static IEnumerable<string> FindLinkedMarkdownReferences(string content, string skillDir, string skillsDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            yield break;
+        }
+
+        var matches = System.Text.RegularExpressions.Regex.Matches(content, @"\[[^\]]+\]\(([^)]+\.md)\)");
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            if (match.Groups.Count < 2)
+            {
+                continue;
+            }
+
+            var relativePath = match.Groups[1].Value.Trim();
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                continue;
+            }
+
+            var resolved = ResolveReferencePath(skillDir, skillsDirectory, relativePath);
+            if (!File.Exists(resolved))
+            {
+                continue;
+            }
+
+            yield return relativePath.Replace('\\', '/');
+        }
+    }
+
+    private static string ResolveReferencePath(string skillDir, string skillsDirectory, string referenceFile)
+    {
+        if (string.IsNullOrWhiteSpace(referenceFile))
+        {
+            return string.Empty;
+        }
+
+        var looksRelative = referenceFile.Contains('/')
+            || referenceFile.Contains('\\')
+            || referenceFile.StartsWith(".", StringComparison.Ordinal);
+
+        var candidate = looksRelative
+            ? Path.GetFullPath(Path.Combine(skillDir, referenceFile))
+            : Path.GetFullPath(Path.Combine(skillDir, "references", referenceFile));
+
+        var skillsRoot = Path.GetFullPath(skillsDirectory)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (candidate.Equals(skillsRoot, comparison)
+            || candidate.StartsWith(skillsRoot + Path.DirectorySeparatorChar, comparison)
+            || candidate.StartsWith(skillsRoot + Path.AltDirectorySeparatorChar, comparison))
+        {
+            return candidate;
+        }
+
+        return string.Empty;
     }
 
     private string Truncate(string content)

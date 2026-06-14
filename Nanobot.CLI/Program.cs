@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.Diagnostics;
+using System.Text.Json;
 using Nanobot.Core.Config;
 using Nanobot.Core.Events;
 using Nanobot.Core.Gateway;
@@ -17,6 +18,11 @@ using Nanobot.Core.Skills;
 
 class Program
 {
+    private static readonly JsonSerializerOptions TemplateJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true
+    };
+
     static async Task<int> Main(string[] args)
     {
         var rootCommand = new RootCommand("Nanobot .NET CLI (Default: Chat Mode)");
@@ -114,100 +120,30 @@ class Program
             var modelsFile = Path.Combine(nanoDir, "models.json");
             if (!File.Exists(modelsFile))
             {
-                File.WriteAllText(modelsFile, """
-                {
-                  "providers": {
-                    "dmx": {
-                      "name": "DMX API",
-                      "apiBase": "https://www.dmxapi.cn/v1/",
-                      "defaultModel": "deepseek-v4-pro-guan",
-                      "models": [
-                        {
-                          "id": "deepseek-v4-pro-guan",
-                          "apiModelId": "deepseek-v4-pro-guan",
-                          "displayName": "DeepSeek V4 Pro",
-                          "contextWindow": 1000000,
-                          "maxOutputTokens": 32000,
-                          "supportsStreaming": true,
-                          "supportsTools": true,
-                          "supportsReasoning": true,
-                          "supportsInterleavedThinking": true,
-                          "reasoningEffort": "high"
-                        }
-                      ]
-                    }
-                  }
-                }
-                """);
+                File.WriteAllText(
+                    modelsFile,
+                    JsonSerializer.Serialize(DefaultProviderCatalog.CreateModelCatalog(), TemplateJsonOptions));
                 Console.WriteLine($"Created models catalog at {modelsFile}");
             }
 
             var secretsFile = Path.Combine(nanoDir, "secrets.json");
             if (!File.Exists(secretsFile))
             {
-                File.WriteAllText(secretsFile, """
-                {
-                  "dmx": {
-                    "apiKey": ""
-                  }
-                }
-                """);
+                File.WriteAllText(
+                    secretsFile,
+                    JsonSerializer.Serialize(DefaultProviderCatalog.CreateSecretsTemplate(), TemplateJsonOptions));
                 Console.WriteLine($"Created secrets file at {secretsFile}");
                 Console.WriteLine("  Fill in your API key: edit ~/.nanobot/secrets.json");
             }
 
             if (!File.Exists(configFile))
             {
-                File.WriteAllText(configFile, """
-                {
-                  "agents": {
-                    "defaults": {
-                      "model": "dmx::deepseek-v4-pro-guan",
-                      "fallbackModels": [
-                        "dmx::deepseek-v4-pro-guan"
-                      ]
-                    }
-                  },
-                  "streaming": {
-                    "enabled": true
-                  },
-                  "gateway": {
-                    "webSocket": {
-                      "prefix": "http://localhost:8765/ws/",
-                      "token": ""
-                    }
-                  },
-                  "tools": {
-                    "nong": {
-                      "enabled": true,
-                      "command": "nong",
-                      "appendJson": true,
-                      "timeoutMs": 120000,
-                      "maxOutputChars": 20000,
-                      "allowedRoots": [
-                        "commands",
-                        "word",
-                        "inspect",
-                        "chart",
-                        "excel",
-                        "diagram",
-                        "genre",
-                        "icons",
-                        "skill",
-                        "pptx",
-                        "ocr",
-                        "pdf",
-                        "lit",
-                        "slice",
-                        "progress"
-                      ]
-                    }
-                  }
-                }
-                """);
+                File.WriteAllText(
+                    configFile,
+                    JsonSerializer.Serialize(DefaultProviderCatalog.CreateRuntimeConfigTemplate(), TemplateJsonOptions));
                 Console.WriteLine($"Created runtime config at {configFile}");
             }
-            if (!Directory.Exists(workspace)) Directory.CreateDirectory(workspace);
+            WorkspaceBootstrapper.EnsureInitialized(workspace);
             Console.WriteLine("Onboarding complete.");
         });
         rootCommand.AddCommand(onboardCommand);

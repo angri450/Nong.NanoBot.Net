@@ -109,7 +109,8 @@ app.MapPost("/api/agent/message", async Task<IResult> (
 
     try
     {
-        var response = await runtime.SendMessageAsync(request, cancellationToken);
+        var turn = runtime.BeginChatTurn(request.SessionId, request.Message ?? "");
+        var response = await runtime.SendMessageAsync(turn, cancellationToken);
         return Results.Ok(response);
     }
     catch (InvalidOperationException ex)
@@ -143,11 +144,17 @@ app.MapPost("/api/agent/stream", async (
 
     context.Response.Headers.ContentType = "application/x-ndjson";
     context.Response.Headers.CacheControl = "no-cache";
+    var turn = runtime.BeginChatTurn(request.SessionId, request.Message ?? "");
 
     try
     {
+        await WriteNdjsonAsync(
+            context,
+            new AgentStreamEvent("session", turn.SessionId),
+            cancellationToken);
+
         var response = await runtime.SendMessageStreamingAsync(
-            request,
+            turn,
             async (streamEvent, token) =>
             {
                 await WriteNdjsonAsync(context, streamEvent, token);
@@ -159,18 +166,23 @@ app.MapPost("/api/agent/stream", async (
             new AgentStreamEvent("complete", response.SessionId, Answer: response.Answer),
             cancellationToken);
     }
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+    {
+        turn.Cancel();
+        return;
+    }
     catch (InvalidOperationException ex)
     {
         await WriteNdjsonAsync(
             context,
-            new AgentStreamEvent("error", runtime.ResolveSessionId(request.SessionId), Error: ex.Message),
+            new AgentStreamEvent("error", turn.SessionId, Error: ex.Message),
             cancellationToken);
     }
     catch (Exception ex)
     {
         await WriteNdjsonAsync(
             context,
-            new AgentStreamEvent("error", runtime.ResolveSessionId(request.SessionId), Error: $"Agent request failed: {ex.Message}"),
+            new AgentStreamEvent("error", turn.SessionId, Error: $"Agent request failed: {ex.Message}"),
             cancellationToken);
     }
 });
@@ -191,24 +203,14 @@ app.MapGet("/api/events", async (
         await foreach (var item in runtime.ReplayEventsAsync(sinceSequence, cancellationToken))
         {
             if (cancellationToken.IsCancellationRequested) break;
-            await context.Response.WriteAsync($"id: {item.EventId}\n", cancellationToken);
-            await context.Response.WriteAsync($"event: runtime\n", cancellationToken);
-            await context.Response.WriteAsync(
-                $"data: {JsonSerializer.Serialize(item, NanobotWebJson.EventOptions)}\n\n",
-                cancellationToken);
-            await context.Response.Body.FlushAsync(cancellationToken);
+            await WriteSseEventAsync(context, item, cancellationToken);
         }
     }
 
     await foreach (var runtimeEvent in runtime.ListenAsync(cancellationToken))
     {
         if (cancellationToken.IsCancellationRequested) break;
-        await context.Response.WriteAsync($"id: {runtimeEvent.Sequence}\n", cancellationToken);
-        await context.Response.WriteAsync($"event: runtime\n", cancellationToken);
-        await context.Response.WriteAsync(
-            $"data: {JsonSerializer.Serialize(runtimeEvent, NanobotWebJson.EventOptions)}\n\n",
-            cancellationToken);
-        await context.Response.Body.FlushAsync(cancellationToken);
+        await WriteSseEventAsync(context, runtimeEvent, cancellationToken);
     }
 });
 
@@ -303,23 +305,33 @@ static async Task WriteNdjsonAsync(
     await context.Response.Body.FlushAsync(cancellationToken);
 }
 
+static async Task WriteSseEventAsync(
+    HttpContext context,
+    RuntimeEvent runtimeEvent,
+    CancellationToken cancellationToken)
+{
+    await context.Response.WriteAsync($"id: {runtimeEvent.Sequence}\n", cancellationToken);
+    await context.Response.WriteAsync("event: runtime\n", cancellationToken);
+    await context.Response.WriteAsync(
+        $"data: {JsonSerializer.Serialize(runtimeEvent, NanobotWebJson.EventOptions)}\n\n",
+        cancellationToken);
+    await context.Response.Body.FlushAsync(cancellationToken);
+}
+
 public sealed class NanobotWebRuntime
 {
-    private const string DmxProviderId = "dmx";
-    private const string DmxDefaultApiBase = "https://www.dmxapi.cn/v1/";
-    private const string DmxDefaultModel = "deepseek-v4-pro-guan";
-
     private readonly object _reloadLock = new();
     private readonly string _nanoDir;
     private readonly string _configFile;
     private readonly string _modelsFile;
     private readonly string _secretsFile;
     private readonly string _workspace;
-    private readonly RuntimeEventBus _eventBus = new();
+    private readonly RuntimeEventBus _eventBus;
     private readonly FileMemoryStore _memory;
     private readonly WebSessionStore _sessions;
     private readonly WorkspaceFileBrowser _files;
     private readonly JsonlSessionStore _jsonlStore;
+    private readonly ModelSettingsStore _modelSettingsStore;
     private readonly GitCodeAuthStore _gitCodeAuthStore;
     private readonly GitCodeAuthService _gitCodeAuthService;
     private readonly GitCodeCodingPlanService _gitCodeCodingPlanService;
@@ -341,6 +353,8 @@ public sealed class NanobotWebRuntime
         Directory.CreateDirectory(_nanoDir);
         Directory.CreateDirectory(_workspace);
 
+        _eventBus = new RuntimeEventBus(JsonlSessionStore.ReadMaxSequence(_nanoDir));
+        _modelSettingsStore = new ModelSettingsStore(_configFile, _modelsFile, _secretsFile);
         _memory = new FileMemoryStore(_workspace);
         _sessions = new WebSessionStore(_workspace);
         _files = new WorkspaceFileBrowser(_workspace);
@@ -369,160 +383,9 @@ public sealed class NanobotWebRuntime
 
     public SystemStatusResponse GetSystemStatus()
     {
-        var nong = ProbeNongStatus();
+        var nong = SystemStatusProbe.ProbeNongStatus();
         var toolkit = ProbeToolkitStatus();
         return new SystemStatusResponse(GetStatus(), nong, toolkit);
-    }
-
-    static NongStatusResponse? ProbeNongStatus()
-    {
-        try
-        {
-            using var proc = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "nong",
-                    Arguments = "commands --json",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            proc.Start();
-            proc.WaitForExit(5000);
-            if (proc.ExitCode != 0) return null;
-            var json = proc.StandardOutput.ReadToEnd();
-            var doc = JsonNode.Parse(json);
-            if (doc?["status"]?.ToString() != "ok") return null;
-            var version = doc["meta"]?["version"]?.ToString();
-            var data = doc["data"]?.AsArray();
-            var roots = data?.Select(c => c["group"]?.ToString() ?? "").Distinct().Where(r => r.Length > 0).OrderBy(r => r).ToList() ?? new List<string>();
-
-            // Probe external dotnet tools
-            var externalTools = ProbeExternalTools();
-
-            // Probe OCR models
-            var ocrModels = ProbeOcrModels();
-
-            return new NongStatusResponse(true, version, data?.Count ?? 0, roots!, externalTools, ocrModels);
-        }
-        catch { return null; }
-    }
-
-    static List<ExternalToolStatus> ProbeExternalTools()
-    {
-        var tools = new List<ExternalToolStatus>();
-        var toolDefs = new[]
-        {
-            ("nong-chart", "Angri450.Nong.Tool.Chart"),
-            ("nong-diagram", "Angri450.Nong.Tool.Diagram"),
-            ("nong-pdf", "Angri450.Nong.Tool.Pdf"),
-            ("nong-pptx", "Angri450.Nong.Tool.Pptx"),
-            ("nong-ocr", "Angri450.Nong.Tool.Ocr"),
-            ("nong-imaging", "Angri450.Nong.Tool.Imaging"),
-        };
-
-        foreach (var (name, packageId) in toolDefs)
-        {
-            try
-            {
-                using var proc = new System.Diagnostics.Process
-                {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "dotnet",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    }
-                };
-                proc.StartInfo.ArgumentList.Add("tool");
-                proc.StartInfo.ArgumentList.Add("list");
-                proc.StartInfo.ArgumentList.Add("--global");
-                proc.Start();
-                proc.WaitForExit(3000);
-                var output = proc.StandardOutput.ReadToEnd();
-                var installed = output.Contains(packageId, StringComparison.OrdinalIgnoreCase);
-
-                // Try to get version
-                string? version = null;
-                if (installed)
-                {
-                    var lines = output.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var line in lines)
-                    {
-                        if (line.Contains(packageId, StringComparison.OrdinalIgnoreCase))
-                        {
-                            var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                            if (parts.Length >= 2) version = parts[^1];
-                            break;
-                        }
-                    }
-                }
-
-                tools.Add(new ExternalToolStatus(name, packageId, installed, version));
-            }
-            catch
-            {
-                tools.Add(new ExternalToolStatus(name, packageId, false, null));
-            }
-        }
-
-        return tools;
-    }
-
-    static OcrModelStatus? ProbeOcrModels()
-    {
-        try
-        {
-            using var proc = new System.Diagnostics.Process
-            {
-                StartInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "nong",
-                    Arguments = "ocr models --json",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            proc.Start();
-            proc.WaitForExit(5000);
-            if (proc.ExitCode != 0) return null;
-            var json = proc.StandardOutput.ReadToEnd();
-            var doc = JsonNode.Parse(json);
-            if (doc?["status"]?.ToString() != "ok") return null;
-
-            // Parse v6 availability from data.models array
-            var models = doc["data"]?["models"]?.AsArray();
-            bool v6Available = false;
-            string? v6Size = null;
-            string? v6Path = null;
-            bool v5Available = false;
-
-            if (models != null)
-            {
-                foreach (var m in models)
-                {
-                    var id = m["id"]?.ToString() ?? "";
-                    if (id.StartsWith("pp-ocrv6-") && m["available"]?.GetValue<bool>() == true)
-                    {
-                        v6Available = true;
-                        v6Size = m["modelSize"]?.ToString();
-                        v6Path = m["modelCachePath"]?.ToString();
-                    }
-                    if (id == "pp-ocrv5-mobile" && m["available"]?.GetValue<bool>() == true)
-                        v5Available = true;
-                }
-            }
-
-            return new OcrModelStatus(v6Available, v6Size, v6Path, v5Available);
-        }
-        catch { return null; }
     }
 
     static ToolkitStatusResponse? ProbeToolkitStatus()
@@ -543,98 +406,12 @@ public sealed class NanobotWebRuntime
 
     public ModelSettingsResponse GetModelSettings()
     {
-        var providerId = DmxProviderId;
-        var provider = ResolveProvider(providerId);
-        var envKey = Environment.GetEnvironmentVariable("DMX_API_KEY");
-        var configuredKey = provider?.ApiKey;
-        var effectiveKey = !string.IsNullOrWhiteSpace(envKey) ? envKey : configuredKey;
-        var keySource = !string.IsNullOrWhiteSpace(envKey)
-            ? "environment"
-            : !string.IsNullOrWhiteSpace(configuredKey)
-                ? "config"
-                : "none";
-
-        return new ModelSettingsResponse(
-            ProviderId: providerId,
-            ApiBase: provider?.ApiBase ?? provider?.BaseUrl ?? DmxDefaultApiBase,
-            Model: ResolveProviderModel(providerId, provider),
-            HasApiKey: !string.IsNullOrWhiteSpace(effectiveKey),
-            ApiKeyPreview: MaskSecret(effectiveKey),
-            KeySource: keySource,
-            ConfigPath: _configFile
-        );
+        return _modelSettingsStore.Get(_config);
     }
 
     public SaveModelSettingsResponse SaveModelSettings(SaveModelSettingsRequest request)
     {
-        var providerId = string.IsNullOrWhiteSpace(request.ProviderId)
-            ? DmxProviderId
-            : request.ProviderId.Trim();
-        if (!providerId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("当前 WebUI 设置面板先支持 DMX provider。");
-        }
-
-        var apiBase = string.IsNullOrWhiteSpace(request.ApiBase)
-            ? DmxDefaultApiBase
-            : request.ApiBase.Trim();
-        var model = string.IsNullOrWhiteSpace(request.Model)
-            ? DmxDefaultModel
-            : request.Model.Trim();
-        if (!Uri.TryCreate(apiBase, UriKind.Absolute, out var apiBaseUri)
-            || (apiBaseUri.Scheme != Uri.UriSchemeHttp && apiBaseUri.Scheme != Uri.UriSchemeHttps))
-        {
-            throw new InvalidOperationException("API 地址必须是 http 或 https URL。");
-        }
-
-        Directory.CreateDirectory(_nanoDir);
-
-        // 1. Write models.json — provider and model definitions only, no keys
-        var modelsJson = LoadOrCreateJson(_modelsFile);
-        var mp = EnsureObject(modelsJson, "providers");
-        var mpEntry = EnsureObject(mp, providerId);
-        mpEntry["name"] = "DMX API";
-        mpEntry["apiBase"] = apiBase;
-        mpEntry["defaultModel"] = model;
-        mpEntry["models"] = new JsonArray
-        {
-            new JsonObject
-            {
-                ["id"] = model,
-                ["apiModelId"] = model,
-                ["displayName"] = model,
-                ["supportsStreaming"] = true,
-                ["supportsTools"] = true,
-                ["providerModelFamily"] = DeepSeekV4Models.IsDeepSeekV4(model) ? "deepseek-v4" : null,
-                ["supportsReasoning"] = DeepSeekV4Models.IsDeepSeekV4(model),
-                ["supportsPromptCacheMetrics"] = DeepSeekV4Models.IsDeepSeekV4(model),
-                ["contextWindow"] = DeepSeekV4Models.IsDeepSeekV4(model) ? 1_000_000 : null,
-                ["maxOutputTokens"] = DeepSeekV4Models.IsDeepSeekV4(model) ? 384_000 : null
-            }
-        };
-        File.WriteAllText(_modelsFile, modelsJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-
-        // 2. Write secrets.json — API key only
-        var secretsJson = LoadOrCreateJson(_secretsFile);
-        if (!secretsJson.ContainsKey(providerId))
-            secretsJson[providerId] = new JsonObject();
-        var sp = secretsJson[providerId]!.AsObject();
-        sp["apiKey"] = request.ClearApiKey ? "" : (string.IsNullOrWhiteSpace(request.ApiKey) ? (sp.ContainsKey("apiKey") ? sp["apiKey"]?.ToString() ?? "" : "") : request.ApiKey.Trim());
-        File.WriteAllText(_secretsFile, secretsJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-
-        // 3. Write config.json — runtime settings only, no provider/model details
-        var configJson = LoadOrCreateJson(_configFile);
-        var agents = EnsureObject(configJson, "agents");
-        var defaults = EnsureObject(agents, "defaults");
-        defaults["model"] = $"{providerId}::{model}";
-        defaults["fallbackModels"] = new JsonArray($"{providerId}::{model}");
-
-        var streaming = EnsureObject(configJson, "streaming");
-        streaming["enabled"] = true;
-
-        File.WriteAllText(
-            _configFile,
-            configJson.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        _modelSettingsStore.Save(request, _config);
 
         ReloadRuntime();
         return new SaveModelSettingsResponse(
@@ -729,66 +506,88 @@ public sealed class NanobotWebRuntime
         return _files.Read(path);
     }
 
-    public string ResolveSessionId(string? sessionId)
+    public WebChatTurn BeginChatTurn(string? sessionId, string message)
     {
-        return _sessions.GetOrCreate(sessionId).Id;
+        return WebChatTurn.Begin(_sessions, sessionId, message);
     }
 
-    public async Task<AgentMessageResponse> SendMessageAsync(AgentMessageRequest request, CancellationToken cancellationToken)
+    public async Task<AgentMessageResponse> SendMessageAsync(WebChatTurn turn, CancellationToken cancellationToken)
     {
         if (_agent is null)
         {
-            throw new InvalidOperationException(_startupError ?? "Agent runtime is not ready.");
+            var message = _startupError ?? "Agent runtime is not ready.";
+            turn.Fail(message);
+            throw new InvalidOperationException(message);
         }
-
-        var sessionId = ResolveSessionId(request.SessionId);
-        _sessions.AppendMessage(sessionId, "user", request.Message ?? "");
 
         var context = AgentExecutionContext.CreateRoot(_workspace) with
         {
-            SessionId = sessionId
+            SessionId = turn.SessionId
         };
-        var answer = await _agent.RunAsync(request.Message ?? "", context);
-        _sessions.AppendMessage(sessionId, "assistant", answer);
-        return new AgentMessageResponse(sessionId, answer);
+
+        try
+        {
+            var answer = await _agent.RunAsync(turn.UserMessage, context);
+            return turn.Complete(answer);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            turn.Cancel();
+            throw;
+        }
+        catch (Exception ex)
+        {
+            turn.Fail(ex.Message);
+            throw;
+        }
     }
 
     public async Task<AgentMessageResponse> SendMessageStreamingAsync(
-        AgentMessageRequest request,
+        WebChatTurn turn,
         Func<AgentStreamEvent, CancellationToken, Task> onStreamEventAsync,
         CancellationToken cancellationToken)
     {
         if (_agent is null)
         {
-            throw new InvalidOperationException(_startupError ?? "Agent runtime is not ready.");
+            var message = _startupError ?? "Agent runtime is not ready.";
+            turn.Fail(message);
+            throw new InvalidOperationException(message);
         }
-
-        var sessionId = ResolveSessionId(request.SessionId);
-        var message = request.Message ?? "";
-        _sessions.AppendMessage(sessionId, "user", message);
-
-        await onStreamEventAsync(new AgentStreamEvent("session", sessionId), cancellationToken);
 
         var context = AgentExecutionContext.CreateRoot(_workspace) with
         {
-            SessionId = sessionId
+            SessionId = turn.SessionId
         };
 
-        var answer = await _agent.RunStreamingAsync(
-            message,
-            context,
-            async (delta, token) =>
-            {
-                await onStreamEventAsync(new AgentStreamEvent("delta", sessionId, Content: delta), token);
-            },
-            cancellationToken,
-            onReasoningDeltaAsync: async (reasoning, token) =>
-            {
-                await onStreamEventAsync(new AgentStreamEvent("reasoning", sessionId, Reasoning: reasoning), token);
-            });
+        try
+        {
+            var answer = await _agent.RunStreamingAsync(
+                turn.UserMessage,
+                context,
+                async (delta, token) =>
+                {
+                    turn.AppendAssistantDelta(delta);
+                    await onStreamEventAsync(new AgentStreamEvent("delta", turn.SessionId, Content: delta), token);
+                },
+                cancellationToken,
+                onReasoningDeltaAsync: async (reasoning, token) =>
+                {
+                    turn.AppendAssistantReasoning(reasoning);
+                    await onStreamEventAsync(new AgentStreamEvent("reasoning", turn.SessionId, Reasoning: reasoning), token);
+                });
 
-        _sessions.AppendMessage(sessionId, "assistant", answer);
-        return new AgentMessageResponse(sessionId, answer);
+            return turn.Complete(answer);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            turn.Cancel();
+            throw;
+        }
+        catch (Exception ex)
+        {
+            turn.Fail(ex.Message);
+            throw;
+        }
     }
 
     public async IAsyncEnumerable<RuntimeEvent> ListenAsync(
@@ -816,25 +615,31 @@ public sealed class NanobotWebRuntime
         long sinceSequence,
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        // Read from JSONL store for the active session
-        // Since events are session-scoped, we find the most recent session
-        var sessions = _sessions.List();
-        var sessionId = sessions.FirstOrDefault()?.Id;
-        if (sessionId is null) yield break;
-
-        await foreach (var item in _jsonlStore.ReadItemsAsync(sessionId, sessionId))
+        await foreach (var item in _jsonlStore.ReadItemsSinceSequenceAsync(sinceSequence))
         {
             if (cancellationToken.IsCancellationRequested) break;
 
+            var sessionId = string.IsNullOrWhiteSpace(item.SessionId)
+                ? item.ThreadId
+                : item.SessionId;
+            if (string.IsNullOrWhiteSpace(sessionId))
+            {
+                continue;
+            }
+
             yield return new RuntimeEvent
             {
-                Type = MapItemType(item.Type),
-                RunId = item.ToolCallId ?? item.Id,
+                Type = item.EventType ?? MapItemType(item.Type),
+                EventId = string.IsNullOrWhiteSpace(item.EventId) ? item.Id : item.EventId,
+                Sequence = item.Sequence,
+                RunId = string.IsNullOrWhiteSpace(item.RunId) ? item.ToolCallId ?? item.Id : item.RunId,
                 SessionId = sessionId,
                 ThreadId = item.ThreadId,
                 Content = item.Content,
                 ToolName = item.ToolName,
                 ToolCallId = item.ToolCallId,
+                ErrorMessage = item.ErrorMessage,
+                Payload = item.Usage,
                 Timestamp = item.Timestamp
             };
         }
@@ -1037,11 +842,6 @@ public sealed class NanobotWebRuntime
         return message;
     }
 
-    private string ResolveSettingsProviderId()
-    {
-        return DmxProviderId;
-    }
-
     private ProviderSettings? ResolveProvider(string providerId)
     {
         return _config.Providers.TryGetValue(providerId, out var provider)
@@ -1069,9 +869,7 @@ public sealed class NanobotWebRuntime
     {
         if (provider is null)
         {
-            return providerId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase)
-                ? DmxDefaultModel
-                : "Not configured";
+            return DefaultProviderCatalog.GetDefaultModel(providerId);
         }
 
         if (!string.IsNullOrWhiteSpace(provider.DefaultModel))
@@ -1085,54 +883,7 @@ public sealed class NanobotWebRuntime
             return model.ApiModelId ?? model.Id!;
         }
 
-        return providerId.Equals(DmxProviderId, StringComparison.OrdinalIgnoreCase)
-            ? DmxDefaultModel
-            : "Not configured";
-    }
-
-    private static string MaskSecret(string? secret)
-    {
-        if (string.IsNullOrWhiteSpace(secret))
-        {
-            return "";
-        }
-
-        var value = secret.Trim();
-        if (value.Length <= 10)
-        {
-            return "已配置";
-        }
-
-        return $"{value[..6]}...{value[^4..]}";
-    }
-
-    private static JsonObject LoadOrCreateJson(string path)
-    {
-        if (!File.Exists(path))
-        {
-            return new JsonObject();
-        }
-
-        var text = File.ReadAllText(path);
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return new JsonObject();
-        }
-
-        return JsonNode.Parse(text) as JsonObject
-            ?? throw new InvalidOperationException($"{Path.GetFileName(path)} root must be a JSON object.");
-    }
-
-    private static JsonObject EnsureObject(JsonObject parent, string propertyName)
-    {
-        if (parent[propertyName] is JsonObject existing)
-        {
-            return existing;
-        }
-
-        var created = new JsonObject();
-        parent[propertyName] = created;
-        return created;
+        return "Not configured";
     }
 
     private static string Truncate(string value, int maxChars)

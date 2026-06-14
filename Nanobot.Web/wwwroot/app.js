@@ -79,7 +79,8 @@ const i18n = {
     keyConfigured: "Key 已配置",
     keyMissing: "Key 未配置",
     keySourceConfig: "当前 Key 来自本机配置。",
-    keySourceEnvironment: "当前 Key 来自环境变量 DMX_API_KEY，表单不会覆盖它的运行时优先级。",
+    keySourceEnvironment: "当前 Key 来自环境变量",
+    keySourceEnvironmentNote: "表单不会覆盖它的运行时优先级。",
     keySourceNone: "请输入中转站调用密钥，保存后写入本机配置。",
     keepExistingKey: "留空表示保留现有 Key。",
     settingsSaved: "模型配置已保存。",
@@ -195,7 +196,8 @@ const i18n = {
     keyConfigured: "Key configured",
     keyMissing: "Key missing",
     keySourceConfig: "Current key is loaded from local config.",
-    keySourceEnvironment: "Current key is loaded from DMX_API_KEY. Form changes do not override environment priority.",
+    keySourceEnvironment: "Current key is loaded from environment variable",
+    keySourceEnvironmentNote: "Form changes do not override its runtime priority.",
     keySourceNone: "Enter the relay API key; it will be saved to local config.",
     keepExistingKey: "Leave blank to keep the existing key.",
     settingsSaved: "Model settings saved.",
@@ -246,6 +248,9 @@ const state = {
   abortController: null,
   modelSettings: null
 };
+
+const EVENT_STREAM_STATUS_EVENT_ID = "eventstream-status";
+const EVENT_STREAM_STATUS_KEY = `event:${EVENT_STREAM_STATUS_EVENT_ID}`;
 
 applyHashPreferences();
 
@@ -307,7 +312,9 @@ const elements = {
   gitCodeLoginHint: document.getElementById("gitCodeLoginHint"),
   gitCodeSyncActions: document.getElementById("gitCodeSyncActions"),
   gitCodeSetupResult: document.getElementById("gitCodeSetupResult"),
-  gitCodeModelList: document.getElementById("gitCodeModelList")
+  gitCodeModelList: document.getElementById("gitCodeModelList"),
+  reloadStatus: document.getElementById("reloadStatus"),
+  refreshFiles: document.getElementById("refreshFiles")
 };
 
 function t(key) {
@@ -390,12 +397,15 @@ async function loadSession(sessionId) {
   elements.sessionTitle.textContent = session.title || t("unnamedSession");
   elements.messages.innerHTML = "";
   for (const message of session.messages || []) {
-    addMessage(message.role, message.content);
+    addMessage(message.role, message.content, message.reasoning || message.Reasoning || "");
   }
   if ((session.messages || []).length === 0) {
     addMessage("system", t("streamReady"));
   }
   renderSessions();
+  syncSelectedEventKey();
+  renderEvents();
+  renderToolDetail();
 }
 
 function renderSessions() {
@@ -415,18 +425,54 @@ function renderSessions() {
   });
 }
 
-function addMessage(role, text) {
+function addMessage(role, text, reasoning = "") {
   const node = document.createElement("div");
   node.className = `message ${role}`;
-  node.textContent = text;
+  const contentNode = document.createElement("div");
+  contentNode.className = "message-content";
+  contentNode.textContent = text;
+  node.appendChild(contentNode);
+
+  if (reasoning) {
+    ensureReasoningBlock(node).querySelector(".reasoning-content").textContent = reasoning;
+  }
+
   elements.messages.appendChild(node);
   elements.messages.scrollTop = elements.messages.scrollHeight;
   return node;
 }
 
 function appendMessage(node, text) {
-  node.textContent += text;
+  ensureMessageContentNode(node).textContent += text;
   elements.messages.scrollTop = elements.messages.scrollHeight;
+}
+
+function setMessageContent(node, text) {
+  ensureMessageContentNode(node).textContent = text;
+  elements.messages.scrollTop = elements.messages.scrollHeight;
+}
+
+function ensureMessageContentNode(node) {
+  let contentNode = node.querySelector(".message-content");
+  if (!contentNode) {
+    contentNode = document.createElement("div");
+    contentNode.className = "message-content";
+    node.appendChild(contentNode);
+  }
+
+  return contentNode;
+}
+
+function ensureReasoningBlock(node) {
+  let reasoningBlock = node.querySelector(".reasoning-block");
+  if (!reasoningBlock) {
+    reasoningBlock = document.createElement("details");
+    reasoningBlock.className = "reasoning-block";
+    reasoningBlock.innerHTML = `<summary>${t("reasoning")}</summary><div class="reasoning-content"></div>`;
+    node.insertBefore(reasoningBlock, ensureMessageContentNode(node));
+  }
+
+  return reasoningBlock;
 }
 
 async function loadStatus() {
@@ -493,24 +539,13 @@ function renderModelSettings() {
   }
 
   const settings = state.modelSettings;
-  elements.providerId.value = settings.providerId || settings.ProviderId || "siliconflow";
-  elements.apiBase.value = settings.apiBase || settings.ApiBase || "https://api.siliconflow.cn/v1/";
-  elements.modelId.value = settings.model || settings.Model || "nex-agi/Nex-N2-Pro";
-  if (elements.modelSelect) {
-    // Sync dropdown with model value
-    var v = settings.model || settings.Model || "";
-    var option = elements.modelSelect.querySelector('option[value="' + v + '"]');
-    if (option) {
-      elements.modelSelect.value = v;
-    } else {
-      // Custom model: add it as an option
-      var opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = v;
-      elements.modelSelect.appendChild(opt);
-      elements.modelSelect.value = v;
-    }
-  }
+  const providerOptions = getProviderOptions(settings);
+  const selectedProviderId = settings.providerId || settings.ProviderId || "siliconflow";
+  const selectedModel = settings.model || settings.Model || "";
+  const selectedApiBase = settings.apiBase || settings.ApiBase || "";
+
+  renderProviderOptions(providerOptions, selectedProviderId);
+  syncProviderSelection(selectedProviderId, selectedModel, selectedApiBase);
   elements.apiKey.value = "";
 
   const thinkingMode = settings.thinkingMode || settings.ThinkingMode || "auto";
@@ -521,6 +556,7 @@ function renderModelSettings() {
   const hasKey = settings.hasApiKey ?? settings.HasApiKey ?? false;
   const keySource = settings.keySource || settings.KeySource || "none";
   const preview = settings.apiKeyPreview || settings.ApiKeyPreview || "";
+  const environmentKeyName = settings.environmentKeyName || settings.EnvironmentKeyName || "";
   elements.keyStatus.textContent = hasKey ? t("keyConfigured") : t("keyMissing");
   elements.keyStatus.className = `section-count ${hasKey ? "status-ready" : "status-error"}`;
 
@@ -528,9 +564,111 @@ function renderModelSettings() {
   if (keySource === "config") {
     sourceText = `${t("keySourceConfig")} ${preview ? `(${preview})` : ""} ${t("keepExistingKey")}`;
   } else if (keySource === "environment") {
-    sourceText = `${t("keySourceEnvironment")} ${preview ? `(${preview})` : ""}`;
+    sourceText = `${t("keySourceEnvironment")} ${environmentKeyName}. ${preview ? `(${preview}) ` : ""}${t("keySourceEnvironmentNote")}`;
   }
   elements.apiKeyHint.textContent = sourceText;
+}
+
+function getProviderOptions(settings) {
+  return settings.availableProviders || settings.AvailableProviders || [];
+}
+
+function getProviderModels(provider) {
+  return provider?.models || provider?.Models || [];
+}
+
+function getProviderId(provider) {
+  return provider?.providerId || provider?.ProviderId || "";
+}
+
+function getProviderApiBase(provider) {
+  return provider?.apiBase || provider?.ApiBase || "";
+}
+
+function getProviderDisplayName(provider) {
+  return provider?.displayName || provider?.DisplayName || getProviderId(provider);
+}
+
+function getModelId(model) {
+  return model?.id || model?.Id || "";
+}
+
+function getModelDisplayName(model) {
+  return model?.displayName || model?.DisplayName || getModelId(model);
+}
+
+function findProviderOption(providerId) {
+  const providerOptions = getProviderOptions(state.modelSettings || {});
+  return providerOptions.find(provider => getProviderId(provider) === providerId) || providerOptions[0] || null;
+}
+
+function renderProviderOptions(providerOptions, selectedProviderId) {
+  if (!elements.providerId) {
+    return;
+  }
+
+  elements.providerId.innerHTML = "";
+  providerOptions.forEach(provider => {
+    const option = document.createElement("option");
+    option.value = getProviderId(provider);
+    option.textContent = getProviderDisplayName(provider);
+    elements.providerId.appendChild(option);
+  });
+
+  if (providerOptions.length > 0) {
+    elements.providerId.value = providerOptions.some(provider => getProviderId(provider) === selectedProviderId)
+      ? selectedProviderId
+      : getProviderId(providerOptions[0]);
+  }
+}
+
+function renderModelOptions(provider, selectedModel) {
+  if (!elements.modelSelect) {
+    return;
+  }
+
+  const models = getProviderModels(provider);
+  elements.modelSelect.innerHTML = "";
+
+  models.forEach(model => {
+    const option = document.createElement("option");
+    option.value = getModelId(model);
+    option.textContent = getModelDisplayName(model);
+    elements.modelSelect.appendChild(option);
+  });
+
+  if (selectedModel) {
+    const exists = models.some(model => getModelId(model) === selectedModel);
+    if (!exists) {
+      const option = document.createElement("option");
+      option.value = selectedModel;
+      option.textContent = selectedModel;
+      elements.modelSelect.appendChild(option);
+    }
+    elements.modelSelect.value = selectedModel;
+    elements.modelId.value = selectedModel;
+  } else if (models.length > 0) {
+    const firstModel = getModelId(models[0]);
+    elements.modelSelect.value = firstModel;
+    elements.modelId.value = firstModel;
+  } else {
+    elements.modelId.value = "";
+  }
+}
+
+function syncProviderSelection(providerId, selectedModel = "", apiBaseOverride = "") {
+  const provider = findProviderOption(providerId);
+  if (!provider) {
+    return;
+  }
+
+  const resolvedProviderId = getProviderId(provider);
+  if (elements.providerId) {
+    elements.providerId.value = resolvedProviderId;
+  }
+
+  elements.apiBase.value = apiBaseOverride || getProviderApiBase(provider);
+  renderModelOptions(provider, selectedModel);
 }
 
 function showSettingsNotice(message, kind = "info") {
@@ -591,13 +729,7 @@ function handleStreamEvent(event, assistantNode) {
 
   if (type === "reasoning") {
     const reasoning = event.reasoning || event.Reasoning || event.content || event.Content || "";
-    let reasoningBlock = assistantNode.querySelector(".reasoning-block");
-    if (!reasoningBlock) {
-      reasoningBlock = document.createElement("details");
-      reasoningBlock.className = "reasoning-block";
-      reasoningBlock.innerHTML = `<summary>${t("reasoning")}</summary><div class="reasoning-content"></div>`;
-      assistantNode.insertBefore(reasoningBlock, assistantNode.firstChild);
-    }
+    const reasoningBlock = ensureReasoningBlock(assistantNode);
     reasoningBlock.querySelector(".reasoning-content").textContent += reasoning;
     reasoningBlock.open = true;
     elements.messages.scrollTop = elements.messages.scrollHeight;
@@ -620,14 +752,14 @@ function handleStreamEvent(event, assistantNode) {
   }
 
   if (type === "complete") {
-    const answer = event.answer || event.Answer || assistantNode.textContent;
-    assistantNode.textContent = answer || assistantNode.textContent;
+    const answer = event.answer || event.Answer || ensureMessageContentNode(assistantNode).textContent;
+    setMessageContent(assistantNode, answer || ensureMessageContentNode(assistantNode).textContent);
     return;
   }
 
   if (type === "error") {
     assistantNode.classList.add("error");
-    assistantNode.textContent = `${t("errorPrefix")}: ${event.error || event.Error || "Unknown"}`;
+    setMessageContent(assistantNode, `${t("errorPrefix")}: ${event.error || event.Error || "Unknown"}`);
   }
 }
 
@@ -691,16 +823,13 @@ function parentPath(path) {
 
 function addEventItem(event) {
   const normalized = normalizeRuntimeEvent(event);
-  state.toolEvents.unshift(normalized);
-  if (state.toolEvents.length > 100) {
-    state.toolEvents.pop();
-  }
-  state.selectedEventKey ||= normalized.key;
+  upsertToolEvent(normalized);
+  syncSelectedEventKey();
   renderEvents();
   renderToolDetail();
 
   // Also render tool events inline in chat
-  if (normalized.type === "ToolStarted" || normalized.type === "ToolCompleted" || normalized.type === "ToolFailed") {
+  if (shouldRenderInlineToolEvent(normalized)) {
     const toolName = normalized.toolName || "Unknown";
     if (normalized.type === "ToolStarted") {
       addMessage("system", `[TOOL] ${toolName} ...`);
@@ -711,27 +840,41 @@ function addEventItem(event) {
 }
 
 function normalizeRuntimeEvent(event) {
+  const sequence = normalizeEventSequence(event.Sequence ?? event.sequence);
+  const eventId = event.EventId || event.eventId || "";
+  const type = event.Type || event.type || "Runtime";
+  const timestamp = event.Timestamp || event.timestamp || new Date().toISOString();
+  const toolCallId = event.ToolCallId || event.toolCallId || "";
+
   return {
-    key: `${event.ToolCallId || event.toolCallId || ""}-${event.Type || event.type || "Runtime"}-${event.Timestamp || event.timestamp || Date.now()}`,
-    type: event.Type || event.type || "Runtime",
+    key: sequence > 0
+      ? `seq:${sequence}`
+      : eventId
+        ? `event:${eventId}`
+        : `${toolCallId}-${type}-${timestamp}`,
+    sequence,
+    eventId,
+    type,
     runId: event.RunId || event.runId || "",
     sessionId: event.SessionId || event.sessionId || "",
-    timestamp: event.Timestamp || event.timestamp || new Date().toISOString(),
+    timestamp,
     toolName: event.ToolName || event.toolName || "",
-    toolCallId: event.ToolCallId || event.toolCallId || "",
+    toolCallId,
     content: event.Content || event.content || "",
     error: event.ErrorMessage || event.errorMessage || ""
   };
 }
 
 function renderEvents() {
+  const visibleEvents = getVisibleToolEvents();
+  syncSelectedEventKey(visibleEvents);
   elements.events.innerHTML = "";
-  if (state.toolEvents.length === 0) {
+  if (visibleEvents.length === 0) {
     elements.events.innerHTML = `<div class="empty-state">${t("noEvents")}</div>`;
     return;
   }
 
-  state.toolEvents.forEach(event => {
+  visibleEvents.forEach(event => {
     const button = document.createElement("button");
     button.className = `event-item${event.key === state.selectedEventKey ? " active" : ""}`;
     button.innerHTML = `
@@ -749,7 +892,8 @@ function renderEvents() {
 }
 
 function renderToolDetail() {
-  const selected = state.toolEvents.find(event => event.key === state.selectedEventKey) || state.toolEvents[0];
+  const visibleEvents = getVisibleToolEvents();
+  const selected = visibleEvents.find(event => event.key === state.selectedEventKey) || visibleEvents[0];
   if (!selected) {
     elements.toolDetail.innerHTML = `<div class="empty-state">${t("noToolSelected")}</div>`;
     return;
@@ -761,6 +905,7 @@ function renderToolDetail() {
       <div><dt>${t("tool")}</dt><dd>${escapeHtml(selected.toolName || "Runtime")}</dd></div>
       <div><dt>${t("run")}</dt><dd>${escapeHtml(selected.runId)}</dd></div>
       <div><dt>${t("session")}</dt><dd>${escapeHtml(selected.sessionId)}</dd></div>
+      ${selected.sequence ? `<div><dt>Seq</dt><dd>${escapeHtml(selected.sequence)}</dd></div>` : ""}
     </dl>
     ${selected.error ? `<pre class="detail-pre error">${escapeHtml(selected.error)}</pre>` : ""}
     ${selected.content ? `<pre class="detail-pre">${escapeHtml(selected.content)}</pre>` : ""}
@@ -769,6 +914,9 @@ function renderToolDetail() {
 
 function connectEvents() {
   const source = new EventSource("/api/events");
+  source.onopen = () => {
+    removeToolEvent(EVENT_STREAM_STATUS_KEY);
+  };
   source.addEventListener("runtime", event => {
     try {
       addEventItem(JSON.parse(event.data));
@@ -777,8 +925,74 @@ function connectEvents() {
     }
   });
   source.onerror = () => {
-    addEventItem({ type: "EventStream", errorMessage: t("disconnected") });
+    addEventItem({ type: "EventStream", eventId: EVENT_STREAM_STATUS_EVENT_ID, errorMessage: t("disconnected") });
   };
+}
+
+function normalizeEventSequence(value) {
+  const sequence = Number(value);
+  return Number.isFinite(sequence) && sequence > 0 ? sequence : 0;
+}
+
+function getVisibleToolEvents() {
+  return state.toolEvents.filter(event => {
+    if (event.type === "EventStream") {
+      return true;
+    }
+
+    if (!state.sessionId) {
+      return !event.sessionId;
+    }
+
+    return event.sessionId === state.sessionId;
+  });
+}
+
+function syncSelectedEventKey(visibleEvents = getVisibleToolEvents()) {
+  if (visibleEvents.length === 0) {
+    state.selectedEventKey = "";
+    return;
+  }
+
+  if (!visibleEvents.some(event => event.key === state.selectedEventKey)) {
+    state.selectedEventKey = visibleEvents[0].key;
+  }
+}
+
+function upsertToolEvent(event) {
+  const existingIndex = state.toolEvents.findIndex(item => item.key === event.key);
+  if (existingIndex >= 0) {
+    state.toolEvents[existingIndex] = {
+      ...state.toolEvents[existingIndex],
+      ...event
+    };
+    return;
+  }
+
+  state.toolEvents.unshift(event);
+  if (state.toolEvents.length > 200) {
+    state.toolEvents.pop();
+  }
+}
+
+function removeToolEvent(key) {
+  const index = state.toolEvents.findIndex(event => event.key === key);
+  if (index < 0) {
+    return;
+  }
+
+  state.toolEvents.splice(index, 1);
+  syncSelectedEventKey();
+  renderEvents();
+  renderToolDetail();
+}
+
+function shouldRenderInlineToolEvent(event) {
+  if (event.sessionId !== state.sessionId) {
+    return false;
+  }
+
+  return event.type === "ToolStarted" || event.type === "ToolFailed";
 }
 
 function updateUsageDisplay(data) {
@@ -845,9 +1059,9 @@ elements.composer.addEventListener("submit", async event => {
   } catch (error) {
     if (error.name !== 'AbortError') {
       assistantNode.classList.add('error');
-      assistantNode.textContent = `${t("requestError")}: ${error.message}`;
+      setMessageContent(assistantNode, `${t("requestError")}: ${error.message}`);
     } else {
-      assistantNode.textContent += '\n[已停止]';
+      appendMessage(assistantNode, '\n[已停止]');
     }
   } finally {
     state.isRunning = false;
@@ -891,18 +1105,10 @@ if (elements.modelSelect) {
   });
 }
 
-// Provider switch → change API base
+// Provider switch → sync provider defaults from API catalog
 if (elements.providerId) {
   elements.providerId.addEventListener("change", () => {
-    var v = elements.providerId.value;
-    if (v === "siliconflow") {
-      elements.apiBase.value = "https://api.siliconflow.cn/v1/";
-      elements.modelId.value = "nex-agi/Nex-N2-Pro";
-      if (elements.modelSelect) elements.modelSelect.value = "nex-agi/Nex-N2-Pro";
-    } else if (v === "dmx") {
-      elements.apiBase.value = "https://www.dmxapi.cn/v1/";
-      elements.modelId.value = "deepseek-v4-pro-guan";
-    }
+    syncProviderSelection(elements.providerId.value);
   });
 }
 

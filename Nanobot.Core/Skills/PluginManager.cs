@@ -8,6 +8,8 @@ namespace Nanobot.Core.Skills;
 /// </summary>
 public class PluginManager
 {
+    private const string ToolkitOwner = "angri450";
+    private const string ToolkitRepository = "Nong.Toolkit.Net";
     private readonly string _skillsDir;
     private readonly string _registryPath;
     private readonly HttpClient _http;
@@ -26,14 +28,19 @@ public class PluginManager
     /// </summary>
     public async Task<PluginInstallResult> InstallAsync(string pluginName, string version)
     {
+        pluginName = NormalizePluginName(pluginName);
+        version = NormalizeVersion(version);
+
         // Derive download URL
         var url = GetReleaseUrl(pluginName, version);
         var tmpDir = Path.Combine(Path.GetTempPath(), $"nanobot-plugin-{pluginName}-{Guid.NewGuid():N}");
         var tmpZip = Path.Combine(tmpDir, "plugin.zip");
+        var extractRoot = Path.Combine(tmpDir, "extract");
 
         try
         {
             Directory.CreateDirectory(tmpDir);
+            Directory.CreateDirectory(extractRoot);
 
             // Download
             await DownloadAsync(url, tmpZip);
@@ -42,28 +49,11 @@ public class PluginManager
             if (!File.Exists(tmpZip) || new FileInfo(tmpZip).Length == 0)
                 return PluginInstallResult.Fail(pluginName, "Downloaded file is empty or missing.");
 
-            // Extract to skills directory
-            var extractDir = Path.Combine(_skillsDir, pluginName);
-            if (Directory.Exists(extractDir))
-            {
-                // Backup existing
-                var backupDir = extractDir + $".bak.{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
-                Directory.Move(extractDir, backupDir);
-            }
+            ZipFile.ExtractToDirectory(tmpZip, extractRoot);
 
-            ZipFile.ExtractToDirectory(tmpZip, extractDir);
-
-            // Find all SKILL.md files to discover sub-skills
-            var skillDirs = Directory.GetDirectories(extractDir)
-                .Where(d => File.Exists(Path.Combine(d, "SKILL.md")))
-                .Select(d => Path.GetFileName(d))
-                .ToList();
-
-            // If the extract dir itself has SKILL.md, it's a single skill
-            if (File.Exists(Path.Combine(extractDir, "SKILL.md")) && skillDirs.Count == 0)
-            {
-                skillDirs.Add(pluginName);
-            }
+            var packageRoot = FindPackageRoot(extractRoot);
+            var installPlan = BuildInstallPlan(packageRoot, pluginName);
+            ApplyInstallPlan(installPlan, tmpDir);
 
             // Update registry
             var registry = LoadRegistry();
@@ -73,11 +63,11 @@ public class PluginManager
                 Version = version,
                 InstalledAt = DateTimeOffset.UtcNow,
                 SourceUrl = url,
-                Skills = skillDirs
+                Skills = installPlan.Skills.Select(skill => skill.InstallName).ToList()
             };
             SaveRegistry(registry);
 
-            return PluginInstallResult.Ok(pluginName, version, skillDirs);
+            return PluginInstallResult.Ok(pluginName, version, installPlan.Skills.Select(skill => skill.InstallName).ToList());
         }
         catch (HttpRequestException ex)
         {
@@ -110,17 +100,24 @@ public class PluginManager
     /// </summary>
     public bool Uninstall(string pluginName)
     {
+        pluginName = NormalizePluginName(pluginName);
         var registry = LoadRegistry();
+        registry.TryGetValue(pluginName, out var entry);
         registry.Remove(pluginName);
         SaveRegistry(registry);
 
-        var dir = Path.Combine(_skillsDir, pluginName);
-        if (Directory.Exists(dir))
+        var removed = false;
+        foreach (var skillName in entry?.Skills ?? new List<string> { pluginName })
         {
-            Directory.Delete(dir, recursive: true);
-            return true;
+            var dir = Path.Combine(_skillsDir, skillName);
+            if (Directory.Exists(dir))
+            {
+                Directory.Delete(dir, recursive: true);
+                removed = true;
+            }
         }
-        return false;
+
+        return removed;
     }
 
     /// <summary>
@@ -130,7 +127,7 @@ public class PluginManager
     {
         try
         {
-            var apiUrl = $"https://api.github.com/repos/angri450/Nong.Toolkit.Net/releases/latest";
+            var apiUrl = $"https://api.github.com/repos/{ToolkitOwner}/{ToolkitRepository}/releases/latest";
             var json = await _http.GetStringAsync(apiUrl);
             using var doc = JsonDocument.Parse(json);
             var tag = doc.RootElement.GetProperty("tag_name").GetString();
@@ -154,9 +151,282 @@ public class PluginManager
 
     private static string GetReleaseUrl(string pluginName, string version)
     {
-        // GitHub release archive URL
-        return $"https://github.com/angri450/Nong.Toolkit.Net/archive/refs/tags/v{version}.zip";
+        return $"https://github.com/{ToolkitOwner}/{ToolkitRepository}/archive/refs/tags/v{version}.zip";
     }
+
+    private ToolkitInstallPlan BuildInstallPlan(string packageRoot, string pluginName)
+    {
+        var marketplace = LoadMarketplace(packageRoot);
+        var plugin = marketplace.Plugins
+            .FirstOrDefault(item => string.Equals(item.Name, pluginName, StringComparison.OrdinalIgnoreCase));
+
+        if (plugin is null)
+        {
+            throw new InvalidOperationException($"Plugin '{pluginName}' was not found in Nong.Toolkit.Net marketplace.");
+        }
+
+        var sourceRoot = ResolvePackagePath(packageRoot, plugin.Source, packageRoot);
+        var manifest = LoadPluginManifest(sourceRoot);
+        var skills = ResolveSkillInstallSources(packageRoot, sourceRoot, manifest);
+        if (skills.Count == 0)
+        {
+            throw new InvalidOperationException($"Plugin '{pluginName}' does not expose any installable skills.");
+        }
+
+        var sharedReferences = Directory.Exists(Path.Combine(packageRoot, "references", "shared"))
+            ? Path.Combine(packageRoot, "references", "shared")
+            : null;
+
+        return new ToolkitInstallPlan(plugin.Name, skills, sharedReferences);
+    }
+
+    private void ApplyInstallPlan(ToolkitInstallPlan plan, string tmpDir)
+    {
+        var backupRoot = Path.Combine(tmpDir, "backup");
+        Directory.CreateDirectory(backupRoot);
+
+        var backups = new List<BackupEntry>();
+        var installedTargets = new List<string>();
+
+        try
+        {
+            foreach (var skill in plan.Skills)
+            {
+                var targetDir = Path.Combine(_skillsDir, skill.InstallName);
+                BackupDirectory(targetDir, backupRoot, backups);
+                installedTargets.Add(targetDir);
+                CopyDirectory(skill.SourcePath, targetDir);
+            }
+
+            if (!string.IsNullOrWhiteSpace(plan.SharedReferencesPath))
+            {
+                var targetSharedDir = Path.Combine(_skillsDir, "references", "shared");
+                BackupDirectory(targetSharedDir, backupRoot, backups);
+                installedTargets.Add(targetSharedDir);
+                CopyDirectory(plan.SharedReferencesPath!, targetSharedDir);
+            }
+        }
+        catch
+        {
+            foreach (var target in installedTargets.Where(Directory.Exists))
+            {
+                Directory.Delete(target, recursive: true);
+            }
+
+            RestoreBackups(backups);
+            throw;
+        }
+    }
+
+    private static void BackupDirectory(string targetDir, string backupRoot, List<BackupEntry> backups)
+    {
+        if (!Directory.Exists(targetDir))
+        {
+            return;
+        }
+
+        var backupDir = Path.Combine(backupRoot, backups.Count.ToString("D4"));
+        var parent = Path.GetDirectoryName(backupDir);
+        if (!string.IsNullOrWhiteSpace(parent))
+        {
+            Directory.CreateDirectory(parent);
+        }
+
+        Directory.Move(targetDir, backupDir);
+        backups.Add(new BackupEntry(targetDir, backupDir));
+    }
+
+    private static void RestoreBackups(IEnumerable<BackupEntry> backups)
+    {
+        foreach (var backup in backups.Reverse())
+        {
+            var parent = Path.GetDirectoryName(backup.TargetPath);
+            if (!string.IsNullOrWhiteSpace(parent))
+            {
+                Directory.CreateDirectory(parent);
+            }
+
+            if (Directory.Exists(backup.TargetPath))
+            {
+                Directory.Delete(backup.TargetPath, recursive: true);
+            }
+
+            Directory.Move(backup.BackupPath, backup.TargetPath);
+        }
+    }
+
+    private static void CopyDirectory(string sourceDir, string destinationDir)
+    {
+        if (!Directory.Exists(sourceDir))
+        {
+            throw new DirectoryNotFoundException($"Source directory '{sourceDir}' does not exist.");
+        }
+
+        if (Directory.Exists(destinationDir))
+        {
+            Directory.Delete(destinationDir, recursive: true);
+        }
+
+        Directory.CreateDirectory(destinationDir);
+
+        foreach (var directory in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(sourceDir, directory);
+            Directory.CreateDirectory(Path.Combine(destinationDir, relative));
+        }
+
+        foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(sourceDir, file);
+            var target = Path.Combine(destinationDir, relative);
+            var parent = Path.GetDirectoryName(target);
+            if (!string.IsNullOrWhiteSpace(parent))
+            {
+                Directory.CreateDirectory(parent);
+            }
+
+            File.Copy(file, target, overwrite: true);
+        }
+    }
+
+    private static string FindPackageRoot(string extractRoot)
+    {
+        if (LooksLikeMarketplaceRoot(extractRoot))
+        {
+            return extractRoot;
+        }
+
+        foreach (var directory in Directory.GetDirectories(extractRoot))
+        {
+            if (LooksLikeMarketplaceRoot(directory))
+            {
+                return directory;
+            }
+        }
+
+        throw new InvalidOperationException("Downloaded package does not contain a Nong.Toolkit.Net marketplace root.");
+    }
+
+    private static bool LooksLikeMarketplaceRoot(string path)
+    {
+        return File.Exists(Path.Combine(path, ".claude-plugin", "marketplace.json"))
+            || File.Exists(Path.Combine(path, ".claude-plugin", "plugin.json"));
+    }
+
+    private static ToolkitMarketplaceManifest LoadMarketplace(string packageRoot)
+    {
+        var path = Path.Combine(packageRoot, ".claude-plugin", "marketplace.json");
+        if (!File.Exists(path))
+        {
+            throw new InvalidOperationException("Nong.Toolkit.Net marketplace manifest '.claude-plugin/marketplace.json' was not found.");
+        }
+
+        var manifest = JsonSerializer.Deserialize<ToolkitMarketplaceManifest>(File.ReadAllText(path), JsonOptions);
+        if (manifest is null || manifest.Plugins.Count == 0)
+        {
+            throw new InvalidOperationException("Nong.Toolkit.Net marketplace manifest is empty or invalid.");
+        }
+
+        return manifest;
+    }
+
+    private static ToolkitPluginManifest LoadPluginManifest(string sourceRoot)
+    {
+        var path = Path.Combine(sourceRoot, ".claude-plugin", "plugin.json");
+        if (!File.Exists(path))
+        {
+            if (File.Exists(Path.Combine(sourceRoot, "SKILL.md")))
+            {
+                return new ToolkitPluginManifest
+                {
+                    Name = Path.GetFileName(sourceRoot),
+                    Skills = new List<string> { "./" }
+                };
+            }
+
+            throw new InvalidOperationException($"Plugin manifest was not found under '{sourceRoot}'.");
+        }
+
+        var manifest = JsonSerializer.Deserialize<ToolkitPluginManifest>(File.ReadAllText(path), JsonOptions);
+        if (manifest is null)
+        {
+            throw new InvalidOperationException($"Plugin manifest under '{sourceRoot}' is invalid.");
+        }
+
+        return manifest;
+    }
+
+    private static List<SkillInstallSource> ResolveSkillInstallSources(
+        string packageRoot,
+        string sourceRoot,
+        ToolkitPluginManifest manifest)
+    {
+        var skills = new List<SkillInstallSource>();
+
+        foreach (var skillPath in manifest.Skills.Where(path => !string.IsNullOrWhiteSpace(path)))
+        {
+            var resolved = ResolvePackagePath(sourceRoot, skillPath, packageRoot);
+            if (!Directory.Exists(resolved) || !File.Exists(Path.Combine(resolved, "SKILL.md")))
+            {
+                throw new InvalidOperationException($"Skill source '{skillPath}' in plugin '{manifest.Name}' is missing SKILL.md.");
+            }
+
+            var installName = Path.GetFileName(resolved.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            skills.Add(new SkillInstallSource(installName, resolved));
+        }
+
+        if (skills.Count == 0 && File.Exists(Path.Combine(sourceRoot, "SKILL.md")))
+        {
+            skills.Add(new SkillInstallSource(Path.GetFileName(sourceRoot), sourceRoot));
+        }
+
+        return skills
+            .GroupBy(skill => skill.InstallName, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group.First())
+            .ToList();
+    }
+
+    private static string ResolvePackagePath(string baseRoot, string relativePath, string packageRoot)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(baseRoot, relativePath));
+        var normalizedRoot = Path.GetFullPath(packageRoot)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (!fullPath.Equals(normalizedRoot, comparison)
+            && !fullPath.StartsWith(normalizedRoot + Path.DirectorySeparatorChar, comparison)
+            && !fullPath.StartsWith(normalizedRoot + Path.AltDirectorySeparatorChar, comparison))
+        {
+            throw new InvalidOperationException($"Manifest path '{relativePath}' resolves outside package root.");
+        }
+
+        return fullPath;
+    }
+
+    private static string NormalizePluginName(string pluginName)
+    {
+        if (string.IsNullOrWhiteSpace(pluginName))
+        {
+            return string.Empty;
+        }
+
+        var normalized = pluginName.Trim();
+        var atIndex = normalized.IndexOf('@');
+        return atIndex > 0 ? normalized[..atIndex] : normalized;
+    }
+
+    private static string NormalizeVersion(string version)
+    {
+        return version.Trim().TrimStart('v', 'V');
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
     private Dictionary<string, PluginEntry> LoadRegistry()
     {
@@ -165,7 +435,7 @@ public class PluginManager
             if (File.Exists(_registryPath))
             {
                 var json = File.ReadAllText(_registryPath);
-                return JsonSerializer.Deserialize<Dictionary<string, PluginEntry>>(json)
+                return JsonSerializer.Deserialize<Dictionary<string, PluginEntry>>(json, JsonOptions)
                     ?? new();
             }
         }
@@ -178,6 +448,32 @@ public class PluginManager
         File.WriteAllText(_registryPath,
             JsonSerializer.Serialize(registry, new JsonSerializerOptions { WriteIndented = true }));
     }
+}
+
+internal sealed record ToolkitInstallPlan(
+    string PluginName,
+    IReadOnlyList<SkillInstallSource> Skills,
+    string? SharedReferencesPath);
+
+internal sealed record SkillInstallSource(string InstallName, string SourcePath);
+
+internal sealed record BackupEntry(string TargetPath, string BackupPath);
+
+internal sealed class ToolkitMarketplaceManifest
+{
+    public List<ToolkitMarketplacePlugin> Plugins { get; set; } = new();
+}
+
+internal sealed class ToolkitMarketplacePlugin
+{
+    public string Name { get; set; } = "";
+    public string Source { get; set; } = "";
+}
+
+internal sealed class ToolkitPluginManifest
+{
+    public string Name { get; set; } = "";
+    public List<string> Skills { get; set; } = new();
 }
 
 public sealed class PluginEntry
