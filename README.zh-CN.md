@@ -344,6 +344,7 @@ NANOBOT_RUN_INTEGRATION_TESTS=1 SILICONFLOW_API_KEY=... dotnet test --filter Rea
 | `dotnet build` | 0 warnings，0 errors |
 | WebUI API smoke（2026-06-14） | `/api/runtime/status` 200，`/api/system/status` 200，`/api/sessions` 200，`/api/gitcode/auth/status` 404，实时 `nong.commandCount = 126` |
 | WebUI 浏览器 smoke（2026-06-14） | 桌面和窄屏布局均加载为 runtime `就绪`，`providerOptions = 1`，发送按钮可用，控制台和运行时异常为空 |
+| MSI 打包 smoke（2026-06-14） | `eng/package-msi.ps1` 生成 `artifacts/installer/NanoBot-0.1.0-win-x64.msi`；MSI 解包和解包后的 `nanobot.exe serve` 都成功 |
 | 源码审计 | 0 TODO，0 stub，0 `NotImplementedException` |
 
 ## 安全边界

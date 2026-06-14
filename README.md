@@ -344,6 +344,7 @@ Current local verification:
 | `dotnet build` | 0 warnings, 0 errors |
 | WebUI API smoke (2026-06-14) | `/api/runtime/status` 200, `/api/system/status` 200, `/api/sessions` 200, `/api/gitcode/auth/status` 404, live `nong.commandCount = 126` |
 | WebUI browser smoke (2026-06-14) | Desktop and narrow layouts load with runtime `就绪`, `providerOptions = 1`, send enabled, and no console/runtime exceptions |
+| MSI packaging smoke (2026-06-14) | `eng/package-msi.ps1` created `artifacts/installer/NanoBot-0.1.0-win-x64.msi`; administrative extraction and extracted `nanobot.exe serve` both succeeded |
 | Source audit | 0 TODO, 0 stub, 0 `NotImplementedException` |
 
 ## Safety Boundary

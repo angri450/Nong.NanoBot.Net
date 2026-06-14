@@ -52,6 +52,16 @@ Last recorded code-side gate from `log/changelog/2026-06-14-siliconflow-distribu
   - active model: `nex-agi/Nex-N2-Pro`
   - desktop and narrow browser smoke: runtime pill `就绪`, `providerOptions = 1`, send enabled, no console/runtime exceptions
 
+Distribution packaging verification:
+
+- `.\eng\package-msi.ps1 -Version 0.1.0 -Configuration Release -RuntimeIdentifier win-x64`
+  - MSI created at `artifacts/installer/NanoBot-0.1.0-win-x64.msi`
+  - MSI administrative extraction succeeded into `artifacts/msi-extract`
+  - extracted `nanobot.exe --help` succeeded
+  - extracted `nanobot.exe serve --urls http://127.0.0.1:8801` succeeded
+  - `http://127.0.0.1:8801/api/settings/model`: SiliconFlow only
+  - `http://127.0.0.1:8801/api/gitcode/auth/status`: 404
+
 Real provider-backed end-to-end LLM verification remains environment-dependent and should be run only when credentials and model access are available.
 
 Latest stabilization additions also cover:

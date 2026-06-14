@@ -28,3 +28,11 @@
   - `GET /api/gitcode/auth/status`: 404
   - desktop browser smoke: runtime pill `就绪`, `providerOptions = 1`, send enabled, no console/runtime exceptions
   - narrow browser smoke: runtime pill `就绪`, `providerOptions = 1`, send enabled, no console/runtime exceptions
+- MSI packaging smoke:
+  - `.\eng\package-msi.ps1 -Version 0.1.0 -Configuration Release -RuntimeIdentifier win-x64`
+  - MSI created at `artifacts/installer/NanoBot-0.1.0-win-x64.msi`
+  - administrative extraction succeeded
+  - extracted `nanobot.exe --help` succeeded
+  - extracted `nanobot.exe serve --urls http://127.0.0.1:8801` succeeded
+  - `http://127.0.0.1:8801/api/settings/model`: SiliconFlow only
+  - `http://127.0.0.1:8801/api/gitcode/auth/status`: 404
